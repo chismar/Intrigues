@@ -19,6 +19,7 @@ public class BasicLoader : MonoBehaviour
 {
     public static string ProjectPrefix = "Intrigues";
     public static bool IsInEditor;
+
 	// Use this for initialization
 	ScriptEngine engine = new ScriptEngine ();
 
@@ -98,6 +99,7 @@ public class BasicLoader : MonoBehaviour
 			loadedAsms.Add ("BlackboardsData");
 			bbloader = new BlackboardsLoader (Engine);
 			bbloader.Init ();
+            metricsLoader = new RelationsMetricsLoader("relations", "metrics", typeof(RelationsMetrics.RelationDelegate), Engine);
 			//eaBar = FindObjectOfType<ProgressBarSet> ().CreateBar (Color.green, "eaBar");
 			compileThread = new Thread (() => {
 				try
@@ -135,6 +137,7 @@ public class BasicLoader : MonoBehaviour
 
 	}
 
+    RelationsMetricsLoader metricsLoader;
 	BlackboardsLoader bbloader;
 	//ProgressBar eaBar;
 	//ProgressBar genBar;
@@ -187,7 +190,13 @@ public class BasicLoader : MonoBehaviour
 		Engine.InitPlugins ();
 
 		genScript.Interpret ();
-		var compiler = Engine.GetPlugin<ScriptCompiler> ();
+
+        Script metricsScript = new Script("metrics", metricsLoader);
+        scriptFiles = Directory.GetFiles((BasicLoader.IsInEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/Mods/Metrics", "*.def");
+        foreach (var file in scriptFiles)
+            metricsScript.LoadFile(file);
+        metricsScript.Interpret();
+        var compiler = Engine.GetPlugin<ScriptCompiler> ();
 		compiler.Compile (OnAssemblyCompiled);
 	}
 

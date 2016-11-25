@@ -30,12 +30,18 @@ public abstract class EventAction
 	{
 
 	}
+
+    public virtual bool Interaction()
+    {
+        return false;
+    }
 }
 
 public class EventActionAttribute : Attribute
 {
     public string Category { get; set; }
     public bool ShouldHaveMaxUtility { get; set; }
+    public bool IsAIAction { get; set; }
     public bool IsInteraction { get; set; }
     public bool OncePerObject { get; set; }
     public bool OncePerTurn { get; set; }
@@ -89,6 +95,7 @@ public class EventActionsLoader : ScriptInterpreter
             CodeAttributeArgument catArg = new CodeAttributeArgument("Category", new CodeSnippetExpression("\"basic\""));
             CodeAttributeArgument onceArg = new CodeAttributeArgument("OncePerObject", new CodeSnippetExpression("false"));
             CodeAttributeArgument oncePerTurnArg = new CodeAttributeArgument("OncePerTurn", new CodeSnippetExpression("false"));
+            CodeAttributeArgument aiActionArg = new CodeAttributeArgument("IsAIAction", new CodeSnippetExpression("false"));
             CodeAttributeArgument interactionArg = new CodeAttributeArgument("IsInteraction", new CodeSnippetExpression("false"));
             CodeAttributeArgument tooltipArg = new CodeAttributeArgument("Tooltip", new CodeSnippetExpression("\"\""));
             CodeAttributeArgument onceInCategory = new CodeAttributeArgument("OnceInCategory", new CodeSnippetExpression("false"));
@@ -96,9 +103,10 @@ public class EventActionsLoader : ScriptInterpreter
             attr.Arguments.Add(catArg);
             attr.Arguments.Add(onceArg);
             attr.Arguments.Add(oncePerTurnArg);
-            attr.Arguments.Add(interactionArg);
+            attr.Arguments.Add(aiActionArg);
             attr.Arguments.Add(tooltipArg);
             attr.Arguments.Add(onceInCategory);
+            attr.Arguments.Add(interactionArg);
             for (int j = 0; j < ctx.Entries.Count; j++)
 			{
 				var op = ctx.Entries [j] as Operator;
@@ -108,9 +116,9 @@ public class EventActionsLoader : ScriptInterpreter
                 {
                     tooltipArg.Value = new CodeSnippetExpression((op.Context as InternalDSL.Expression).Operands[0].ToString());
 
-                } else if (op.Identifier as string == "is_interaction")
+                } else if (op.Identifier as string == "ai_action")
                 {
-                    interactionArg.Value = new CodeSnippetExpression("true");
+                    aiActionArg.Value = new CodeSnippetExpression("true");
 
                 }
                 else if (op.Identifier as string == "once_per_category")
@@ -152,7 +160,27 @@ public class EventActionsLoader : ScriptInterpreter
 					CreateEventFunction ("Filter", op.Context, codeType, scopeMethod, retVal);
 					//CreateFilterFunction (op.Context as Expression, codeType);
 
-				} else if (op.Identifier as string == "action")
+				}
+                else if (op.Identifier as string == "interaction")
+                {
+                    //It's a filter function
+                    //					Debug.Log (op.Context.GetType ());
+                    if (ScriptEngine.AnalyzeDebug)
+                        Debug.Log((op.Context as Expression).Operands[0].GetType());
+
+                    (((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts.Add("true");
+                    DeclareVariableStatement retVal = new DeclareVariableStatement();
+                    retVal.IsReturn = true;
+                    retVal.Name = "applicable";
+                    retVal.Type = typeof(bool);
+                    retVal.InitExpression = "false";
+
+                    CreateEventFunction("Interaction", op.Context, codeType, scopeMethod, retVal);
+                    interactionArg.Value = new CodeSnippetExpression("true");
+                    //CreateFilterFunction (op.Context as Expression, codeType);
+
+                }
+                else if (op.Identifier as string == "action")
 				{
 					//It's an action function
 					CreateEventFunction (op.Identifier as string, op.Context, codeType, actionMethod);
