@@ -7,6 +7,7 @@ public class Movable : MonoBehaviour {
     Rigidbody2D rigidBody;
     public float Speed { get; set; }
     public bool IsMoving { get; internal set; }
+    public bool NearTarget { get; internal set; }
     Vector3 target;
     Transform targetGo;
     float OKDistance;
@@ -40,7 +41,7 @@ public class Movable : MonoBehaviour {
         var transform = base.transform;
         var difVector = transform.position - target;
         var distance = difVector.magnitude;
-        if(IsMoving = distance > OKDistance)
+        if(NearTarget = IsMoving = distance > OKDistance)
         {
             var normalVector = difVector / distance;
             rigidBody.AddForce(normalVector * Speed * Time.deltaTime, ForceMode2D.Impulse);

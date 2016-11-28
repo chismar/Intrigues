@@ -10,9 +10,11 @@ public class Actions : Root<Actions>
     BasicLoader loader;
 
     List<EventAction> actions = new List<EventAction>();
-    Dictionary<string, List<EventAction>> actionsByCategory = new Dictionary<string, List<EventAction>>();
+    Dictionary<Type, List<EventAction>> eventsByCategory = new Dictionary<Type, List<EventAction>>();
 
-    Dictionary<string, List<EventAction>> interactionsByCategory = new Dictionary<string, List<EventAction>>();
+    Dictionary<Type, List<EventAction>> interactionsByCategory = new Dictionary<Type, List<EventAction>>();
+
+    Dictionary<Type, List<EventAction>> actionsByCategory = new Dictionary<Type, List<EventAction>>();
     public bool Loaded = false;
 
     void Awake()
@@ -35,23 +37,41 @@ public class Actions : Root<Actions>
             var actionMeta = type.GetCustomAttributes(typeof(EventActionAttribute), false)[0] as EventActionAttribute;
             action.Meta = actionMeta;
             List<EventAction> catList = null;
-            var cats = actionsByCategory;
+
+            var cats = eventsByCategory;
             if (action.Meta.IsInteraction)
                 cats = interactionsByCategory;
-            else
+            else if (action.Meta.IsAIAction)
+                cats = actionsByCategory;
 
                 actions.Add(action);
-            if (!cats.TryGetValue(action.Meta.Category, out catList))
+            var categories = type.GetInterfaces();
+            foreach ( var cat in categories)
             {
-                catList = new List<EventAction>();
-                cats.Add(action.Meta.Category, catList);
+                if (!cats.TryGetValue(cat, out catList))
+                {
+                    catList = new List<EventAction>();
+                    cats.Add(cat, catList);
+                }
+                catList.Add(action);
             }
-            catList.Add(action);
         }
 
         weights = new ActionWeight[actions.Count];
         Loaded = true;
     }
+
+    public EventAction GetAction(Type type)
+    {
+        var a = Activator.CreateInstance(type) as EventAction;
+        a.Init();
+        return a;
+    }
+    public List<Type> GetActionsByCategory(Type cat)
+    {
+        return null;
+    }
+
     const bool DebugGeneration = false;
     ObjectPool<StringBuilder> debugBuilders = new ObjectPool<StringBuilder>();
     ObjectPool<HashSet<EventAction>> eaPool = new ObjectPool<HashSet<EventAction>>();
@@ -84,11 +104,11 @@ public class Actions : Root<Actions>
                 if (iterations++ > 50)
                     break;
             oneMoreRun = false;
-            foreach (var categoryPair in actionsByCategory)
+            foreach (var categoryPair in eventsByCategory)
             {
                 var category = categoryPair.Value;
                 if (DebugGeneration)
-                    debugBuilder.Append(" ").AppendLine(categoryPair.Key);
+                    debugBuilder.Append(" ").AppendLine(categoryPair.Key.Name);
                 maximizeActions.Clear();
                 foreach (var action in category)
                 {
@@ -166,9 +186,9 @@ public class Actions : Root<Actions>
 
     }
     ObjectPool<List<EventAction>> listsPool = new ObjectPool<List<EventAction>>();
-    public Dictionary<string, List<EventAction>> FormActionsSet(GameObject go)
+    public Dictionary<Type, List<EventAction>> FormActionsSet(GameObject go)
     {
-        Dictionary<string, List<EventAction>> set = new Dictionary<string, List<EventAction>>();
+        Dictionary<Type, List<EventAction>> set = new Dictionary<Type, List<EventAction>>();
         foreach ( var cat in actionsByCategory)
         {
             var list = listsPool.Get();
@@ -237,7 +257,7 @@ public class Actions : Root<Actions>
 
         dictPool.Return(interactionsByType);
     }*/
-    void NotifyOfAct(GameObject go, EventAction action)
+    public void NotifyOfAct(GameObject go, EventAction action)
     {
         if (action.Meta.OncePerObject || action.Meta.OnceInCategory)
         {
@@ -382,6 +402,9 @@ public class Actions : Root<Actions>
 
     }
 
-
+    public List<Dependency> GetDeps(Type eventActionType)
+    {
+        return null;
+    }
 }
 

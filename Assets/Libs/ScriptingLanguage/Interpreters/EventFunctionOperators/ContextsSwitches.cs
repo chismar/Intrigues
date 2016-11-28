@@ -290,24 +290,33 @@ public class ContextFunctionCallInterpreter : FunctionOperatorInterpreter
 				argsBuilder.Append (exprInter.InterpretClosure (op.Args [i], block, argsDef [i].ParameterType).ExprString).Append (",");
 			else if (argsDef [i].ParameterType == typeof(string))
 				argsBuilder.Append ('(').Append (exprInter.InterpretExpression (op.Args [i], block).ExprString).Append (')').Append (".ToString()").Append (",");
-			else
+			else if(argsDef[i].ParameterType == typeof(System.Type)) //ScriptedTypes
+                argsBuilder.Append("typeof").Append('(').Append("ScriptedTypes.").Append(exprInter.InterpretExpression(op.Args[i], block).ExprString.ClearFromBraces()).Append(')').Append(",");
+            else
 				argsBuilder.Append ('(').Append (argsDef [i].ParameterType).Append (')').Append ('(').Append (exprInter.InterpretExpression (op.Args [i], block).ExprString).Append (')').Append (",");
 			
 		}
 		if (op.Context is Expression)
 		{
-			if (argsDef [argsDef.Length - 1].ParameterType.IsSubclassOf (typeof(Delegate)))
-				argsBuilder.
-				Append ('(').
-				Append (argsDef [argsDef.Length - 1].ParameterType).
-				Append (')').
-				Append ('(').
-				Append (exprInter.InterpretClosure (op.Context as Expression, block, argsDef [argsDef.Length - 1].ParameterType).ExprString).
-				Append (')');
-			else if (argsDef [argsDef.Length - 1].ParameterType == typeof(string))
-				argsBuilder.Append ('(').Append (exprInter.InterpretExpression (op.Context as Expression, block).ExprString).Append (')').Append (".ToString()");
-			else
-				argsBuilder.
+            if (argsDef[argsDef.Length - 1].ParameterType.IsSubclassOf(typeof(Delegate)))
+                argsBuilder.
+                Append('(').
+                Append(argsDef[argsDef.Length - 1].ParameterType).
+                Append(')').
+                Append('(').
+                Append(exprInter.InterpretClosure(op.Context as Expression, block, argsDef[argsDef.Length - 1].ParameterType).ExprString).
+                Append(')');
+            else if (argsDef[argsDef.Length - 1].ParameterType == typeof(string))
+                argsBuilder.Append('(').Append(exprInter.InterpretExpression(op.Context as Expression, block).ExprString).Append(')').Append(".ToString()");
+            else if (argsDef[argsDef.Length - 1].ParameterType == typeof(System.Type))
+                argsBuilder.
+                Append("typeof").
+                Append('(').
+                Append("ScriptedTypes").
+                Append(exprInter.InterpretExpression(op.Context as Expression, block).ExprString.ClearFromBraces()).
+                Append(')');
+            else
+                argsBuilder.
 				Append ('(').
 				Append (argsDef [argsDef.Length - 1].ParameterType).
 				Append (')').
@@ -428,7 +437,7 @@ public class ContextFunctionCallInterpreter : FunctionOperatorInterpreter
 		}
 			
 
-
+       
 		
 	
 	}
@@ -439,7 +448,20 @@ public class ContextFunctionCallInterpreter : FunctionOperatorInterpreter
 	}
 
 }
-
+public static class StringExtNoBraces
+{
+    static StringBuilder builder = new StringBuilder();
+    public static string ClearFromBraces(this string str)
+    {
+        builder.Length = 0;
+        for ( int i = 0; i < str.Length; i++)
+        {
+            if (str[i] != '(' && str[i] != ')')
+                builder.Append(str[i]);
+        }
+        return builder.ToString();
+    }
+}
 public class ContextPropertyInterpreter : FunctionOperatorInterpreter
 {
 	ExpressionInterpreter exprInter;

@@ -412,7 +412,10 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 								{
 									if (argsDef [j].ParameterType.IsSubclassOf (typeof(Delegate)))
 										exprBuilder.Append (InterpretClosure (callArgs [j], curBlock, argsDef [j].ParameterType).ExprString).Append (",");
-									else
+                                    else if (argsDef[j].ParameterType == typeof(System.Type))
+                                        exprBuilder.Append("typeof(ScriptedTypes.").
+                                            Append(InterpretExpression(callArgs[j], curBlock).ExprString.ClearFromBraces()).Append(")").Append(",");
+                                    else
 										exprBuilder.Append (InterpretExpression (callArgs [j], curBlock).ExprString).Append (",");
 								}
 								if (callArgs.Length > 0)

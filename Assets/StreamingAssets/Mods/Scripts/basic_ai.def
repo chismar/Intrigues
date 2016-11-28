@@ -1,0 +1,67 @@
+interaction_lit_up_manual = 
+{
+	interaction = manual
+	scope = interactable.light_source.manual.fit(not lit_up)
+	depends = closer_than(1)
+	action = 
+	{
+		light_source.lit_up = yes
+	}
+}
+
+interaction_lit_up_remote =
+{
+	interaction = manual
+	scope = interactable.manual.remote_controller.fit(control.light_source.true)
+	depends = closer_than(1)
+	action = 
+	{
+		remote_controller.controlled.light_source.lit_up = yes
+	}
+}
+
+lit_up_room_manual =
+{
+	ai_action = yes
+	category = lit_up_room
+	scope = light_sensor.can_do(interaction_lit_up_manual)
+	utility = 
+	{
+		cache(light) = any(room.all_objects, interactable.can(interaction_lit_up_manual))
+		if(light).ut = 1 - light_sensor.light
+	}
+	action = {
+		do(interaction_lit_up_manual) = light
+	}
+}
+
+lit_up_room_remote =
+{
+	ai_action = yes
+	category = lit_up_room
+	scope = light_sensor.can_do(lit_up_remote)
+	utility = 
+	{
+		cached(remote_c) = any(room.all_objects, interactable.remote.controller.can(interaction_lit_up_remote))
+		if(remote_c).ut = 1 - light_sensor.light
+	}
+	action = {
+		do(interaction_lit_up_remote) = remote_c
+	}
+}
+
+
+basic_move =
+{
+	ai_action = yes
+	category = move_to
+	scope = movable
+	utility = 0
+	action = {
+		movable = 
+		{
+			goto(distance) = target
+			wait(not is_moving, not is_moving and not near_target) = yes
+		}
+	}
+}

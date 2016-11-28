@@ -29,7 +29,7 @@ public class BlackboardsLoader  : ScriptInterpreter
 
 	public BlackboardsLoader (ScriptEngine engine) : base (engine)
 	{
-		cNamespace.Name = "Blackboards";
+		cNamespace.Name = "ScriptedTypes";
 	}
 
 	//	public void AddTypes (params Type[] types)
@@ -56,8 +56,7 @@ public class BlackboardsLoader  : ScriptInterpreter
 				bbType = new CodeTypeDeclaration (entry.Identifier as string);
 				if (entry.Args.Count == 1)
 				{
-					bbType.BaseTypes.Add (new CodeTypeReference (typeof(ScriptableObject)));
-
+                    bbType.IsInterface = true;
 				} else
 					bbType.BaseTypes.Add (new CodeTypeReference (typeof(MonoBehaviour)));
 				cNamespace.Types.Add (bbType);
@@ -73,20 +72,22 @@ public class BlackboardsLoader  : ScriptInterpreter
                     CodeMemberProperty prop = new CodeMemberProperty();
                     prop.HasGet = true;
                     prop.HasSet = true;
-                    prop.GetStatements.Add(new CodeSnippetStatement(String.Format("return {0}; ", op.Identifier)));
-                    if ((typeName == "float" || typeName == "int") && op.Args.Count == 2)
+                    if(!bbType.IsInterface)
                     {
-                       
-                        var clampMin = op.Args[0].ToString();
-                        var clampMax = op.Args[1].ToString();
-                        prop.SetStatements.Add(new CodeSnippetStatement(String.Format("{0} = ({3})UnityEngine.Mathf.Clamp(value, {1}, {2}); ", op.Identifier, clampMin, clampMax, typeName)));
+                        prop.GetStatements.Add(new CodeSnippetStatement(String.Format("return {0}; ", op.Identifier)));
+                        if ((typeName == "float" || typeName == "int") && op.Args.Count == 2)
+                        {
 
+                            var clampMin = op.Args[0].ToString();
+                            var clampMax = op.Args[1].ToString();
+                            prop.SetStatements.Add(new CodeSnippetStatement(String.Format("{0} = ({3})UnityEngine.Mathf.Clamp(value, {1}, {2}); ", op.Identifier, clampMin, clampMax, typeName)));
+
+                        }
+                        else
+                            prop.SetStatements.Add(new CodeSnippetStatement(String.Format("{0} = value; ", op.Identifier)));
                     }
-                    else
-					    prop.SetStatements.Add (new CodeSnippetStatement (String.Format ("{0} = value; ", op.Identifier)));
+                   
 					prop.Name = NameTranslator.CSharpNameFromScript (op.Identifier as string);
-
-					bbType.Members.Add (prop);
 					if (typeName == null)
 					{
 						var listFunc = (((op.Context as Expression).Operands [0] as ExprAtom).Content as Scope).Parts [0] as FunctionCall;
@@ -107,7 +108,8 @@ public class BlackboardsLoader  : ScriptInterpreter
 					field.Attributes = MemberAttributes.Public;
 					prop.Type = field.Type;
 					prop.Attributes = MemberAttributes.Public;
-					bbType.Members.Add (field);
+                    if(!bbType.IsInterface)
+					    bbType.Members.Add (field);
 
                     
 				}

@@ -27,7 +27,7 @@ public class RepeatOperator : FunctionOperatorInterpreter
 		{
 			ForStatement stmt = new ForStatement ();
 			stmt.RepeatBlock = new FunctionBlock (block, block.Method, block.Type);
-			stmt.InsideExpr = String.Format ("int i = 0; i < {0}; i++", exprInterpreter.InterpretExpression (op.Args [0], block).ExprString);
+			stmt.InsideExpr = String.Format ("int i{1} = 0; i{1} < {0}; i{1}++", exprInterpreter.InterpretExpression (op.Args [0], block).ExprString, DeclareVariableStatement.VariableId++);
 
 			block.Statements.Add (stmt);
 			foreach (var entry in (op.Context as Context).Entries)

@@ -99,7 +99,7 @@ public class BasicLoader : MonoBehaviour
 			loadedAsms.Add ("BlackboardsData");
 			bbloader = new BlackboardsLoader (Engine);
 			bbloader.Init ();
-            metricsLoader = new RelationsMetricsLoader("relations", "metrics", typeof(RelationsMetrics.RelationDelegate), Engine);
+            metricsLoader = new RelationsMetricsLoader("ScriptedTypes", "metrics", typeof(RelationsMetrics.RelationDelegate), Engine);
 			//eaBar = FindObjectOfType<ProgressBarSet> ().CreateBar (Color.green, "eaBar");
 			compileThread = new Thread (() => {
 				try
@@ -144,7 +144,7 @@ public class BasicLoader : MonoBehaviour
     
 	void OnExternalsCompiled ()
 	{
-		var loader = new EventActionsLoader ("generators", Engine);
+		var loader = new EventActionsLoader ("ScriptedTypes", Engine);
 		//loader.CurProgressUpdated += x => eaBar.CurValue = x;
 		//loader.CurProgressUpdated += x => {
 		//	if (x == eaBar.MaxValue)
