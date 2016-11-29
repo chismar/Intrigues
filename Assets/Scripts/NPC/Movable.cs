@@ -16,6 +16,7 @@ public class Movable : MonoBehaviour {
         targetGo = null;
         target = point;
         this.OKDistance = OKDistance;
+        
     }
 
     public void Goto(float OKDistance, GameObject go)

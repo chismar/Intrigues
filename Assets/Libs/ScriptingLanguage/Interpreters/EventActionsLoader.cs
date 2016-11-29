@@ -9,17 +9,20 @@ using System.CodeDom.Compiler;
 using System.Reflection;
 using System;
 using System.Threading;
-
+using System.Text;
 
 public abstract class EventAction
 {
     
     public enum ActionState { None, Started, Failed, Finished }
     public ActionState State { get { return state; } set { state = value; } }
-    ActionState state = ActionState.None;
+    protected ActionState state = ActionState.None;
 	public abstract bool Filter ();
 
-	public abstract float Utility ();
+	public virtual float Utility ()
+    {
+        return -1f;
+    }
 
 	protected GameObject root;
 
@@ -67,7 +70,7 @@ public abstract class EventAction
 
 public interface EventInteraction
 {
-    GameObject Target { get; set; }
+    GameObject Initiator { get; set; }
 }
 
 public class EventActionAttribute : Attribute
@@ -97,7 +100,7 @@ public class EventActionsLoader : ScriptInterpreter
 		filters = engine.GetPlugin<FiltersPlugin> ();
 		functionOperators = engine.GetPlugin<EventFunctionOperators> ();
 	}
-
+    StringBuilder builder = new StringBuilder();
 	public override void Interpret (Script script)
 	{
 		MaxProgress = script.Entries.Count;
@@ -138,7 +141,8 @@ public class EventActionsLoader : ScriptInterpreter
             attr.Arguments.Add(tooltipArg);
             attr.Arguments.Add(onceInCategory);
             attr.Arguments.Add(interactionArg);
-            List<string> dependenciesData = new List<string>();
+            FunctionBlock dependenciesBlock = new FunctionBlock(null, null, codeType);
+            List<string> deps = new List<string>();
             for (int j = 0; j < ctx.Entries.Count; j++)
 			{
 				var op = ctx.Entries [j] as Operator;
@@ -167,7 +171,7 @@ public class EventActionsLoader : ScriptInterpreter
                 else if (op.Identifier as string == "category")
                 {
                     var cat = (((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts[0].ToString();
-                    var type = Engine.FindType(cat);
+                    var type = Engine.FindType("ScriptedTypes." + cat);
                     if (type != null)
                     {
                         var props = type.GetProperties();
@@ -193,6 +197,7 @@ public class EventActionsLoader : ScriptInterpreter
                                 codeType.UserData.Add(fieldName, field);
                                 field.UserData.Add("type", propInfo.PropertyType);
                             }
+                            codeType.Members.Add(prop);
                         }
                     }
                     else
@@ -276,6 +281,7 @@ public class EventActionsLoader : ScriptInterpreter
                             codeType.UserData.Add(fieldName, field);
                             field.UserData.Add("type", propInfo.PropertyType);
                         }
+                        codeType.Members.Add(prop);
                     }
 
                     
@@ -296,23 +302,80 @@ public class EventActionsLoader : ScriptInterpreter
                 }
                 else if (op.Identifier as string == "dependency")
                 {
-                    //var ctor = ((op.Context as Expression).Operands[0] as FunctionCall);
-                    //var type = Engine.FindType(ctor.Name);
-                    //dependenciesData.Add(String.Format("new {0}({1})", type.Name, ));
+                    var ctor = ((op.Context as Expression).Operands[0] as FunctionCall);
+                    var type = Engine.FindType(NameTranslator.CSharpNameFromScript(ctor.Name));
+                    MethodInfo initMethod = type.GetMethod("Init");
+                    var args = initMethod.GetParameters();
+                    bool hasInteractable = false;
+                    bool hasInitiator = false;
+                    foreach (var param in args)
+                    {
+                        if (param.Name == "interactable")
+                        {
+                            hasInteractable = true;
+                        }
+                        else if (param.Name == "initiator")
+                        {
+                            hasInitiator = true;
+                        }
+                    }
+                    builder.Length = 0;
+                    builder.Append("new ");
+                    builder.Append(type.FullName);
+                    builder.Append("().Init");
+                    builder.Append("(");
+                    if (hasInitiator)
+                    {
+                        builder.Append("Initiator");
+                        builder.Append(",");
+                    }
+                    if(hasInteractable)
+                    {
+                        builder.Append("Root");
+                        builder.Append(",");
+                    }
+                    foreach ( var funcArg in ctor.Args)
+                    {
+                        builder.Append(exprInter.InterpretExpression(funcArg, dependenciesBlock));
+                        builder.Append(",");
+                    }
+                    if (builder[builder.Length - 1] == ',')
+                        builder.Length = builder.Length - 1;
+                    builder.Append(")");
+                    deps.Add(builder.ToString());
                 }
                 else
                 {
                     //No idea
                 }
 			}
+            if(deps.Count > 0)
+            {
+                CodeMemberMethod method = new CodeMemberMethod();
+                method.Name = "GetDependencies";
+                method.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+                codeType.Members.Add(method);
+                string listName = "list" + DeclareVariableStatement.VariableId++;
+                string listOp = String.Format("var {0} = new List<Dependency>({1});", listName, deps.Count);
+                var addToListBlock = new FunctionBlock(dependenciesBlock);
+                foreach (var newDep in deps)
+                {
+                    addToListBlock.Statements.Add(String.Format("{0}.Add({1});", listName, newDep));
+                }
+                dependenciesBlock.Statements.Add(addToListBlock);
+                dependenciesBlock.Statements.Add(String.Format("return {0};", listName));
+                method.Statements.Add(new CodeSnippetStatement(dependenciesBlock.ToString()));
 
-		}
+            }
+
+
+        }
 		CurProgress = MaxProgress;
 		foreach (var type in codeTypes)
 		{
 			cNamespace.Types.Add (type);
 		}
-
+        
 		CSharpCodeProvider provider = new CSharpCodeProvider ();
 		CodeGeneratorOptions options = new CodeGeneratorOptions ();
 		var writer = new StringWriter ();
@@ -331,7 +394,7 @@ public class EventActionsLoader : ScriptInterpreter
 		var args = baseMethod.GetParameters ();
 		FunctionBlock block = new FunctionBlock (null, method, codeType);
         if (isAction)
-            block.Statements.Add("this.state = EventAction.ActionState.Started");
+            block.Statements.Add("this.state = EventAction.ActionState.Started;");
 		block.Statements.Add ("var root = this.root;");
 
         //block.Statements.Add ("UnityEngine.Debug.Log(root.ToString() + IfStatement.AntiMergeValue++);");
@@ -415,7 +478,7 @@ public class EventActionsLoader : ScriptInterpreter
 			block.Statements.Add (String.Format ("return ({1}){0};", exprInter.InterpretExpression (expr, block).ExprString, TypeName.NameOf (retVal.Type)));
 		}
         if (isAction)
-            block.Statements.Add("this.state = EventAction.ActionState.Finished");
+            block.Statements.Add("this.state = EventAction.ActionState.Finished;");
         method.Statements.Add (new CodeSnippetStatement (block.ToString ()));
 
         

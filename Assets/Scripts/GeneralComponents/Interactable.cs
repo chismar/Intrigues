@@ -4,8 +4,10 @@ using System.Collections;
 public class Interactable : MonoBehaviour
 {
 
-    public bool Can(string interactionType)
+    public bool Can(System.Type interactionType)
     {
-        return false;
+        var a = Actions.Instance.GetAction(interactionType);
+        a.Root = gameObject;
+        return a.Filter();
     }
 }

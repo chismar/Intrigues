@@ -24,7 +24,7 @@ lit_up_room_manual =
 {
 	ai_action = yes
 	category = lit_up_room
-	scope = light_sensor.can_do(interaction_lit_up_manual)
+	scope = light_sensor.actor.can_do(interaction_lit_up_manual)
 	utility = 
 	{
 		cache(light) = any(room.all_objects, interactable.can(interaction_lit_up_manual))
@@ -39,10 +39,10 @@ lit_up_room_remote =
 {
 	ai_action = yes
 	category = lit_up_room
-	scope = light_sensor.can_do(lit_up_remote)
+	scope = light_sensor.actor.can_do(interaction_lit_up_remote)
 	utility = 
 	{
-		cached(remote_c) = any(room.all_objects, interactable.remote.controller.can(interaction_lit_up_remote))
+		cache(remote_c) = any(room.all_objects, remote.controller.interactable.can(interaction_lit_up_remote))
 		if(remote_c).ut = 1 - light_sensor.light
 	}
 	action = {

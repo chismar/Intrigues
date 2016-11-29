@@ -733,12 +733,10 @@ namespace InternalDSL
 		public override string ToString ()
 		{
 			StringBuilder builder = new StringBuilder (100);
-			builder.Append ("SCOPE<");
 			for (int i = 0; i < Parts.Count; i++)
 				builder.Append (Parts [i]).Append (".");
 			if (builder.Length > 0)
 				builder.Length -= 1;
-			builder.Append (">");
 			return builder.ToString ();
 		}
 	}

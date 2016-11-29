@@ -54,7 +54,6 @@ public class ExternalFunctionsPlugin : ScriptEnginePlugin
 		init.Name = "Init";
 		init.Statements.Add (new CodeSnippetStatement ("UnityEngine.Debug.LogWarning(\"External functions class initialization\");"));
 		decl.Members.Add (init);
-		decl.Members.Add (new CodeSnippetTypeMember ("static External(){UnityEngine.Debug.LogWarning(\"CTOR\" + BasicLoader0);}"));
 //		CodeConstructor ctor = new CodeConstructor ();
 //		ctor.Attributes = MemberAttributes.Static;
 //		ctor.Statements.Add (new CodeSnippetStatement (""));

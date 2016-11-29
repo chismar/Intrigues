@@ -27,12 +27,13 @@ public class WaitOperator : FunctionOperatorInterpreter
                 newActionMethod.Name = "Action";
                 newActionMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
                 newActionMethod.Statements.Add(new CodeSnippetStatement("Coroutine = ActionCoroutine(); state = ActionState.Started;"));
+                block.Type.Members.Add(newActionMethod);
                 block.Method.UserData.Add("has_transformed_action", "has_transformed_action");
             }
             var whileArg = exprInter.InterpretExpression(op.Args[0], block);
             var failArg = exprInter.InterpretExpression(op.Args[1], block);
             string operatorString = null;
-            operatorString = string.Format("while({0}){{ if({1}) { this.state = EventAction.ActionState.Failed; return; } yield return null; }}",
+            operatorString = string.Format("while({0}){{ if({1}) {{ this.state = EventAction.ActionState.Failed; yield break; }} yield return null; }}",
             whileArg.ExprString, failArg.ExprString);
             if (op.Context is Expression)
             {
@@ -41,7 +42,7 @@ public class WaitOperator : FunctionOperatorInterpreter
                 if(timeArg.Type != typeof(bool))
                 {
                     operatorString =
-                    string.Format("float time{2} = UnityEngine.Time.realtimeSinceStartup; while({0}){{ if ((UnityEngine.Time.RealtimeSinceStartup - time{2} > {3}) || ({1})) { this.state = EventAction.ActionState.Failed; return; } yield return null; }}",
+                    string.Format("float time{2} = UnityEngine.Time.realtimeSinceStartup; while({0}){{ if ((UnityEngine.Time.RealtimeSinceStartup - time{2} > {3}) || ({1})) {{ this.state = EventAction.ActionState.Failed; yield break; }} yield return null; }}",
                     whileArg.ExprString, failArg.ExprString, DeclareVariableStatement.VariableId++, timeArg.ExprString);
                 }
                 

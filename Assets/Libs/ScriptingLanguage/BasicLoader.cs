@@ -188,7 +188,6 @@ public class BasicLoader : MonoBehaviour
 
 		blackboardsScript.Interpret ();
 		Engine.InitPlugins ();
-
 		genScript.Interpret ();
 
         Script metricsScript = new Script("metrics", metricsLoader);

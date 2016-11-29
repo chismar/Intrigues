@@ -26,23 +26,26 @@ public class DoOperator: FunctionOperatorInterpreter
             newActionMethod.Name = "Action";
             newActionMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
             newActionMethod.Statements.Add(new CodeSnippetStatement("Coroutine = ActionCoroutine(); state = ActionState.Started;"));
+            block.Type.Members.Add(newActionMethod);
             block.Method.UserData.Add("has_transformed_action", "has_transformed_action");
         }
 
         var contextVar = block.FindStatement<DeclareVariableStatement>(v => (v.IsContext || v.IsArg) && v.Type == typeof(Actor));
         if(contextVar == null)
-            block.FindStatement<DeclareVariableStatement>(v => (v.IsContext || v.IsArg) && v.Type == typeof(GameObject));
+            contextVar = block.FindStatement<DeclareVariableStatement>(v => (v.IsContext || v.IsArg) && v.Type == typeof(GameObject));
+        int aId = 0;
         if (op.Args.Count == 1)
         {
             if(op.Context is Expression)
             {
                 //do(interaction_type) = target
-                var interTypeArg = exprInter.InterpretExpression(op.Args[0], block).ExprString.ClearFromBraces();
+                var interTypeArg = op.Args[0].ToString().ClearFromBraces();
                 var targetArg = exprInter.InterpretExpression(op.Context as Expression, block).ExprString;
-                int aId = DeclareVariableStatement.VariableId++;
-                block.Statements.Add(String.Format("var a{0} = Actions.Instance.GetAction(typeof(ScriptedTypes.{1}))", aId, interTypeArg));
-                block.Statements.Add(String.Format("(a{0} as EventInteraction).Target = {1};", aId, targetArg));
-                if(contextVar.Type == typeof(GameObject))
+                aId = DeclareVariableStatement.VariableId++;
+                block.Statements.Add(String.Format("var a{0} = Actions.Instance.GetAction(typeof(ScriptedTypes.{1}));", aId, interTypeArg));
+                block.Statements.Add(String.Format("(a{0} as EventInteraction).Initiator = {1};", aId, (contextVar.Type == typeof(GameObject)? contextVar.Name : (contextVar.Name + ".gameObject"))));
+                block.Statements.Add(String.Format("a{0}.Root = {1};", aId, targetArg));
+                if (contextVar.Type == typeof(GameObject))
                     block.Statements.Add(String.Format("({0}.GetComponent(typeof(Actor)) as Actor).Act(a{1});", contextVar.Name, aId));
                 else
                     block.Statements.Add(String.Format("{0}.Act(a{1});", contextVar.Name, aId));
@@ -51,9 +54,10 @@ public class DoOperator: FunctionOperatorInterpreter
             else
             {
                 //do(interaction_type) = { target = some_object some_argument = some_value }
-                var interTypeArg = exprInter.InterpretExpression(op.Args[0], block).ExprString.ClearFromBraces();
-                int aId = DeclareVariableStatement.VariableId++;
-                block.Statements.Add(String.Format("var a{0} = Actions.Instance.GetAction(typeof(ScriptedTypes.{1}))", aId, interTypeArg));
+                var interTypeArg = op.Args[0].ToString().ClearFromBraces();
+                aId = DeclareVariableStatement.VariableId++;
+                block.Statements.Add(String.Format("var a{0} = Actions.Instance.GetAction(typeof(ScriptedTypes.{1}));", aId, interTypeArg));
+                block.Statements.Add(String.Format("(a{0} as EventInteraction).Initiator = {1};", aId, (contextVar.Type == typeof(GameObject) ? contextVar.Name : (contextVar.Name + ".gameObject"))));
                 var type = Engine.FindType(interTypeArg);
                 var props = type.GetProperties();
                 propsDict.Clear();
@@ -68,7 +72,7 @@ public class DoOperator: FunctionOperatorInterpreter
 
                         var targetArg = exprInter.InterpretExpression(subOp.Context as Expression, block).ExprString;
                         
-                        block.Statements.Add(String.Format("(a{0} as EventInteraction).Target = {1};", aId, targetArg));
+                        block.Statements.Add(String.Format("a{0}.Root = {1};", aId, targetArg));
                     }
                     else if(propsDict.TryGetValue(subOp.Identifier as string, out prop))
                     {
@@ -88,10 +92,10 @@ public class DoOperator: FunctionOperatorInterpreter
         else if(op.Args.Count == 2)
         {
             //do(interaction_type, possible_one_argument) = target
-            var interTypeArg = exprInter.InterpretExpression(op.Args[0], block).ExprString.ClearFromBraces();
+            var interTypeArg = op.Args[0].ToString().ClearFromBraces();
             var targetArg = exprInter.InterpretExpression(op.Context as Expression, block).ExprString;
-            int aId = DeclareVariableStatement.VariableId++;
-            block.Statements.Add(String.Format("var a{0} = Actions.Instance.GetAction(typeof(ScriptedTypes.{1}))", aId, interTypeArg));
+            aId = DeclareVariableStatement.VariableId++;
+            block.Statements.Add(String.Format("var a{0} = Actions.Instance.GetAction(typeof(ScriptedTypes.{1}));", aId, interTypeArg));
             var type = Engine.FindType(interTypeArg);
             var props = type.GetProperties();
             if (ScriptEngine.AnalyzeDebug)
@@ -99,7 +103,8 @@ public class DoOperator: FunctionOperatorInterpreter
                     Debug.LogErrorFormat("Wrong number of properties for DO statement in ", block.Type.Name);
             var prop = props[0];
             var propExpr = exprInter.InterpretExpression(op.Args[0], block).ExprString;
-            block.Statements.Add(String.Format("(a{0} as EventInteraction).Target = {1};", aId, targetArg));
+            block.Statements.Add(String.Format("(a{0} as EventInteraction).Initiator = {1};", aId, (contextVar.Type == typeof(GameObject) ? contextVar.Name : (contextVar.Name + ".gameObject"))));
+            block.Statements.Add(String.Format("a{0}.Root = {1};", aId, targetArg));
             block.Statements.Add(String.Format("(a{0} as ScriptedTypes.{1}).{2} = {3}", aId, interTypeArg, prop.Name, propExpr));
             if (contextVar.Type == typeof(GameObject))
                 block.Statements.Add(String.Format("({0}.GetComponent(typeof(Actor)) as Actor).Act(a{1});", contextVar.Name, aId));
@@ -109,9 +114,12 @@ public class DoOperator: FunctionOperatorInterpreter
         }
         string operatorString = null;
         
+
         if (operatorString != null)
             block.Statements.Add(operatorString);
-        
+        var waitString = string.Format("while(a{0}.State != EventAction.ActionState.Finished){{ if(a{0}.State == EventAction.ActionState.Failed) {{ this.state = EventAction.ActionState.Failed; yield break; }} yield return null; }}",
+            aId);
+        block.Statements.Add(waitString);
 
     }
 

@@ -11,7 +11,7 @@ public class ScriptEngine
 {
 	public bool Working = true;
 	public static bool ParseDebug = false;
-	public static bool AnalyzeDebug = false;
+	public static bool AnalyzeDebug = true;
 	public static bool CompileDebug = true;
 	List<Type> allTypes = new List<Type> ();
 

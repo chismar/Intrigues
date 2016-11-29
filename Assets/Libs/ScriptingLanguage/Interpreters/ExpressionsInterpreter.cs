@@ -401,7 +401,7 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 						if (method == null)
                         {
                             if (ScriptEngine.AnalyzeDebug)
-                                Debug.LogFormat ("Can't find {0} in {1}", NameTranslator.CSharpNameFromScript (callName), contextType);
+                                Debug.LogFormat ("Can't find method {0} in {1}", NameTranslator.CSharpNameFromScript (callName), contextType);
 						} else
 						{
 							exprBuilder.Append (method.Name).Append ("(");
@@ -414,7 +414,7 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 										exprBuilder.Append (InterpretClosure (callArgs [j], curBlock, argsDef [j].ParameterType).ExprString).Append (",");
                                     else if (argsDef[j].ParameterType == typeof(System.Type))
                                         exprBuilder.Append("typeof(ScriptedTypes.").
-                                            Append(InterpretExpression(callArgs[j], curBlock).ExprString.ClearFromBraces()).Append(")").Append(",");
+                                            Append(callArgs[j].ToString().ClearFromBraces()).Append(")").Append(",");
                                     else
 										exprBuilder.Append (InterpretExpression (callArgs [j], curBlock).ExprString).Append (",");
 								}

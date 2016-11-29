@@ -261,7 +261,10 @@ public class ContextFunctionCallInterpreter : FunctionOperatorInterpreter
 		    returnType != typeof(bool) && returnType != typeof(float) && returnType != typeof(int))) &&
 		    !(returnType.IsGenericType && returnType.GetGenericTypeDefinition () == typeof(List<>)))
 		{
-			ctxInter = new ContextPropertySwitchInterpreter ("", returnType, engine);
+            if (ContextPropertySwitchInterpreter.allPropSwitches.ContainsKey(new ContextPropertySwitchInterpreter.PropKey(returnType, "")))
+                ctxInter = ContextPropertySwitchInterpreter.allPropSwitches[new ContextPropertySwitchInterpreter.PropKey(returnType, "")];
+            else
+			    ctxInter = new ContextPropertySwitchInterpreter ("", returnType, engine);
 		}
 		funcName = method.Name;
 	}
@@ -291,7 +294,7 @@ public class ContextFunctionCallInterpreter : FunctionOperatorInterpreter
 			else if (argsDef [i].ParameterType == typeof(string))
 				argsBuilder.Append ('(').Append (exprInter.InterpretExpression (op.Args [i], block).ExprString).Append (')').Append (".ToString()").Append (",");
 			else if(argsDef[i].ParameterType == typeof(System.Type)) //ScriptedTypes
-                argsBuilder.Append("typeof").Append('(').Append("ScriptedTypes.").Append(exprInter.InterpretExpression(op.Args[i], block).ExprString.ClearFromBraces()).Append(')').Append(",");
+                argsBuilder.Append("typeof").Append('(').Append("ScriptedTypes.").Append(op.Args[i].ToString().ClearFromBraces()).Append(')').Append(",");
             else
 				argsBuilder.Append ('(').Append (argsDef [i].ParameterType).Append (')').Append ('(').Append (exprInter.InterpretExpression (op.Args [i], block).ExprString).Append (')').Append (",");
 			
@@ -313,7 +316,7 @@ public class ContextFunctionCallInterpreter : FunctionOperatorInterpreter
                 Append("typeof").
                 Append('(').
                 Append("ScriptedTypes").
-                Append(exprInter.InterpretExpression(op.Context as Expression, block).ExprString.ClearFromBraces()).
+                Append(op.Context.ToString().ClearFromBraces()).
                 Append(')');
             else
                 argsBuilder.
@@ -552,7 +555,7 @@ public class ContextPropertyInterpreter : FunctionOperatorInterpreter
 
 public class ContextPropertySwitchInterpreter : ContextPropertyInterpreter
 {
-	struct PropKey
+	public struct PropKey
 	{
 		public Type Type;
 		public string Name;
@@ -581,7 +584,7 @@ public class ContextPropertySwitchInterpreter : ContextPropertyInterpreter
 		}
 	}
 
-	static Dictionary<PropKey, ContextPropertySwitchInterpreter> allPropSwitches = new Dictionary<PropKey, ContextPropertySwitchInterpreter> ();
+	public static Dictionary<PropKey, ContextPropertySwitchInterpreter> allPropSwitches = new Dictionary<PropKey, ContextPropertySwitchInterpreter> ();
 	//	static Dictionary<Type, ContextPropertySwitchInterpreter> switchesByType = new Dictionary<Type, ContextPropertySwitchInterpreter> ();
 	//
 	//	public static ContextPropertySwitchInterpreter GetSwitch (Type t)

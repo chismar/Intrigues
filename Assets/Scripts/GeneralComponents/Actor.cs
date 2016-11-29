@@ -57,8 +57,8 @@ public class Actor : MonoBehaviour {
     {
         var a =  Actions.Instance.GetAction(interactionType);
         a.Root = gameObject;
-        return a.Interaction();
-        
+        bool res =  a.Interaction();
+        return res;
     }
     HashSet<Type> externalDependencies = new HashSet<Type>();
 
@@ -191,11 +191,12 @@ public class CloserThan : Dependency
     Transform targetTransform;
     Transform rootTransform;
     float distance;
-    public CloserThan(GameObject root, GameObject other, float distance)
+    public Dependency Init(GameObject interactable, GameObject initiator, float distance)
     {
         this.distance = distance;
-        rootTransform = root.transform;
-        targetTransform = other.transform;
+        rootTransform = initiator.transform;
+        targetTransform = interactable.transform;
+        return this;
     }
     
     public override Type ActionCategory()
