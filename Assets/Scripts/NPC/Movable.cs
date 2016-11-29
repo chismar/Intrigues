@@ -16,13 +16,15 @@ public class Movable : MonoBehaviour {
         targetGo = null;
         target = point;
         this.OKDistance = OKDistance;
-        
+        IsMoving = true;
+
     }
 
     public void Goto(float OKDistance, GameObject go)
     {
         targetGo = go.transform;
         this.OKDistance = OKDistance;
+        IsMoving = true;
     }
 
     private void Awake()

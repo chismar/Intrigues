@@ -2,15 +2,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using System.Text;
 
 public class Actor : MonoBehaviour {
 
     Dictionary<Type, List<EventAction>> actionsSet = null;
     List<EventAction> allActions = new List<EventAction>();
+    Dictionary<Type, int> actionsInUse = new Dictionary<Type, int>();
     Stack<ActionWrapper> actionsStack = new Stack<ActionWrapper>();
     ActionWrapper curAction = null;
     private void Start()
     {
+        StartCoroutine(InitCoroutine());
+        
+    }
+
+    IEnumerator InitCoroutine()
+    {
+        while (!Actions.Instance.Loaded)
+            yield return null;
         actionsSet = Actions.Instance.FormActionsSet(gameObject);
         foreach (var cat in actionsSet)
             foreach (var action in cat.Value)
@@ -19,24 +29,70 @@ public class Actor : MonoBehaviour {
 
     private void Update()
     {
+        if (actionsSet == null)
+            return;
         if (curAction == null)
             ChooseAction();
         if (curAction != null)
-            curAction.Update();
+        {
+            Debug.Log("Update " + curAction.Action.GetType().Name);
+            curAction.Update(this);
+            if(curAction.Action.State == EventAction.ActionState.Failed || curAction.Action.State == EventAction.ActionState.Finished)
+            {
+                Debug.Log(curAction.Action.State);
+                var aType = curAction.GetType();
+                int countUsed = 0;
+                if(actionsInUse.TryGetValue(aType, out countUsed))
+                {
+                    if (countUsed == 1)
+                        actionsInUse.Remove(aType);
+                    else
+                        actionsInUse[aType] = countUsed - 1;
+                }
+
+                curAction = actionsStack.Count > 0 ? actionsStack.Pop() : null;
+            }
+        }
     }
 
+    StringBuilder builder = new StringBuilder();
     void ChooseAction(Type category = null)
+    {
+        List<Dependency> maxDeps = null;
+        var maxAction = FindAction(category, out maxDeps);
+        //Debug.Log("choose action");
+        if (maxAction != null)
+        {
+            Act(maxAction, maxDeps);
+        }
+
+    }
+    public EventAction FindAction(Type category, out List<Dependency> maxDeps, Dependency targetDep = null)
     {
         var maxUt = 0f;
         EventAction maxAction = null;
-        List<Dependency> maxDeps = null;
+        maxDeps = null;
         List<EventAction> actions = allActions;
         if (category != null)
             actionsSet.TryGetValue(category, out actions);
-        foreach (var action in allActions)
+        builder.Length = 0;
+        builder.Append("Actor choosing action: ");
+        builder.Append(gameObject.name).AppendLine();
+        foreach (var action in actions)
         {
-            action.Root = gameObject;
+            EventAction a = action;
+            builder.Append(action.GetType().Name).Append(" ");
+            int countUsed = 0;
+            if (actionsInUse.TryGetValue(action.GetType(), out countUsed))
+            {
+                a = Actions.Instance.GetAction(action.GetType());
+            }
+            a.Init();
+            if (targetDep != null)
+                targetDep.InitAction(a);
+            a.Root = gameObject;
             var ut = action.Utility();
+            builder.Append(ut).AppendLine();
             var deps = Actions.Instance.GetDeps(action.GetType());
             if (ut > maxUt && Traverse(deps))
             {
@@ -45,14 +101,9 @@ public class Actor : MonoBehaviour {
                 maxDeps = deps;
             }
         }
-        if(maxAction != null)
-        {
-            var action = Actions.Instance.GetAction(maxAction.GetType());
-            Act(action, maxDeps);
-        }
-
+        Debug.Log(builder.ToString());
+        return maxAction;
     }
-
     public bool CanDo(Type interactionType)
     {
         var a =  Actions.Instance.GetAction(interactionType);
@@ -64,12 +115,14 @@ public class Actor : MonoBehaviour {
 
     public void Act(EventAction action, List<Dependency> deps = null)
     {
+        action.Init();
+        Debug.Log("Act " + action.GetType().Name, gameObject);
         ActionWrapper wrapper = new ActionWrapper();
         wrapper.Action = action;
         bool canDo = true;
         if (deps == null)
         {
-            wrapper.Deps = Actions.Instance.GetDeps(action.GetType());//Here it should ask the action to get its dependencies
+            wrapper.Deps = action.GetDependencies();//Here it should ask the action to get its dependencies
             canDo = Traverse(wrapper.Deps);//Here it should traverse those and answer whether it's possible to achieve this action at all, 
                                            //while also marking external dependencies
         }
@@ -81,6 +134,7 @@ public class Actor : MonoBehaviour {
         }
         else
         {
+            Debug.Log("Put as current action");
             PutAsCurrentAction(wrapper);
         }
     }
@@ -89,8 +143,13 @@ public class Actor : MonoBehaviour {
         if(curAction != null)
         {
             actionsStack.Push(curAction);
-            curAction = wrapper;
         }
+        int countUsed = 0;
+        if (actionsInUse.TryGetValue(wrapper.Action.GetType(), out countUsed))
+            actionsInUse[wrapper.Action.GetType()] = countUsed + 1;
+        else
+            actionsInUse.Add(wrapper.Action.GetType(), 1);
+        curAction = wrapper;
     }
 
     public bool Traverse(List<Dependency> deps)
@@ -133,7 +192,7 @@ public class ActionWrapper
     public EventAction Action;
     public List<Dependency> Deps;
     Dependency currentDep;
-    public void Update()
+    public void Update(Actor actor)
     {
         if(Action.State == EventAction.ActionState.None)
         {
@@ -148,31 +207,42 @@ public class ActionWrapper
                 }
             }
             if (satisfied)
+            {
+                Debug.Log("Performing " + Action.GetType().Name);
                 Action.Action();
+
+            }
             else
             {
                 if (currentDep == null || currentDep.Satisfied())
                 {
                     var dep = Deps.Find(d => !d.Satisfied());
                     currentDep = dep;
+                    Debug.Log(dep.GetType().Name);
                 }
-                currentDep.ActionWrapper.Update();
+                if (currentDep.ActionWrapper == null)
+                    currentDep.ActionWrapper = new ActionWrapper() {Action = actor.FindAction(currentDep.ActionCategory(), out Deps, currentDep)};
+                currentDep.ActionWrapper.Update(actor);
+                
+                
             }
         }
 
         if(Action.State == EventAction.ActionState.Started)
         {
+            Debug.Log("Update the action");
             Action.Update();
         }
         
         if(Action.State == EventAction.ActionState.Failed)
         {
-
+            Debug.Log(Action.State);
         }
 
         if(Action.State == EventAction.ActionState.Finished)
         {
 
+            Debug.Log(Action.State);
         }
     }
 }
@@ -193,6 +263,8 @@ public class CloserThan : Dependency
     float distance;
     public Dependency Init(GameObject interactable, GameObject initiator, float distance)
     {
+        if (interactable == null || initiator == null)
+            return this;
         this.distance = distance;
         rootTransform = initiator.transform;
         targetTransform = interactable.transform;

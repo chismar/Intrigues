@@ -9,6 +9,7 @@ public class Actions : Root<Actions>
 {
     BasicLoader loader;
 
+    Dictionary<Type, EventAction> eventActionsByType = new Dictionary<Type, EventAction>();
     List<EventAction> actions = new List<EventAction>();
     Dictionary<Type, List<EventAction>> eventsByCategory = new Dictionary<Type, List<EventAction>>();
 
@@ -36,6 +37,7 @@ public class Actions : Root<Actions>
 
             var actionMeta = type.GetCustomAttributes(typeof(EventActionAttribute), false)[0] as EventActionAttribute;
             action.Meta = actionMeta;
+            eventActionsByType.Add(type, action);
             List<EventAction> catList = null;
 
             var cats = eventsByCategory;
@@ -64,12 +66,18 @@ public class Actions : Root<Actions>
     public EventAction GetAction(Type type)
     {
         var a = Activator.CreateInstance(type) as EventAction;
+        a.Meta = eventActionsByType[type].Meta;
         a.Init();
         return a;
     }
     public List<Type> GetActionsByCategory(Type cat)
     {
-        return null;
+        var list = new List<Type>();
+        List<EventAction> aList = null;
+        if (actionsByCategory.TryGetValue(cat, out aList))
+            foreach (var a in aList)
+                list.Add(a.GetType());
+        return list;
     }
 
     const bool DebugGeneration = false;
@@ -188,16 +196,21 @@ public class Actions : Root<Actions>
     ObjectPool<List<EventAction>> listsPool = new ObjectPool<List<EventAction>>();
     public Dictionary<Type, List<EventAction>> FormActionsSet(GameObject go)
     {
+        //Debug.Log("Forming actions set", go);
         Dictionary<Type, List<EventAction>> set = new Dictionary<Type, List<EventAction>>();
         foreach ( var cat in actionsByCategory)
         {
             var list = listsPool.Get();
+            //Debug.Log(cat.Key.Name);
             foreach (var action in cat.Value)
             {
+
+                //Debug.LogFormat("Check {0} to {1}", action.GetType().Name, go);
                 var prevRoot = action.Root;
                 action.Root = go;
+
                 if (action.Filter())
-                    list.Add(action);
+                    list.Add(GetAction(action.GetType()));
                 action.Root = prevRoot;
             }
             if (list.Count == 0)
@@ -207,56 +220,7 @@ public class Actions : Root<Actions>
         }
         return set;            
     }
-    /*ObjectPool<Dictionary<Type, EventAction>> dictPool = new ObjectPool<Dictionary<Type, EventAction>>();
-    public void GetInteractions(Interactable inter)
-    {
-        var interactionsByType = dictPool.Get();
-        interactionsByType.Clear();
-        bool oneMoreRun = true;
-        int iterations = 0;
-        foreach (var i in inter.Options)
-        {
-            var t = i.GetType();
-            interactionsByType.Add(t, i);
-
-
-        }
-
-        while (inter.Options.Count > 0)
-            inter.RemoveOption(inter.Options[0]);
-        while (oneMoreRun)
-        {
-            if (Application.isEditor)
-                if (iterations++ > 50)
-                    break;
-            oneMoreRun = false;
-            foreach (var category in interactionsByCategory.Values)
-            {
-                foreach (var action in category)
-                {
-
-                    var cachedRoot = action.Root;
-                    action.Root = inter.gameObject;
-                    if (action.Filter())
-                    {
-                        var ta = action.GetType();
-                        EventAction interaction = null;
-                        if (!interactionsByType.TryGetValue(ta, out interaction))
-                        {
-                            interaction = Activator.CreateInstance(action.GetType()) as EventAction;
-                            interaction.Meta = action.Meta;
-                            interactionsByType.Add(ta, interaction);
-                        }
-                        inter.AddOption(interaction);
-
-                    }
-
-                }
-            }
-        }
-
-        dictPool.Return(interactionsByType);
-    }*/
+    
     public void NotifyOfAct(GameObject go, EventAction action)
     {
         if (action.Meta.OncePerObject || action.Meta.OnceInCategory)
@@ -404,7 +368,7 @@ public class Actions : Root<Actions>
 
     public List<Dependency> GetDeps(Type eventActionType)
     {
-        return null;
+        return eventActionsByType[eventActionType].GetDependencies();
     }
 }
 

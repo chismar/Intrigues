@@ -21,7 +21,7 @@ public class WaitOperator : FunctionOperatorInterpreter
             block.Method.ReturnType = new CodeTypeReference(typeof(IEnumerator));
             block.Method.Attributes = MemberAttributes.Public;
             block.Method.Name = "ActionCoroutine";
-            if(block.Method.UserData.Contains("has_transformed_action"))
+            if(!block.Method.UserData.Contains("has_transformed_action"))
             {
                 var newActionMethod = new CodeMemberMethod();
                 newActionMethod.Name = "Action";

@@ -30,6 +30,8 @@ public abstract class EventAction
     public EventActionAttribute Meta { get; set;  }
     public virtual void Init ()
 	{
+        //TODO: event actions loader should put init code for properties here
+        Coroutine = null;
         state = ActionState.None;
 	}
 
@@ -300,9 +302,11 @@ public class EventActionsLoader : ScriptInterpreter
                     utVal.InitExpression = "0";
                     CreateEventFunction(op.Identifier as string, op.Context, codeType, utMethod, false, utVal);
                 }
-                else if (op.Identifier as string == "dependency")
+                else if (op.Identifier as string == "depends")
                 {
-                    var ctor = ((op.Context as Expression).Operands[0] as FunctionCall);
+                    //Debug.Log(op);
+                    //Debug.Log(((op.Context as Expression).Operands[0] as ExprAtom).Content.GetType().Name);
+                    var ctor = ((((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts[0] as FunctionCall);
                     var type = Engine.FindType(NameTranslator.CSharpNameFromScript(ctor.Name));
                     MethodInfo initMethod = type.GetMethod("Init");
                     var args = initMethod.GetParameters();
@@ -326,17 +330,17 @@ public class EventActionsLoader : ScriptInterpreter
                     builder.Append("(");
                     if (hasInitiator)
                     {
-                        builder.Append("Initiator");
+                        builder.Append("this.initiator");
                         builder.Append(",");
                     }
                     if(hasInteractable)
                     {
-                        builder.Append("Root");
+                        builder.Append("this.root");
                         builder.Append(",");
                     }
                     foreach ( var funcArg in ctor.Args)
                     {
-                        builder.Append(exprInter.InterpretExpression(funcArg, dependenciesBlock));
+                        builder.Append(exprInter.InterpretExpression(funcArg, dependenciesBlock).ExprString);
                         builder.Append(",");
                     }
                     if (builder[builder.Length - 1] == ',')
@@ -352,11 +356,13 @@ public class EventActionsLoader : ScriptInterpreter
             if(deps.Count > 0)
             {
                 CodeMemberMethod method = new CodeMemberMethod();
+                method.ReturnType = new CodeTypeReference(typeof(List<Dependency>));
                 method.Name = "GetDependencies";
                 method.Attributes = MemberAttributes.Public | MemberAttributes.Override;
                 codeType.Members.Add(method);
                 string listName = "list" + DeclareVariableStatement.VariableId++;
-                string listOp = String.Format("var {0} = new List<Dependency>({1});", listName, deps.Count);
+                string listOp = String.Format("var {0} = new System.Collections.Generic.List<Dependency>({1});", listName, deps.Count);
+                dependenciesBlock.Statements.Add(listOp);
                 var addToListBlock = new FunctionBlock(dependenciesBlock);
                 foreach (var newDep in deps)
                 {
@@ -428,8 +434,9 @@ public class EventActionsLoader : ScriptInterpreter
 		rootVar.Name = "root";
 		rootVar.Type = typeof(GameObject);
 		rootVar.IsArg = true;
+        rootVar.IsContext = true;
 
-		block.Statements.Add (rootVar);
+        block.Statements.Add (rootVar);
 
         
         foreach (var member in codeType.Members)

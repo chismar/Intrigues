@@ -455,6 +455,14 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 								curBlock.Statements.Add (ifSt);
 								curBlock = ifSt.TrueBlock;
 							}
+                            else if(contextType == typeof(bool))
+                            {
+                                IfStatement ifSt = new IfStatement();
+                                ifSt.CheckExpression = String.Format("{0} != false", declVar.Name);
+                                ifSt.TrueBlock = new FunctionBlock(curBlock);
+                                curBlock.Statements.Add(ifSt);
+                                curBlock = ifSt.TrueBlock;
+                            }
 							isFunc = true;
 						}
 

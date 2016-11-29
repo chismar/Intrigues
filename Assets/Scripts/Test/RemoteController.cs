@@ -5,6 +5,6 @@ public class RemoteController : MonoBehaviour
 {
     [SerializeField]
     Remote controlled;
-    public Remote Controlled { get { return controlled; } set { if (controlled != null && controlled.Controller == this) controlled.Controller = null; controlled = value; controlled.Controller = this; } }
+    public GameObject Controlled { get { return controlled.gameObject; } set { if (controlled != null && controlled.Controller == this) controlled.Controller = null; controlled = value.GetComponent<Remote>(); controlled.Controller = gameObject; } }
     
 }

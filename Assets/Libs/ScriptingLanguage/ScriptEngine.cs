@@ -11,8 +11,8 @@ public class ScriptEngine
 {
 	public bool Working = true;
 	public static bool ParseDebug = false;
-	public static bool AnalyzeDebug = true;
-	public static bool CompileDebug = true;
+	public static bool AnalyzeDebug = false;
+	public static bool CompileDebug = false;
 	List<Type> allTypes = new List<Type> ();
 
 	public IEnumerable<Assembly> Addons { get; internal set; }
