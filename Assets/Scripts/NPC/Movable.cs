@@ -5,7 +5,9 @@ using System.Collections;
 public class Movable : MonoBehaviour {
 
     Rigidbody2D rigidBody;
-    public float Speed { get; set; }
+    [SerializeField]
+    float speed;
+    public float Speed { get { return speed; } set { speed = Mathf.Clamp(value, 0 , 1000); } }
     public bool IsMoving { get; internal set; }
     public bool NearTarget { get; internal set; }
     Vector3 target;
@@ -17,6 +19,7 @@ public class Movable : MonoBehaviour {
         target = point;
         this.OKDistance = OKDistance;
         IsMoving = true;
+        NearTarget = false;
 
     }
 
@@ -25,6 +28,7 @@ public class Movable : MonoBehaviour {
         targetGo = go.transform;
         this.OKDistance = OKDistance;
         IsMoving = true;
+        NearTarget = false;
     }
 
     private void Awake()
@@ -42,12 +46,18 @@ public class Movable : MonoBehaviour {
         if(targetGo != null)
             target = targetGo.position;
         var transform = base.transform;
-        var difVector = transform.position - target;
+        var difVector = target - transform.position;
         var distance = difVector.magnitude;
-        if(NearTarget = IsMoving = distance > OKDistance)
+        if (IsMoving = distance > OKDistance)
         {
             var normalVector = difVector / distance;
-            rigidBody.AddForce(normalVector * Speed * Time.deltaTime, ForceMode2D.Impulse);
+            rigidBody.velocity = normalVector * Speed;
+            NearTarget = false;
+        }
+        else
+        {
+            rigidBody.velocity = Vector3.zero;
+            NearTarget = true;
         }
     }
 }

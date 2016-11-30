@@ -106,10 +106,16 @@ initiator = value;
 			var list10 = new System.Collections.Generic.List<Dependency>(1);
 			
 			{
-				list10.Add(new CloserThan().Init(this.initiator,this.root, (1f)));
+				list10.Add(new CloserThan().Init(this.root,this.initiator, (1f)));
 			}
 			return list10;
 		}
+        }
+        
+        public override void Init() {
+base.Init();
+this.initiator = default(UnityEngine.GameObject);
+
         }
     }
     
@@ -252,10 +258,16 @@ initiator = value;
 			var list29 = new System.Collections.Generic.List<Dependency>(1);
 			
 			{
-				list29.Add(new CloserThan().Init(this.initiator,this.root, (1f)));
+				list29.Add(new CloserThan().Init(this.root,this.initiator, (1f)));
 			}
 			return list29;
 		}
+        }
+        
+        public override void Init() {
+base.Init();
+this.initiator = default(UnityEngine.GameObject);
+
         }
     }
     
@@ -356,6 +368,7 @@ return  (OperandVar38);}); //IsContext = False IsNew = False
 			UnityEngine.GameObject OperandVar45 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
 			OperandVar45 = light;
 			var a46 = Actions.Instance.GetAction(typeof(ScriptedTypes.interaction_lit_up_manual ));
+			a46.Init();
 			(a46 as EventInteraction).Initiator = root;
 			a46.Root =  (OperandVar45);
 			UnityEngine.Debug.Log(a46.Root);
@@ -368,6 +381,12 @@ return  (OperandVar38);}); //IsContext = False IsNew = False
         
         public override void Action() {
 Coroutine = ActionCoroutine(); state = ActionState.Started;
+        }
+        
+        public override void Init() {
+base.Init();
+this.light = default(UnityEngine.GameObject);
+
         }
     }
     
@@ -484,6 +503,7 @@ return  (OperandVar57);}); //IsContext = False IsNew = False
 			UnityEngine.GameObject OperandVar66 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
 			OperandVar66 = remote_c;
 			var a67 = Actions.Instance.GetAction(typeof(ScriptedTypes.interaction_lit_up_remote ));
+			a67.Init();
 			(a67 as EventInteraction).Initiator = root;
 			a67.Root =  (OperandVar66);
 			UnityEngine.Debug.Log(a67.Root);
@@ -496,6 +516,12 @@ return  (OperandVar57);}); //IsContext = False IsNew = False
         
         public override void Action() {
 Coroutine = ActionCoroutine(); state = ActionState.Started;
+        }
+        
+        public override void Init() {
+base.Init();
+this.remote_c = default(UnityEngine.GameObject);
+
         }
     }
     
@@ -594,9 +620,12 @@ distance = value;
 					UnityEngine.GameObject OperandVar75 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
 					OperandVar75 = target;
 					subContext73.Goto((System.Single)( (OperandVar74)),(UnityEngine.GameObject)( (OperandVar75)));
+					
+					
+					
 					UnityEngine.GameObject OperandVar76 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
 					OperandVar76 = target;
-					External.Log((System.Object)( (OperandVar76)));
+					External.Log((System.Object)(( ( ("Target: "))) + ( ( (OperandVar76)))));
 					
 					System.Boolean OperandVar78 = default(System.Boolean); //IsContext = False IsNew = False
 					System.Boolean prop77 = subContext73.IsMoving; //IsContext = False IsNew = False
@@ -618,7 +647,7 @@ distance = value;
 					System.Boolean prop83 = subContext73.NearTarget; //IsContext = False IsNew = False
 					OperandVar84 = prop83;
 					
-					while(( (!(OperandVar78))) && ( ( (OperandVar80)))){ if(( (!(OperandVar82))) && ( (!(OperandVar84)))) { this.state = EventAction.ActionState.Failed; yield break; } yield return null; }
+					while(( ( (OperandVar78))) && ( ( (OperandVar80)))){ if(( (!(OperandVar82))) && ( (!(OperandVar84)))) { this.state = EventAction.ActionState.Failed; yield break; } yield return null; }
 				}
 			}
 			this.state = EventAction.ActionState.Finished;
@@ -627,6 +656,13 @@ distance = value;
         
         public override void Action() {
 Coroutine = ActionCoroutine(); state = ActionState.Started;
+        }
+        
+        public override void Init() {
+base.Init();
+this.target = default(UnityEngine.GameObject);
+this.distance = default(System.Single);
+
         }
     }
 }

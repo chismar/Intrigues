@@ -14,7 +14,7 @@ public class Actor : MonoBehaviour {
     private void Start()
     {
         StartCoroutine(InitCoroutine());
-        
+        fuzziness  = new System.Random(UnityEngine.Random.Range(0, 500));
     }
 
     IEnumerator InitCoroutine()
@@ -26,7 +26,7 @@ public class Actor : MonoBehaviour {
             foreach (var action in cat.Value)
                 allActions.Add(action);
     }
-
+    System.Random fuzziness;
     private void Update()
     {
         if (actionsSet == null)
@@ -75,13 +75,13 @@ public class Actor : MonoBehaviour {
         List<EventAction> actions = allActions;
         if (category != null)
             actionsSet.TryGetValue(category, out actions);
-        builder.Length = 0;
-        builder.Append("Actor choosing action: ");
-        builder.Append(gameObject.name).AppendLine();
+        //builder.Length = 0;
+        //builder.Append("Actor choosing action: ");
+        //builder.Append(gameObject.name).AppendLine();
         foreach (var action in actions)
         {
             EventAction a = action;
-            builder.Append(action.GetType().Name).Append(" ");
+            //builder.Append(action.GetType().Name).Append(" ");
             int countUsed = 0;
             if (actionsInUse.TryGetValue(action.GetType(), out countUsed))
             {
@@ -91,17 +91,18 @@ public class Actor : MonoBehaviour {
             if (targetDep != null)
                 targetDep.InitAction(a);
             a.Root = gameObject;
-            var ut = action.Utility();
-            builder.Append(ut).AppendLine();
-            var deps = Actions.Instance.GetDeps(action.GetType());
+            var ut = a.Utility();
+            ut = ut * (1f + ((float)fuzziness.NextDouble() - 0.5f) * 2f * 0.1f);
+            //builder.Append(ut).Append(" ").Append(a.State).AppendLine();
+            var deps = a.GetDependencies();
             if (ut > maxUt && Traverse(deps))
             {
                 maxUt = ut;
-                maxAction = action;
+                maxAction = a;
                 maxDeps = deps;
             }
         }
-        Debug.Log(builder.ToString());
+        //Debug.Log(builder.ToString());
         return maxAction;
     }
     public bool CanDo(Type interactionType)
@@ -115,8 +116,8 @@ public class Actor : MonoBehaviour {
 
     public void Act(EventAction action, List<Dependency> deps = null)
     {
-        action.Init();
         Debug.Log("Act " + action.GetType().Name, gameObject);
+        Debug.Log(action.State);
         ActionWrapper wrapper = new ActionWrapper();
         wrapper.Action = action;
         bool canDo = true;
@@ -197,13 +198,18 @@ public class ActionWrapper
         if(Action.State == EventAction.ActionState.None)
         {
             bool satisfied = true;
+            Debug.Log(Deps);
             if (Deps != null)
-            foreach (var dep in Deps)
             {
-                if(!dep.Satisfied())
+                Debug.Log(Deps.Count);
+                foreach (var dep in Deps)
                 {
-                    satisfied = false;
-                    break;
+                    Debug.LogFormat("{0} = {1}", dep.GetType(), dep.Satisfied());
+                    if (!dep.Satisfied())
+                    {
+                        satisfied = false;
+                        break;
+                    }
                 }
             }
             if (satisfied)
@@ -217,11 +223,15 @@ public class ActionWrapper
                 if (currentDep == null || currentDep.Satisfied())
                 {
                     var dep = Deps.Find(d => !d.Satisfied());
+                    Debug.Log(Deps.Count);
                     currentDep = dep;
                     Debug.Log(dep.GetType().Name);
                 }
                 if (currentDep.ActionWrapper == null)
-                    currentDep.ActionWrapper = new ActionWrapper() {Action = actor.FindAction(currentDep.ActionCategory(), out Deps, currentDep)};
+                {
+                    currentDep.ActionWrapper = new ActionWrapper();
+                    currentDep.ActionWrapper.Action = actor.FindAction(currentDep.ActionCategory(), out currentDep.ActionWrapper.Deps, currentDep);
+                }
                 currentDep.ActionWrapper.Update(actor);
                 
                 
@@ -230,7 +240,7 @@ public class ActionWrapper
 
         if(Action.State == EventAction.ActionState.Started)
         {
-            Debug.Log("Update the action");
+            Debug.Log("Update the action " + Action.GetType().Name);
             Action.Update();
         }
         

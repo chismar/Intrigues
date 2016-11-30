@@ -30,7 +30,6 @@ public abstract class EventAction
     public EventActionAttribute Meta { get; set;  }
     public virtual void Init ()
 	{
-        //TODO: event actions loader should put init code for properties here
         Coroutine = null;
         state = ActionState.None;
 	}
@@ -328,16 +327,17 @@ public class EventActionsLoader : ScriptInterpreter
                     builder.Append(type.FullName);
                     builder.Append("().Init");
                     builder.Append("(");
+                    if (hasInteractable)
+                    {
+                        builder.Append("this.root");
+                        builder.Append(",");
+                    }
                     if (hasInitiator)
                     {
                         builder.Append("this.initiator");
                         builder.Append(",");
                     }
-                    if(hasInteractable)
-                    {
-                        builder.Append("this.root");
-                        builder.Append(",");
-                    }
+                    
                     foreach ( var funcArg in ctor.Args)
                     {
                         builder.Append(exprInter.InterpretExpression(funcArg, dependenciesBlock).ExprString);
@@ -355,11 +355,11 @@ public class EventActionsLoader : ScriptInterpreter
 			}
             if(deps.Count > 0)
             {
-                CodeMemberMethod method = new CodeMemberMethod();
-                method.ReturnType = new CodeTypeReference(typeof(List<Dependency>));
-                method.Name = "GetDependencies";
-                method.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-                codeType.Members.Add(method);
+                CodeMemberMethod getDepsOverride = new CodeMemberMethod();
+                getDepsOverride.ReturnType = new CodeTypeReference(typeof(List<Dependency>));
+                getDepsOverride.Name = "GetDependencies";
+                getDepsOverride.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+                codeType.Members.Add(getDepsOverride);
                 string listName = "list" + DeclareVariableStatement.VariableId++;
                 string listOp = String.Format("var {0} = new System.Collections.Generic.List<Dependency>({1});", listName, deps.Count);
                 dependenciesBlock.Statements.Add(listOp);
@@ -370,10 +370,25 @@ public class EventActionsLoader : ScriptInterpreter
                 }
                 dependenciesBlock.Statements.Add(addToListBlock);
                 dependenciesBlock.Statements.Add(String.Format("return {0};", listName));
-                method.Statements.Add(new CodeSnippetStatement(dependenciesBlock.ToString()));
+                getDepsOverride.Statements.Add(new CodeSnippetStatement(dependenciesBlock.ToString()));
 
             }
-
+            CodeMemberMethod initOverrideMethod = new CodeMemberMethod();
+            initOverrideMethod.Name = "Init";
+            initOverrideMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+            codeType.Members.Add(initOverrideMethod);
+            builder.Length = 0;
+            builder.Append("base.Init();").AppendLine();
+            foreach (var member in codeType.Members)
+            {
+                var field = member as CodeMemberField;
+                if (field != null)
+                {
+                    builder.Append("this.").Append(field.Name).Append(" = ").Append("default(").Append((field.UserData["type"] as Type).FullName).Append(");").AppendLine();
+                    
+                }
+            }
+            initOverrideMethod.Statements.Add(new CodeSnippetStatement(builder.ToString()));
 
         }
 		CurProgress = MaxProgress;

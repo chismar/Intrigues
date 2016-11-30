@@ -65,8 +65,8 @@ basic_move =
 		movable = 
 		{
 			goto(distance) = target
-			log = target
-			wait(not is_moving and log("updated basic_move"), not is_moving and not near_target) = yes
+			log = "Target: " + target
+			wait(is_moving and log("updated basic_move"), not is_moving and not near_target) = yes
 		}
 	}
 }

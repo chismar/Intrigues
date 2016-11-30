@@ -43,6 +43,7 @@ public class DoOperator: FunctionOperatorInterpreter
                 var targetArg = exprInter.InterpretExpression(op.Context as Expression, block);
                 aId = DeclareVariableStatement.VariableId++;
                 block.Statements.Add(String.Format("var a{0} = Actions.Instance.GetAction(typeof(ScriptedTypes.{1}));", aId, interTypeArg));
+                block.Statements.Add(String.Format("a{0}.Init();", aId));
                 block.Statements.Add(String.Format("(a{0} as EventInteraction).Initiator = {1};", aId, (contextVar.Type == typeof(GameObject)? contextVar.Name : (contextVar.Name + ".gameObject"))));
                 if(targetArg.Type == typeof(GameObject))
                     block.Statements.Add(String.Format("a{0}.Root = {1};", aId, targetArg.ExprString));
@@ -62,6 +63,7 @@ public class DoOperator: FunctionOperatorInterpreter
                 var interTypeArg = op.Args[0].ToString().ClearFromBraces();
                 aId = DeclareVariableStatement.VariableId++;
                 block.Statements.Add(String.Format("var a{0} = Actions.Instance.GetAction(typeof(ScriptedTypes.{1}));", aId, interTypeArg));
+                block.Statements.Add(String.Format("a{0}.Init();", aId));
                 block.Statements.Add(String.Format("(a{0} as EventInteraction).Initiator = {1};", aId, (contextVar.Type == typeof(GameObject) ? contextVar.Name : (contextVar.Name + ".gameObject"))));
                 var type = Engine.FindType(interTypeArg);
                 var props = type.GetProperties();
@@ -104,6 +106,7 @@ public class DoOperator: FunctionOperatorInterpreter
             var targetArg = exprInter.InterpretExpression(op.Context as Expression, block);
             aId = DeclareVariableStatement.VariableId++;
             block.Statements.Add(String.Format("var a{0} = Actions.Instance.GetAction(typeof(ScriptedTypes.{1}));", aId, interTypeArg));
+            block.Statements.Add(String.Format("a{0}.Init();", aId));
             var type = Engine.FindType(interTypeArg);
             var props = type.GetProperties();
             if (ScriptEngine.AnalyzeDebug)
