@@ -1,0 +1,85 @@
+rival_landlord = 
+{
+	scope = story
+	once_per_object = yes
+	once_per_category = yes
+	category = base_scenario
+	utility = 1
+	action = 
+	{
+
+		king = find_object("npc", actor.king_role)
+		if(not has(king)).spawn_prefab("npc", "king") =
+			{
+				create = king_role
+				entity.random_position(0, 0) = 3
+				king = this
+				actor.scenarios_count = scenarios_count + 1
+			}
+		rival = no_one
+		if(story.actors_count > story.target_actors_count).rival = find_object("npc", actor.scenarios_count < 2 and not (this = king))
+		if(not has(rival)).spawn_prefab("npc", "rival") =
+			{
+				create = feudal_landlord_role
+				create = noble_role
+				create = criminal_role
+				create(rival_role) ={
+					of_whom = player
+				}
+				entity.random_position(0, 0) = 3
+				actor.scenarios_count = scenarios_count + 1
+			}
+	}
+
+}
+
+kings_cook = 
+{
+	scope = story
+	once_per_object = yes
+	utility = {
+		cache(king) = find_object("npc", actor.king_role)
+		if(has(king)) = {
+			ut = 1
+			log = king
+		}
+	}
+	action = 
+	{
+		spawn_prefab("npc", "personal cook") =
+		{
+			create = cook_role
+			create(servant_role) ={
+				of_whom = king
+			}
+			entity.random_position(0, 0) = 3
+			actor.scenarios_count = scenarios_count + 1
+		}
+	}
+}
+
+fucks_kings_daughter =
+{
+	scope = story
+	once_per_object = yes
+	utility = 
+	{
+		cache(king) = find_object("npc", actor.king_role)
+		cache(noble) = find_object("npc", noble_role.criminal_role and actor.scenarios_count < 2)
+		if(noble and king).ut = 1
+	}
+	action = 
+	{
+		kings_daughter = find_object("npc", heir_role.woman_role.fit(of_whom = king) and actor.scenarios_count < 2)
+		if(not has(kings_daughter)).spawn_prefab("npc", "kings_daughter") =
+			{
+				create(heir_role).of_whom = king
+				create = woman_role
+				create(in_love).with_whom = noble
+				entity.random_position(0, 0) = 3
+				kings_daughter = this
+				actor.scenarios_count = scenarios_count + 1
+			}
+		noble.create(in_love).with_whom = kings_daughter
+	}
+}

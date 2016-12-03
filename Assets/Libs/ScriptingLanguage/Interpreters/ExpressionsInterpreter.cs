@@ -410,13 +410,20 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 							{
 								for (int j = 0; j < callArgs.Length; j++)
 								{
-									if (argsDef [j].ParameterType.IsSubclassOf (typeof(Delegate)))
-										exprBuilder.Append (InterpretClosure (callArgs [j], curBlock, argsDef [j].ParameterType).ExprString).Append (",");
-                                    else if (argsDef[j].ParameterType == typeof(System.Type))
-                                        exprBuilder.Append("typeof(ScriptedTypes.").
-                                            Append(callArgs[j].ToString().ClearFromBraces()).Append(")").Append(",");
-                                    else
-										exprBuilder.Append (InterpretExpression (callArgs [j], curBlock).ExprString).Append (",");
+                                    try
+                                    {
+                                        if (argsDef[j].ParameterType.IsSubclassOf(typeof(Delegate)))
+                                            exprBuilder.Append(InterpretClosure(callArgs[j], curBlock, argsDef[j].ParameterType).ExprString).Append(",");
+                                        else if (argsDef[j].ParameterType == typeof(System.Type))
+                                            exprBuilder.Append("typeof(ScriptedTypes.").
+                                                Append(callArgs[j].ToString().ClearFromBraces()).Append(")").Append(",");
+                                        else
+                                            exprBuilder.Append(InterpretExpression(callArgs[j], curBlock).ExprString).Append(",");
+                                    }
+                                    catch (IndexOutOfRangeException e)
+                                    {
+                                        Debug.LogErrorFormat("Index out of range {0} in args of {1}. Script: {2}", j, method.Name, operand);
+                                    }
 								}
 								if (callArgs.Length > 0)
 									exprBuilder.Length -= 1;
@@ -471,7 +478,11 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 				} 
 				if (!isFunc)
 				{
-					var propName = NameTranslator.CSharpNameFromScript (scope [i] as string);
+                    var scopeStr = scope[i] as string;
+                    if (scopeStr == null)
+                        Debug.LogErrorFormat("{0} can't be casted to string", scope[i]);
+
+                    var propName = NameTranslator.CSharpNameFromScript (scopeStr);
 
 					var prop = contextType.GetProperty (propName);
 

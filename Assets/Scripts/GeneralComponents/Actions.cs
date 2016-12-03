@@ -48,6 +48,18 @@ public class Actions : Root<Actions>
 
                 actions.Add(action);
             var categories = type.GetInterfaces();
+            if (categories.Length == 1)
+                action.Meta.Category = categories[0].Name;
+            else if (categories.Length == 0)
+            {
+                if (!cats.TryGetValue(typeof(EventAction), out catList))
+                {
+                    catList = new List<EventAction>();
+                    cats.Add(typeof(EventAction), catList);
+                }
+                catList.Add(action);
+            }
+                
             foreach ( var cat in categories)
             {
                 if (!cats.TryGetValue(cat, out catList))
@@ -80,7 +92,7 @@ public class Actions : Root<Actions>
         return list;
     }
 
-    const bool DebugGeneration = false;
+    const bool DebugGeneration = true;
     ObjectPool<StringBuilder> debugBuilders = new ObjectPool<StringBuilder>();
     ObjectPool<HashSet<EventAction>> eaPool = new ObjectPool<HashSet<EventAction>>();
     ObjectPool<List<EventAction>> eaListPool = new ObjectPool<List<EventAction>>();
@@ -134,13 +146,16 @@ public class Actions : Root<Actions>
                         action.Root = go;
                         if (action.Filter())
                         {
-                            if (oneMoreRun |= (action.Utility() > 0))
+                            var ut = action.Utility();
+                            var useful = ut > 0;
+                            oneMoreRun |= useful;
+                            if (useful)
                             {
                                 if (action.Meta.OncePerTurn)
                                     performedActions.Add(action);
                                 action.Action();
                                 if (DebugGeneration)
-                                    debugBuilder.AppendLine("YES");
+                                    debugBuilder.AppendLine(ut.ToString());
                                 NotifyOfAct(go, action);
                             }
                             else
@@ -173,6 +188,127 @@ public class Actions : Root<Actions>
                         oneMoreRun = true;
                     }
                 }
+                else if (DebugGeneration)
+                    debugBuilder.AppendLine( "NOTHING");
+
+            }
+            eaListPool.Return(maximizeActions);
+            eaPool.Return(performedActions);
+        }
+        if (DebugGeneration)
+            debugBuilder.AppendLine("INTERACTIONS:");
+        /*var inter = go.GetComponent<Interactable>();
+        if (inter != null)
+        {
+            GetInteractions(inter);
+            if (DebugGeneration)
+                foreach (var i in inter.Options)
+                    debugBuilder.Append(" ").AppendLine(i.GetType().Name);
+        }*/
+
+        if (DebugGeneration)
+            Debug.Log(debugBuilder.ToString());
+        debugBuilders.Return(debugBuilder);
+
+    }
+
+    public IEnumerator GenerateCoroutine(GameObject go, float fuzzy = 0f)
+    {
+
+        var debugBuilder = debugBuilders.Get();
+        if (DebugGeneration)
+        {
+            debugBuilder.Length = 0;
+            debugBuilder.AppendLine(go.name);
+            //var n = go.GetComponent<Named>();
+            //if (n != null)
+            //    debugBuilder.AppendLine(n.FullName);
+        }
+
+
+        var performedActions = eaPool.Get();
+        var maximizeActions = eaListPool.Get();
+        maximizeActions.Clear();
+        performedActions.Clear();
+        bool oneMoreRun = true;
+        int iterations = 0;
+        while (oneMoreRun)
+        {
+            yield return null;
+            if (DebugGeneration)
+                debugBuilder.AppendLine("=================================================================");
+            if (Application.isEditor)
+                if (iterations++ > 50)
+                    break;
+            oneMoreRun = false;
+            foreach (var categoryPair in eventsByCategory)
+            {
+                var category = categoryPair.Value;
+                if (DebugGeneration)
+                    debugBuilder.Append(" ").AppendLine(categoryPair.Key.Name);
+                maximizeActions.Clear();
+                foreach (var action in category)
+                {
+
+                    if (DebugGeneration)
+                        debugBuilder.Append("  ").Append(action.GetType().Name).Append(" = ");
+                    if (ActedThisWayAndShouldNoMore(go, action) || (action.Meta.OncePerTurn && performedActions.Contains(action)))
+                    {
+                        debugBuilder.AppendLine("NO");
+                        continue;
+                    }
+                    if (!action.Meta.ShouldHaveMaxUtility)
+                    {
+                        var cachedRoot = action.Root;
+                        action.Root = go;
+                        if (action.Filter())
+                        {
+                            var ut = action.Utility();
+                            var useful = ut > 0;
+                            oneMoreRun |= useful;
+                            if (useful)
+                            {
+                                if (action.Meta.OncePerTurn)
+                                    performedActions.Add(action);
+                                action.Action();
+                                yield return null;
+                                if (DebugGeneration)
+                                    debugBuilder.AppendLine(ut.ToString());
+                                NotifyOfAct(go, action);
+                            }
+                            else
+                            if (DebugGeneration)
+                                debugBuilder.AppendLine("NO");
+                        }
+                        else
+                        if (DebugGeneration)
+                            debugBuilder.AppendLine("NO");
+                        action.Root = cachedRoot;
+                    }
+                    else
+                    {
+                        maximizeActions.Add(action);
+                        if (DebugGeneration)
+                            debugBuilder.AppendLine("ONLY_MAX");
+                    }
+                }
+                if (DebugGeneration)
+                    debugBuilder.Append("  CHOSEN_MAX = ");
+                if (maximizeActions.Count > 0)
+                {
+                    var act = GenerateMostUseful(go, fuzzy, maximizeActions, performedActions);
+                    if (DebugGeneration)
+                        debugBuilder.AppendLine(act == null ? "NOTHING" : act.GetType().Name);
+                    if (act != null)
+                    {
+                        if (act.Meta.OncePerTurn)
+                            performedActions.Add(act);
+                        oneMoreRun = true;
+                    }
+                }
+                else if (DebugGeneration)
+                    debugBuilder.AppendLine("NOTHING");
+
             }
             eaListPool.Return(maximizeActions);
             eaPool.Return(performedActions);

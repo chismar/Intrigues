@@ -30,90 +30,102 @@ public class CreationInterpreter : FunctionOperatorInterpreter
 		DeclareVariableStatement cmpVar = null;
 		DeclareVariableStatement contextVar = block.FindStatement<DeclareVariableStatement> (v => (v.IsContext | v.IsArg) && v.Type == typeof(GameObject));
 		string ctxVar = contextVar == null ? "root" : contextVar.Name;
-		if (op.Args.Count == 0)
-		{
-			var expr = op.Context as Expression;
-			if (expr != null)
-			{
-				var cmpType = (((op.Context as Expression).Operands [0] as ExprAtom).Content as Scope).Parts [0] as string;
-				block.Statements.Add (string.Format ("{0}.AddComponent<{1}>();", ctxVar, components [cmpType]));
-			}
-		} else if (op.Args.Count == 1)
-		{
-			var ctx = op.Context as Context;
-			var expr = op.Context as Expression;
-			if (expr != null)
-			{
+        string cmpTypeName = null;
+        try
+        {
+            if (op.Args.Count == 0)
+            {
+                var expr = op.Context as Expression;
+                if (expr != null)
+                {
+                    var cmpType = (((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts[0] as string;
+                    block.Statements.Add(string.Format("{0}.AddComponent<{1}>();", ctxVar, components[cmpType]));
+                }
+            }
+            else if (op.Args.Count == 1)
+            {
+                var ctx = op.Context as Context;
+                var expr = op.Context as Expression;
+                if (expr != null)
+                {
 
-				var cmpTypeName = (((op.Context as Expression).Operands [0] as ExprAtom).Content as Scope).Parts [0] as string;
-				var varName = ((op.Args [0].Operands [0] as ExprAtom).Content as Scope).Parts [0] as string;
-				var cmpType = components [cmpTypeName];
-				cmpVar = new DeclareVariableStatement ();
-				cmpVar.InitExpression = string.Format ("{0}.AddComponent<{1}>();", ctxVar, cmpType);
-				cmpVar.Type = cmpType;
-				cmpVar.Name = varName;
-				cmpVar.IsNew = true;
-				cmpVar.IsContext = true;
-				block.Statements.Add (cmpVar);
-			} else if (ctx != null)
-			{
-				var cmpTypeName = ((op.Args [0].Operands [0] as ExprAtom).Content as Scope).Parts [0] as string;
-				var cmpType = components [cmpTypeName];
-				cmpVar = new DeclareVariableStatement ();
-				cmpVar.InitExpression = string.Format ("{0}.AddComponent<{1}>();", ctxVar, cmpType);
-				cmpVar.Type = cmpType;
-				cmpVar.IsContext = true;
-				cmpVar.IsNew = true;
-				cmpVar.Name = "ContextVar" + DeclareVariableStatement.VariableId++;
-				block.Statements.Add (cmpVar);
-				switches.GetInterByType (cmpType).Interpret (op, block);
+                    cmpTypeName = (((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts[0] as string;
+                    var varName = ((op.Args[0].Operands[0] as ExprAtom).Content as Scope).Parts[0] as string;
+                    var cmpType = components[cmpTypeName];
+                    cmpVar = new DeclareVariableStatement();
+                    cmpVar.InitExpression = string.Format("{0}.AddComponent<{1}>();", ctxVar, cmpType);
+                    cmpVar.Type = cmpType;
+                    cmpVar.Name = varName;
+                    cmpVar.IsNew = true;
+                    cmpVar.IsContext = true;
+                    block.Statements.Add(cmpVar);
+                }
+                else if (ctx != null)
+                {
+                    cmpTypeName = ((op.Args[0].Operands[0] as ExprAtom).Content as Scope).Parts[0] as string;
+                    var cmpType = components[cmpTypeName];
+                    cmpVar = new DeclareVariableStatement();
+                    cmpVar.InitExpression = string.Format("{0}.AddComponent<{1}>();", ctxVar, cmpType);
+                    cmpVar.Type = cmpType;
+                    cmpVar.IsContext = true;
+                    cmpVar.IsNew = true;
+                    cmpVar.Name = "ContextVar" + DeclareVariableStatement.VariableId++;
+                    block.Statements.Add(cmpVar);
+                    switches.GetInterByType(cmpType).Interpret(op, block);
 
-			}
-		} else if (op.Args.Count == 2)
-		{
+                }
+            }
+            else if (op.Args.Count == 2)
+            {
 
-			var ctx = op.Context as Context;
-			if (ctx != null)
-			{
-				var cmpTypeName = ((op.Args [1].Operands [0] as ExprAtom).Content as Scope).Parts [0] as string;
-				var varName = ((op.Args [0].Operands [0] as ExprAtom).Content as Scope).Parts [0] as string;
-				var cmpType = components [cmpTypeName];
-				cmpVar = new DeclareVariableStatement ();
-				cmpVar.InitExpression = string.Format ("{0}.AddComponent<{1}>();", ctxVar, cmpType);
-				cmpVar.Type = cmpType;
-				cmpVar.IsContext = true;
-				cmpVar.IsNew = true;
-				cmpVar.Name = varName;
-				block.Statements.Add (cmpVar);
-				switches.GetInterByType (cmpType).Interpret (op, block);
+                var ctx = op.Context as Context;
+                if (ctx != null)
+                {
+                    cmpTypeName = ((op.Args[1].Operands[0] as ExprAtom).Content as Scope).Parts[0] as string;
+                    var varName = ((op.Args[0].Operands[0] as ExprAtom).Content as Scope).Parts[0] as string;
+                    var cmpType = components[cmpTypeName];
+                    cmpVar = new DeclareVariableStatement();
+                    cmpVar.InitExpression = string.Format("{0}.AddComponent<{1}>();", ctxVar, cmpType);
+                    cmpVar.Type = cmpType;
+                    cmpVar.IsContext = true;
+                    cmpVar.IsNew = true;
+                    cmpVar.Name = varName;
+                    block.Statements.Add(cmpVar);
+                    switches.GetInterByType(cmpType).Interpret(op, block);
 
-			}
-		}
+                }
+            }
 
 
-		var entVar = block.FindStatement<DeclareVariableStatement> (v => v.ctxEntity == ctxVar && v.Type == typeof(Entity));
-		if (entVar == null)
-		{
-			entVar = new DeclareVariableStatement ();
-			entVar.Name = "EntVar" + DeclareVariableStatement.VariableId++;
-			entVar.Type = typeof(Entity);
-			entVar.ctxEntity = ctxVar;
+            var entVar = block.FindStatement<DeclareVariableStatement>(v => v.ctxEntity == ctxVar && v.Type == typeof(Entity));
+            if (entVar == null)
+            {
+                entVar = new DeclareVariableStatement();
+                entVar.Name = "EntVar" + DeclareVariableStatement.VariableId++;
+                entVar.Type = typeof(Entity);
+                entVar.ctxEntity = ctxVar;
 
-			entVar.InitExpression = String.Format ("(Entity){0}.GetComponent(typeof(Entity));", ctxVar);
-			block.Statements.Add (entVar);
-			var updateSt = new StatementStringContainer (String.Format ("if({0} != null) {0}.ComponentAdded();", entVar.Name));
-			entVar.Cnt = updateSt;
-			block.Statements.Add (updateSt);
-		} else
-		{
-			var updateSt = new StatementStringContainer (entVar.Cnt.Data);
-			entVar.Cnt.Data = "";
-			entVar.Cnt = updateSt;
-			block.Statements.Add (updateSt);
-		}
+                entVar.InitExpression = String.Format("(Entity){0}.GetComponent(typeof(Entity));", ctxVar);
+                block.Statements.Add(entVar);
+                var updateSt = new StatementStringContainer(String.Format("if({0} != null) {0}.ComponentAdded();", entVar.Name));
+                entVar.Cnt = updateSt;
+                block.Statements.Add(updateSt);
+            }
+            else
+            {
+                var updateSt = new StatementStringContainer(entVar.Cnt.Data);
+                entVar.Cnt.Data = "";
+                entVar.Cnt = updateSt;
+                block.Statements.Add(updateSt);
+            }
 
-		if (cmpVar != null)
-			cmpVar.IsContext = false;
+            if (cmpVar != null)
+                cmpVar.IsContext = false;
+        }
+		catch(KeyNotFoundException e)
+        {
+            Debug.LogErrorFormat("Can't create {0} in {1}", cmpTypeName, op);
+        }
 
 
 

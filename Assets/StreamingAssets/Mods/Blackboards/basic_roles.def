@@ -1,0 +1,21 @@
+king_role = yes
+feudal_landlord_role = yes
+noble_role = yes
+rival_role = {
+	of_whom = gameobject
+}
+servant_role = 
+{
+	of_whom = gameobject
+}
+cook_role = yes
+criminal_role = yes
+woman_role = yes
+heir_role = 
+{
+	of_whom = gameobject
+}
+in_love = 
+{
+	with_whom = gameobject
+}

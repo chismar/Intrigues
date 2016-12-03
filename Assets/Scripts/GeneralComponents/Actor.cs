@@ -11,10 +11,16 @@ public class Actor : MonoBehaviour {
     Dictionary<Type, int> actionsInUse = new Dictionary<Type, int>();
     Stack<ActionWrapper> actionsStack = new Stack<ActionWrapper>();
     ActionWrapper curAction = null;
+    public int ScenariosCount { get; set; }
+
+    private void Awake()
+    {
+    }
     private void Start()
     {
         StartCoroutine(InitCoroutine());
         fuzziness  = new System.Random(UnityEngine.Random.Range(0, 500));
+        Story.Instance.AttachNPC(gameObject);
     }
 
     IEnumerator InitCoroutine()
@@ -35,11 +41,11 @@ public class Actor : MonoBehaviour {
             ChooseAction();
         if (curAction != null)
         {
-            Debug.Log("Update " + curAction.Action.GetType().Name);
+            //Debug.Log("Update " + curAction.Action.GetType().Name);
             curAction.Update(this);
             if(curAction.Action.State == EventAction.ActionState.Failed || curAction.Action.State == EventAction.ActionState.Finished)
             {
-                Debug.Log(curAction.Action.State);
+                //Debug.Log(curAction.Action.State);
                 var aType = curAction.GetType();
                 int countUsed = 0;
                 if(actionsInUse.TryGetValue(aType, out countUsed))
@@ -116,8 +122,8 @@ public class Actor : MonoBehaviour {
 
     public void Act(EventAction action, List<Dependency> deps = null)
     {
-        Debug.Log("Act " + action.GetType().Name, gameObject);
-        Debug.Log(action.State);
+        //Debug.Log("Act " + action.GetType().Name, gameObject);
+        //Debug.Log(action.State);
         ActionWrapper wrapper = new ActionWrapper();
         wrapper.Action = action;
         bool canDo = true;
@@ -135,7 +141,7 @@ public class Actor : MonoBehaviour {
         }
         else
         {
-            Debug.Log("Put as current action");
+            //Debug.Log("Put as current action");
             PutAsCurrentAction(wrapper);
         }
     }
@@ -198,13 +204,13 @@ public class ActionWrapper
         if(Action.State == EventAction.ActionState.None)
         {
             bool satisfied = true;
-            Debug.Log(Deps);
+            //Debug.Log(Deps);
             if (Deps != null)
             {
-                Debug.Log(Deps.Count);
+                //Debug.Log(Deps.Count);
                 foreach (var dep in Deps)
                 {
-                    Debug.LogFormat("{0} = {1}", dep.GetType(), dep.Satisfied());
+                    //Debug.LogFormat("{0} = {1}", dep.GetType(), dep.Satisfied());
                     if (!dep.Satisfied())
                     {
                         satisfied = false;
@@ -214,7 +220,7 @@ public class ActionWrapper
             }
             if (satisfied)
             {
-                Debug.Log("Performing " + Action.GetType().Name);
+                //Debug.Log("Performing " + Action.GetType().Name);
                 Action.Action();
 
             }
@@ -223,9 +229,9 @@ public class ActionWrapper
                 if (currentDep == null || currentDep.Satisfied())
                 {
                     var dep = Deps.Find(d => !d.Satisfied());
-                    Debug.Log(Deps.Count);
+                    //Debug.Log(Deps.Count);
                     currentDep = dep;
-                    Debug.Log(dep.GetType().Name);
+                    //Debug.Log(dep.GetType().Name);
                 }
                 if (currentDep.ActionWrapper == null)
                 {
@@ -240,19 +246,19 @@ public class ActionWrapper
 
         if(Action.State == EventAction.ActionState.Started)
         {
-            Debug.Log("Update the action " + Action.GetType().Name);
+            //Debug.Log("Update the action " + Action.GetType().Name);
             Action.Update();
         }
         
         if(Action.State == EventAction.ActionState.Failed)
         {
-            Debug.Log(Action.State);
+            //Debug.Log(Action.State);
         }
 
         if(Action.State == EventAction.ActionState.Finished)
         {
 
-            Debug.Log(Action.State);
+            //Debug.Log(Action.State);
         }
     }
 }

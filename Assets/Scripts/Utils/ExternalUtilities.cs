@@ -7,7 +7,7 @@ public class ExternalUtilities : MonoBehaviour
 
     private void Awake()
     {
-        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "Any", "Log", "Has"));
+        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne"));
     }
     //ayn
     System.Random rand = new System.Random();
@@ -35,5 +35,37 @@ public class ExternalUtilities : MonoBehaviour
     public bool Has(GameObject go)
     {
         return go != null;
+    }
+
+    public GameObject SpawnPrefab(string name, string goName)
+    {
+        var go =  GameObject.Instantiate(Resources.Load("Prefabs/" + name) as GameObject);
+        go.name = goName;
+        go.GetComponent<Entity>().PrefabName = name;
+        return go;
+    }
+
+    public GameObject NoOne()
+    {
+        return null;
+    }
+
+    public delegate bool CheckDelegate(GameObject go);
+    List<GameObject> found = new List<GameObject>();
+    public GameObject FindObject(string prefabType, CheckDelegate checker)
+    {
+        found.Clear();
+        foreach (var obj in Story.Instance.AllActors)
+        {
+            if (obj.GetComponent<Entity>().PrefabName == prefabType)
+            {
+                if (checker(obj))
+                    found.Add(obj);
+            }
+        }
+        if (found.Count == 0)
+            return null;
+        else
+            return found[Random.Range(0, found.Count)];
     }
 }

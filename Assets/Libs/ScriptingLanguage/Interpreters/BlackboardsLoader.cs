@@ -108,6 +108,7 @@ public class BlackboardsLoader  : ScriptInterpreter
 					field.Attributes = MemberAttributes.Public;
 					prop.Type = field.Type;
 					prop.Attributes = MemberAttributes.Public;
+                    bbType.Members.Add(prop);
                     if(!bbType.IsInterface)
 					    bbType.Members.Add (field);
 
