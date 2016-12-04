@@ -20,4 +20,13 @@ public class Entity : MonoBehaviour {
     {
         transform.position = new Vector3(x + Random.Range(-range, range), y + Random.Range(-range, range));
     }
+
+    public delegate void GODelegate(GameObject go);
+    public event GODelegate OnDeath;
+
+    private void OnDestroy()
+    {
+        if (OnDeath != null)
+            OnDeath(gameObject);
+    }
 }
