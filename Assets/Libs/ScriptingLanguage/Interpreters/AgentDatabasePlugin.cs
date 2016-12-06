@@ -12,7 +12,7 @@ using System.Reflection;
 
 
 
-public class AgentDatabse : MonoBehaviour
+public class AgentDatabase : MonoBehaviour
 {
     protected Dictionary<Type, object> data = new Dictionary<Type, object>();
 
@@ -53,7 +53,7 @@ public class AgentDatabaseLoader : ScriptInterpreter
     {
         this.baseType = baseType;
         dbComponentType = new CodeTypeDeclaration(typeName);
-        dbComponentType.BaseTypes.Add(typeof(MonoBehaviour));
+        dbComponentType.BaseTypes.Add(typeof(AgentDatabase));
         cNamespace.Name = "ScriptedTypes";
         cNamespace.Types.Add(dbComponentType);
     }
@@ -165,15 +165,15 @@ public class AgentDatabaseLoader : ScriptInterpreter
                 getThisTypeMethod.Name = "Get" + NameTranslator.CSharpNameFromScript(dbElement.Name);
                 if(returnedLists.Add(dbElement.Name))
                 {
-                    var listExt = string.Format("public static class {0} {{ static ObjectPool<System.Collections.Generic.List<ScriptedTypes.{1}>> pool = new ObjectPool<System.Collections.Generic.ScriptedTypes.List<{1}>>(); {2}}}",
+                    var listExt = string.Format("public static class {0} {{ static ObjectPool<System.Collections.Generic.List<ScriptedTypes.{1}>> pool = new ObjectPool<System.Collections.Generic.List<ScriptedTypes.{1}>>(); {2} }}",
                         dbElement.Name + "ListExt", dbElement.Name,
-                        string.Format("public static System.Collections.Generic.List<ScriptedTypes.{0}> Get() { var list = pool.Get(); list.Clear(); return list; } public static void Return(this System.Collections.Generic.List<ScriptedTypes.{0}> list){pool.Return(list);}",
+                        string.Format("public static System.Collections.Generic.List<ScriptedTypes.{0}> Get() {{ var list = pool.Get(); list.Clear(); return list; }} public static void Return(this System.Collections.Generic.List<ScriptedTypes.{0}> list){{pool.Return(list);}}",
                         dbElement.Name));
                     listExtensions.Add(listExt); 
                 }
-                getThisTypeMethod.ReturnType = new CodeTypeReference(string.Format("List<ScriptedTypes.{0}>", dbElement.Name));
+                getThisTypeMethod.ReturnType = new CodeTypeReference(string.Format("System.Collections.Generic.List<ScriptedTypes.{0}>", dbElement.Name));
                 getThisTypeMethod.Statements.Add(new CodeSnippetStatement(
-                    string.Format("var list = this.Get<ScriptedTypes.{0}>; return list;", dbElement.Name)));
+                    string.Format("var list = this.Get<ScriptedTypes.{0}>(); return list;", dbElement.Name)));
                 dbComponentType.Members.Add(getThisTypeMethod);
 
                 var queryThisTypeMethod = new CodeMemberMethod();
@@ -183,9 +183,9 @@ public class AgentDatabaseLoader : ScriptInterpreter
                 del.Parameters.Add(new CodeParameterDeclarationExpression("ScriptedTypes." + dbElement.Name, NameTranslator.ScriptNameFromCSharp(baseType.Name)));
                 cNamespace.Types.Add(del);
                 queryThisTypeMethod.Parameters.Add(new CodeParameterDeclarationExpression(dbElement.Name + "_queryDelegate", "queryDel"));
-                queryThisTypeMethod.ReturnType = new CodeTypeReference(string.Format("List<ScriptedTypes.{0}>", dbElement.Name));
+                queryThisTypeMethod.ReturnType = new CodeTypeReference(string.Format("System.Collections.Generic.List<ScriptedTypes.{0}>", dbElement.Name));
                 queryThisTypeMethod.Statements.Add(new CodeSnippetStatement(
-                    string.Format("var list = this.Get<ScriptedTypes.{0}>; if(list == null) return list; var queryList = {1}.Get(); foreach(var e in list) if (queryDel(e)) queryList.Add(e); return queryList;", dbElement.Name, dbElement.Name + "ListExt")));
+                    string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list == null) return list; var queryList = {1}.Get(); foreach(var e in list) if (queryDel(e)) queryList.Add(e); return queryList;", dbElement.Name, dbElement.Name + "ListExt")));
                 dbComponentType.Members.Add(queryThisTypeMethod);
 
 
@@ -194,7 +194,7 @@ public class AgentDatabaseLoader : ScriptInterpreter
 
                 deleteWhere.Parameters.Add(new CodeParameterDeclarationExpression(dbElement.Name + "_queryDelegate", "queryDel"));
                 deleteWhere.Statements.Add(new CodeSnippetStatement(
-                    string.Format("var list = this.Get<ScriptedTypes.{0}>; if(list == null) return; for(int i =0; i < list.Count; i++) if(queryDel(e)) { list.RemoveAt(i); i--; }", dbElement.Name)));
+                    string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list == null) return; for(int i =0; i < list.Count; i++) if(queryDel(list[i])) {{ list.RemoveAt(i); i--; }}", dbElement.Name)));
                 dbComponentType.Members.Add(deleteWhere);
 
 
@@ -203,21 +203,21 @@ public class AgentDatabaseLoader : ScriptInterpreter
 
                 delete.Parameters.Add(new CodeParameterDeclarationExpression(dbElement.Name, "obj"));
                 delete.Statements.Add(new CodeSnippetStatement(
-                    string.Format("var list = this.Get<ScriptedTypes.{0}>; if(list != null) list.Remove(obj);", dbElement.Name)));
+                    string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list != null) list.Remove(obj);", dbElement.Name)));
                 dbComponentType.Members.Add(delete);
 
                 var add = new CodeMemberMethod();
                 add.Name = "Add" + NameTranslator.CSharpNameFromScript(dbElement.Name);
                 add.ReturnType = new CodeTypeReference("ScriptedTypes." + dbElement.Name);
                 add.Statements.Add(new CodeSnippetStatement(
-                    string.Format("var list = this.Get<ScriptedTypes.{0}>; if(list == null) { list = System.Collections.Generic.List<ScriptedTypes.{0}>.Get(); data.Add(typeof(ScriptedTypes.{0}), list); } var e = new ScriptedTypes.{0}(); list.Add(e); return e;", dbElement.Name)));
+                    string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list == null) {{ list = ScriptedTypes.{0}ListExt.Get(); data.Add(typeof(ScriptedTypes.{0}), list); }} var e = new ScriptedTypes.{0}(); list.Add(e); return e;", dbElement.Name)));
                 dbComponentType.Members.Add(add);
 
                 var has = new CodeMemberMethod();
                 has.Name = "Has" + NameTranslator.CSharpNameFromScript(dbElement.Name);
                 has.ReturnType = new CodeTypeReference(typeof(bool));
                 has.Statements.Add(new CodeSnippetStatement(
-                    string.Format("var list = this.Get<ScriptedTypes.{0}>; return list != null;", dbElement.Name)));
+                    string.Format("var list = this.Get<ScriptedTypes.{0}>(); return list != null;", dbElement.Name)));
                 dbComponentType.Members.Add(has);
 
                 var hasWhere = new CodeMemberMethod();
@@ -225,7 +225,7 @@ public class AgentDatabaseLoader : ScriptInterpreter
                 hasWhere.ReturnType = new CodeTypeReference(typeof(bool));
                 hasWhere.Parameters.Add(new CodeParameterDeclarationExpression(dbElement.Name + "_queryDelegate", "queryDel"));
                 hasWhere.Statements.Add(new CodeSnippetStatement(
-                    string.Format("var list = this.Get<ScriptedTypes.{0}>; if(list == null) return false; for(int i =0; i < list.Count; i++) if(queryDel(e)) return true; return false;", dbElement.Name)));
+                    string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list == null) return false; for(int i =0; i < list.Count; i++) if(queryDel(list[i])) return true; return false;", dbElement.Name)));
                 dbComponentType.Members.Add(hasWhere);
             }
 
@@ -234,10 +234,14 @@ public class AgentDatabaseLoader : ScriptInterpreter
         CodeGeneratorOptions options = new CodeGeneratorOptions();
         var writer = new StringWriter();
         codeProvider.GenerateCodeFromNamespace(cNamespace, writer, options);
-        writer.WriteLine("namespace ScriptedTypes {");
-        foreach (var listExt in listExtensions)
-            writer.WriteLine(listExt);
-        writer.WriteLine("}");
+        if(listExtensions.Count > 0)
+        {
+            writer.WriteLine("namespace ScriptedTypes {");
+            foreach (var listExt in listExtensions)
+                writer.WriteLine(listExt);
+            writer.WriteLine("}");
+        }
+        
         Debug.Log(writer.ToString());
         OnCompiled(loader.Load(new string[] { writer.ToString() }, "AgentsDatabases_" + baseType.Name));
         //onCompiled ();

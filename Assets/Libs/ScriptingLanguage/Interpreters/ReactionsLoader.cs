@@ -11,122 +11,46 @@ using System;
 using System.Threading;
 using System.Text;
 
-public abstract class EventAction
+public class ReactionsLoader : ScriptInterpreter
 {
-    
-    public enum ActionState { None, Started, Failed, Finished }
-    public ActionState State { get { return state; } set { state = value; } }
-    protected ActionState state = ActionState.None;
-	public abstract bool Filter ();
+    List<CodeTypeDeclaration> codeTypes = new List<CodeTypeDeclaration>();
+    FiltersPlugin filters;
+    CodeNamespace cNamespace = new CodeNamespace();
+    EventFunctionOperators functionOperators;
+    ExpressionInterpreter exprInter;
 
-	public virtual float Utility ()
+    public ReactionsLoader(string namespaceName, ScriptEngine engine) : base(engine)
     {
-        return -1f;
+        cNamespace.Name = namespaceName;
+        exprInter = engine.GetPlugin<ExpressionInterpreter>();
+        filters = engine.GetPlugin<FiltersPlugin>();
+        functionOperators = engine.GetPlugin<EventFunctionOperators>();
     }
-
-	protected GameObject root;
-
-	public GameObject Root { get { return root; } set { root = value; } }
-    public EventActionAttribute Meta { get; set;  }
-    public virtual void Init ()
-	{
-        Coroutine = null;
-        state = ActionState.None;
-	}
-
-	public virtual void Action ()
-	{
-
-	}
-    public virtual List<Dependency> GetDependencies()
-    {
-        return null;
-    }
-    public virtual bool Interaction()
-    {
-        return false;
-    }
-    public IEnumerator Coroutine;
-
-    public void Update()
-    {
-        if(Coroutine != null)
-        {
-            if(Coroutine.MoveNext())
-            {
-                var yieldResult = Coroutine.Current;
-                if(yieldResult == null) // everything is ok
-                {
-                    //do nothing, coroutine is updated
-                }
-            }
-            else
-            {
-                //coroutine is finished
-            }
-        }
-    }
-
-}
-
-public interface EventInteraction
-{
-    GameObject Initiator { get; set; }
-}
-
-public class EventActionAttribute : Attribute
-{
-    public string Category { get; set; }
-    public bool ShouldHaveMaxUtility { get; set; }
-    public bool IsAIAction { get; set; }
-    public bool IsInteraction { get; set; }
-    public bool OncePerObject { get; set; }
-    public bool OncePerTurn { get; set; }
-    public bool OnceInCategory { get; set; }
-    public string Tooltip { get; set; }
-}
-
-public class EventActionsLoader : ScriptInterpreter
-{
-	List<CodeTypeDeclaration> codeTypes = new List<CodeTypeDeclaration> ();
-	FiltersPlugin filters;
-	CodeNamespace cNamespace = new CodeNamespace ();
-	EventFunctionOperators functionOperators;
-	ExpressionInterpreter exprInter;
-
-	public EventActionsLoader (string namespaceName, ScriptEngine engine) : base (engine)
-	{
-		cNamespace.Name = namespaceName;
-		exprInter = engine.GetPlugin<ExpressionInterpreter> ();
-		filters = engine.GetPlugin<FiltersPlugin> ();
-		functionOperators = engine.GetPlugin<EventFunctionOperators> ();
-	}
     StringBuilder builder = new StringBuilder();
-	public override void Interpret (Script script)
-	{
-		MaxProgress = script.Entries.Count;
-		for (int i = 0; i < script.Entries.Count; i++)
-		{
-			if (!Engine.Working)
-				Thread.CurrentThread.Abort ();
-			CurProgress = i;
-			var entry = script.Entries [i];
-			CodeTypeDeclaration codeType = new CodeTypeDeclaration ();
+    public override void Interpret(Script script)
+    {
+        MaxProgress = script.Entries.Count;
+        for (int i = 0; i < script.Entries.Count; i++)
+        {
+            if (!Engine.Working)
+                Thread.CurrentThread.Abort();
+            CurProgress = i;
+            var entry = script.Entries[i];
+            CodeTypeDeclaration codeType = new CodeTypeDeclaration();
             //codeType.CustomAttributes.
-			codeType.BaseTypes.Add (new CodeTypeReference (typeof(EventAction)));
-			codeType.Name = entry.Identifier as string;
-			codeTypes.Add (codeType);
+            codeType.BaseTypes.Add(new CodeTypeReference(typeof(EventAction)));
+            codeType.Name = entry.Identifier as string;
+            codeTypes.Add(codeType);
 
             if (ScriptEngine.AnalyzeDebug)
                 Debug.LogWarning((entry.Identifier as string).ToUpper());
 
             var ctx = entry.Context as Context;
-			if (ctx == null)
-				continue;
-			var actionMethod = typeof(EventAction).GetMethod ("Action");
-			var utMethod = typeof(EventAction).GetMethod ("Utility");
-			var scopeMethod = typeof(EventAction).GetMethod ("Filter");
-            var interMethod = typeof(EventAction).GetMethod("Interaction");
+            if (ctx == null)
+                continue;
+            var actionMethod = typeof(EventAction).GetMethod("Action");
+            var utMethod = typeof(EventAction).GetMethod("Utility");
+            var scopeMethod = typeof(EventAction).GetMethod("Filter");
             CodeAttributeDeclaration attr = new CodeAttributeDeclaration("EventActionAttribute");
             codeType.CustomAttributes.Add(attr);
             CodeAttributeArgument maxArg = new CodeAttributeArgument("ShouldHaveMaxUtility", new CodeSnippetExpression("false"));
@@ -146,10 +70,10 @@ public class EventActionsLoader : ScriptInterpreter
             FunctionBlock dependenciesBlock = new FunctionBlock(null, null, codeType);
             List<string> deps = new List<string>();
             for (int j = 0; j < ctx.Entries.Count; j++)
-			{
-				var op = ctx.Entries [j] as Operator;
-				if (op == null)
-					continue;
+            {
+                var op = ctx.Entries[j] as Operator;
+                if (op == null)
+                    continue;
                 if (op.Identifier as string == "tooltip")
                 {
                     tooltipArg.Value = new CodeSnippetExpression((op.Context as InternalDSL.Expression).Operands[0].ToString());
@@ -255,7 +179,7 @@ public class EventActionsLoader : ScriptInterpreter
                     retVal.Type = typeof(bool);
                     retVal.InitExpression = "false";
 
-                    CreateEventFunction("Interaction", op.Context, codeType, interMethod, false, retVal);
+                    CreateEventFunction("Interaction", op.Context, codeType, scopeMethod, false, retVal);
                     interactionArg.Value = new CodeSnippetExpression("true");
                     //CreateFilterFunction (op.Context as Expression, codeType);
 
@@ -286,7 +210,7 @@ public class EventActionsLoader : ScriptInterpreter
                         codeType.Members.Add(prop);
                     }
 
-                    
+
                 }
                 else if (op.Identifier as string == "action")
                 {
@@ -338,8 +262,8 @@ public class EventActionsLoader : ScriptInterpreter
                         builder.Append("this.initiator");
                         builder.Append(",");
                     }
-                    
-                    foreach ( var funcArg in ctor.Args)
+
+                    foreach (var funcArg in ctor.Args)
                     {
                         builder.Append(exprInter.InterpretExpression(funcArg, dependenciesBlock).ExprString);
                         builder.Append(",");
@@ -353,8 +277,8 @@ public class EventActionsLoader : ScriptInterpreter
                 {
                     //No idea
                 }
-			}
-            if(deps.Count > 0)
+            }
+            if (deps.Count > 0)
             {
                 CodeMemberMethod getDepsOverride = new CodeMemberMethod();
                 getDepsOverride.ReturnType = new CodeTypeReference(typeof(List<Dependency>));
@@ -386,38 +310,38 @@ public class EventActionsLoader : ScriptInterpreter
                 if (field != null)
                 {
                     builder.Append("this.").Append(field.Name).Append(" = ").Append("default(").Append((field.UserData["type"] as Type).FullName).Append(");").AppendLine();
-                    
+
                 }
             }
             initOverrideMethod.Statements.Add(new CodeSnippetStatement(builder.ToString()));
 
         }
-		CurProgress = MaxProgress;
-		foreach (var type in codeTypes)
-		{
-			cNamespace.Types.Add (type);
-		}
-        
-		CSharpCodeProvider provider = new CSharpCodeProvider ();
-		CodeGeneratorOptions options = new CodeGeneratorOptions ();
-		var writer = new StringWriter ();
-		provider.GenerateCodeFromNamespace (cNamespace, writer, options);
-		Engine.GetPlugin<ScriptCompiler> ().AddSource (writer.ToString ());
+        CurProgress = MaxProgress;
+        foreach (var type in codeTypes)
+        {
+            cNamespace.Types.Add(type);
+        }
 
-	}
-    
+        CSharpCodeProvider provider = new CSharpCodeProvider();
+        CodeGeneratorOptions options = new CodeGeneratorOptions();
+        var writer = new StringWriter();
+        provider.GenerateCodeFromNamespace(cNamespace, writer, options);
+        Engine.GetPlugin<ScriptCompiler>().AddSource(writer.ToString());
 
-	void CreateEventFunction (string name, object context, CodeTypeDeclaration codeType, MethodInfo baseMethod, bool isAction, params object[] initStatements)
-	{
-		CodeMemberMethod method = new CodeMemberMethod ();
-		method.Name = NameTranslator.CSharpNameFromScript (name);
-		method.Attributes = MemberAttributes.Override | MemberAttributes.Public;
-		method.ReturnType = new CodeTypeReference (baseMethod.ReturnType);
-		var args = baseMethod.GetParameters ();
-		FunctionBlock block = new FunctionBlock (null, method, codeType);
+    }
+
+
+    void CreateEventFunction(string name, object context, CodeTypeDeclaration codeType, MethodInfo baseMethod, bool isAction, params object[] initStatements)
+    {
+        CodeMemberMethod method = new CodeMemberMethod();
+        method.Name = NameTranslator.CSharpNameFromScript(name);
+        method.Attributes = MemberAttributes.Override | MemberAttributes.Public;
+        method.ReturnType = new CodeTypeReference(baseMethod.ReturnType);
+        var args = baseMethod.GetParameters();
+        FunctionBlock block = new FunctionBlock(null, method, codeType);
         if (isAction)
             block.Statements.Add("this.state = EventAction.ActionState.Started;");
-		block.Statements.Add ("var root = this.root;");
+        block.Statements.Add("var root = this.root;");
 
         //block.Statements.Add ("UnityEngine.Debug.Log(root.ToString() + IfStatement.AntiMergeValue++);");
         var externVar = new DeclareVariableStatement()
@@ -433,77 +357,78 @@ public class EventActionsLoader : ScriptInterpreter
             InterpretInContext = Engine.GetPlugin<ExternalFunctionsPlugin>().Ctx.InterpretInContext
         });
         foreach (var initStmt in initStatements)
-			block.Statements.Add (initStmt);
-		//bool hasRoot = false;
-		foreach (var arg in args)
-		{
-			//if (arg.Name == "root")
-			//	hasRoot = true;
-			method.Parameters.Add (new CodeParameterDeclarationExpression (arg.ParameterType, arg.Name));
-			var paramVar = new DeclareVariableStatement ();
-			paramVar.Name = arg.Name;
-			paramVar.Type = arg.ParameterType;
-			paramVar.IsArg = true;
-			block.Statements.Add (paramVar);
-		}
-		var rootVar = new DeclareVariableStatement ();
-		rootVar.Name = "root";
-		rootVar.Type = typeof(GameObject);
-		rootVar.IsArg = true;
+            block.Statements.Add(initStmt);
+        //bool hasRoot = false;
+        foreach (var arg in args)
+        {
+            //if (arg.Name == "root")
+            //	hasRoot = true;
+            method.Parameters.Add(new CodeParameterDeclarationExpression(arg.ParameterType, arg.Name));
+            var paramVar = new DeclareVariableStatement();
+            paramVar.Name = arg.Name;
+            paramVar.Type = arg.ParameterType;
+            paramVar.IsArg = true;
+            block.Statements.Add(paramVar);
+        }
+        var rootVar = new DeclareVariableStatement();
+        rootVar.Name = "root";
+        rootVar.Type = typeof(GameObject);
+        rootVar.IsArg = true;
         rootVar.IsContext = true;
 
-        block.Statements.Add (rootVar);
+        block.Statements.Add(rootVar);
 
-        
+
         foreach (var member in codeType.Members)
-		{
-			var field = member as CodeMemberField;
-			if (field != null)
-			{
-				var cachedVar = new DeclareVariableStatement ();
-				cachedVar.Name = field.Name;
-				cachedVar.Type = field.UserData ["type"] as Type;
-				cachedVar.IsArg = true;
+        {
+            var field = member as CodeMemberField;
+            if (field != null)
+            {
+                var cachedVar = new DeclareVariableStatement();
+                cachedVar.Name = field.Name;
+                cachedVar.Type = field.UserData["type"] as Type;
+                cachedVar.IsArg = true;
 
-				block.Statements.Add (cachedVar);
-			}
-		}
-		//if (!hasRoot)
-		//{
-		//	Debug.LogFormat ("Method {0} in {1} has no root arg", baseMethod.Name, codeType.Name);
-		//	return;
-		//}
+                block.Statements.Add(cachedVar);
+            }
+        }
+        //if (!hasRoot)
+        //{
+        //	Debug.LogFormat ("Method {0} in {1} has no root arg", baseMethod.Name, codeType.Name);
+        //	return;
+        //}
 
-		codeType.Members.Add (method);
-		var table = context as Context;
-		if (table != null)
-		{
-			foreach (var entry in table.Entries)
-			{
-				Operator op = entry as Operator;
-				var inter = functionOperators.GetInterpreter (op, block);
-				if (inter == null)
-				{
-					Debug.LogFormat ("Can't find interpreter for operator {0} in {1} of {2}", op.Identifier, baseMethod.Name, codeType.Name);
-					continue;
-				}
-				inter.Interpret (op, block);
-			}	
-			var retVal = block.FindStatement<DeclareVariableStatement> (v => v.IsReturn);
-			if (retVal != null)
-				block.Statements.Add (String.Format ("return {0};", retVal.Name));
-		} else
-		{
-			var expr = context as Expression;
+        codeType.Members.Add(method);
+        var table = context as Context;
+        if (table != null)
+        {
+            foreach (var entry in table.Entries)
+            {
+                Operator op = entry as Operator;
+                var inter = functionOperators.GetInterpreter(op, block);
+                if (inter == null)
+                {
+                    Debug.LogFormat("Can't find interpreter for operator {0} in {1} of {2}", op.Identifier, baseMethod.Name, codeType.Name);
+                    continue;
+                }
+                inter.Interpret(op, block);
+            }
+            var retVal = block.FindStatement<DeclareVariableStatement>(v => v.IsReturn);
+            if (retVal != null)
+                block.Statements.Add(String.Format("return {0};", retVal.Name));
+        }
+        else
+        {
+            var expr = context as Expression;
 
-			var retVal = block.FindStatement<DeclareVariableStatement> (v => v.IsReturn);
-			//retVal.IsArg = true;
-			block.Statements.Add (String.Format ("return ({1}){0};", exprInter.InterpretExpression (expr, block).ExprString, TypeName.NameOf (retVal.Type)));
-		}
+            var retVal = block.FindStatement<DeclareVariableStatement>(v => v.IsReturn);
+            //retVal.IsArg = true;
+            block.Statements.Add(String.Format("return ({1}){0};", exprInter.InterpretExpression(expr, block).ExprString, TypeName.NameOf(retVal.Type)));
+        }
         if (isAction)
             block.Statements.Add("this.state = EventAction.ActionState.Finished;");
-        method.Statements.Add (new CodeSnippetStatement (block.ToString ()));
+        method.Statements.Add(new CodeSnippetStatement(block.ToString()));
 
-        
+
     }
 }

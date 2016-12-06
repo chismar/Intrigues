@@ -17,9 +17,13 @@ public abstract class Metric
     protected GameObject other;
     public GameObject Root {  get { return root; } set { root = value; } }
     public GameObject Other { get { return other;  } set { other = value; } }
+    public virtual void Init()
+    {
 
+    }
     public abstract bool RootFilter();
-    public bool FilterOther()
+    public abstract float Value();
+    public bool FullFilterOther()
     {
         GameObject cachedRoot = root;
         root = other;
@@ -27,7 +31,7 @@ public abstract class Metric
         root = cachedRoot;
         return returnValue;
     }
-    protected abstract bool OtherFilter();
+    public abstract bool OtherFilter();
     public MetricAttribute Meta { get; set; }
 
 }
@@ -65,7 +69,7 @@ public class MetricsLoader : ScriptInterpreter
             var entry = script.Entries[i];
             CodeTypeDeclaration codeType = new CodeTypeDeclaration();
             //codeType.CustomAttributes.
-            codeType.BaseTypes.Add(new CodeTypeReference(typeof(EventAction)));
+            codeType.BaseTypes.Add(new CodeTypeReference(typeof(Metric)));
             codeType.Name = entry.Identifier as string;
             codeTypes.Add(codeType);
 
@@ -75,12 +79,12 @@ public class MetricsLoader : ScriptInterpreter
             var ctx = entry.Context as Context;
             if (ctx == null)
                 continue;
-            var actionMethod = typeof(EventAction).GetMethod("Action");
-            var utMethod = typeof(EventAction).GetMethod("Utility");
-            var scopeMethod = typeof(EventAction).GetMethod("Filter");
-            CodeAttributeDeclaration attr = new CodeAttributeDeclaration("EventActionAttribute");
+            var scopeMethod = typeof(Metric).GetMethod("RootFilter");
+            var otherScopeMethod = typeof(Metric).GetMethod("OtherFilter");
+            var valueMethod = typeof(Metric).GetMethod("Value");
+            CodeAttributeDeclaration attr = new CodeAttributeDeclaration("MetricAttribute");
             codeType.CustomAttributes.Add(attr);
-            CodeAttributeArgument weightArg = new CodeAttributeArgument("ShouldHaveMaxUtility", new CodeSnippetExpression("1"));
+            CodeAttributeArgument weightArg = new CodeAttributeArgument("Weight", new CodeSnippetExpression("1"));
             attr.Arguments.Add(weightArg);
             FunctionBlock dependenciesBlock = new FunctionBlock(null, null, codeType);
             List<string> deps = new List<string>();
@@ -139,7 +143,7 @@ public class MetricsLoader : ScriptInterpreter
                         codeType.BaseTypes.Add(cat);
                     }
                 }
-                else if (op.Identifier as string == "from_scope")
+                else if (op.Identifier as string == "scope")
                 {
                     //It's a filter function
                     //					Debug.Log (op.Context.GetType ());
@@ -157,7 +161,7 @@ public class MetricsLoader : ScriptInterpreter
                     //CreateFilterFunction (op.Context as Expression, codeType);
 
                 }
-                else if (op.Identifier as string == "of_scope")
+                else if (op.Identifier as string == "other_scope")
                 {
                     //It's a filter function
                     //					Debug.Log (op.Context.GetType ());
@@ -170,8 +174,8 @@ public class MetricsLoader : ScriptInterpreter
                     retVal.Name = "applicable";
                     retVal.Type = typeof(bool);
                     retVal.InitExpression = "false";
-
-                    CreateEventFunction("OtherFilter", op.Context, codeType, scopeMethod, false, retVal);
+                    Debug.Log(otherScopeMethod);
+                    CreateEventFunction("OtherFilter", op.Context, codeType, otherScopeMethod, false, retVal);
                     //CreateFilterFunction (op.Context as Expression, codeType);
 
                 }
@@ -182,7 +186,7 @@ public class MetricsLoader : ScriptInterpreter
                     utVal.Name = "val";
                     utVal.Type = typeof(float);
                     utVal.InitExpression = "0";
-                    CreateEventFunction(op.Identifier as string, op.Context, codeType, utMethod, false, utVal);
+                    CreateEventFunction(op.Identifier as string, op.Context, codeType, valueMethod, false, utVal);
                 }
                 
                 else
@@ -254,6 +258,7 @@ public class MetricsLoader : ScriptInterpreter
         if (isAction)
             block.Statements.Add("this.state = EventAction.ActionState.Started;");
         block.Statements.Add("var root = this.root;");
+        block.Statements.Add("var other = this.other;");
 
         //block.Statements.Add ("UnityEngine.Debug.Log(root.ToString() + IfStatement.AntiMergeValue++);");
         var externVar = new DeclareVariableStatement()
@@ -289,6 +294,14 @@ public class MetricsLoader : ScriptInterpreter
         rootVar.IsContext = true;
 
         block.Statements.Add(rootVar);
+
+        var otherVar = new DeclareVariableStatement();
+        otherVar.Name = "other";
+        otherVar.Type = typeof(GameObject);
+        otherVar.IsArg = true;
+        otherVar.IsContext = true;
+
+        block.Statements.Add(otherVar);
 
 
         foreach (var member in codeType.Members)

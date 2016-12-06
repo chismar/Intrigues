@@ -1,0 +1,7 @@
+most_basic_backstory_fact = 
+{
+	first_value = int
+	second_value = float
+	reference = gameobject
+	flag = bool
+}

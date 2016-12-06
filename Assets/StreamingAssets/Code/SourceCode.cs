@@ -1349,6 +1349,91 @@ this.noble = default(UnityEngine.GameObject);
 namespace ScriptedTypes {
     
     
-    public class metrics {
+    [MetricAttribute(Weight=(50))]
+    public class test_metric : Metric {
+        
+        public override float Value() {
+
+		{
+			var root = this.root;
+			var other = this.other;
+			
+			//ContextStatement External External ContextSwitchInterpreter
+			System.Single val = 0; //IsContext = False IsNew = False
+			
+			
+			System.Single OperandVar195 = default(System.Single); //IsContext = False IsNew = False
+			LightSource StoredVariable193 = ((LightSource)other.GetComponent(typeof(LightSource))); //IsContext = False IsNew = False
+			if(StoredVariable193 != null)
+			{
+				System.Single prop194 = StoredVariable193.Brightness; //IsContext = False IsNew = False
+				OperandVar195 = prop194;
+			}
+			System.Single OperandVar198 = default(System.Single); //IsContext = False IsNew = False
+			LightSensor StoredVariable196 = ((LightSensor)other.GetComponent(typeof(LightSensor))); //IsContext = False IsNew = False
+			if(StoredVariable196 != null)
+			{
+				System.Single prop197 = StoredVariable196.Light; //IsContext = False IsNew = False
+				OperandVar198 = prop197;
+			}
+			val = ( (OperandVar195)) * ( (OperandVar198));
+			return val;
+		}
+        }
+        
+        public override bool RootFilter() {
+
+		{
+			var root = this.root;
+			var other = this.other;
+			
+			//ContextStatement External External ContextSwitchInterpreter
+			System.Boolean applicable = false; //IsContext = False IsNew = False
+			
+			
+			System.Boolean OperandVar201 = default(System.Boolean); //IsContext = False IsNew = False
+			Actor StoredVariable199 = ((Actor)other.GetComponent(typeof(Actor))); //IsContext = False IsNew = False
+			if(StoredVariable199 != null)
+			{
+				LightSensor StoredVariable200 = ((LightSensor)StoredVariable199.GetComponent(typeof(LightSensor))); //IsContext = False IsNew = False
+				if(StoredVariable200 != null)
+				{
+					applicable = true;
+					OperandVar201 = applicable;
+				}
+			}
+			return (System.Boolean) (OperandVar201);
+		}
+        }
+        
+        public override bool OtherFilter() {
+
+		{
+			var root = this.root;
+			var other = this.other;
+			
+			//ContextStatement External External ContextSwitchInterpreter
+			System.Boolean applicable = false; //IsContext = False IsNew = False
+			
+			
+			System.Boolean OperandVar204 = default(System.Boolean); //IsContext = False IsNew = False
+			Actor StoredVariable202 = ((Actor)other.GetComponent(typeof(Actor))); //IsContext = False IsNew = False
+			if(StoredVariable202 != null)
+			{
+				LightSource StoredVariable203 = ((LightSource)StoredVariable202.GetComponent(typeof(LightSource))); //IsContext = False IsNew = False
+				if(StoredVariable203 != null)
+				{
+					applicable = true;
+					OperandVar204 = applicable;
+				}
+			}
+			return (System.Boolean) (OperandVar204);
+		}
+        }
+        
+        public override void Init() {
+base.Init();
+
+        }
     }
 }

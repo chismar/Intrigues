@@ -1,0 +1,11 @@
+test_metric = 
+{
+	weight = 50
+	value = 
+	{
+		val = other.light_source.brightness * light_sensor.light
+	}
+	scope = actor.light_sensor
+	other_scope = actor.light_source
+
+}

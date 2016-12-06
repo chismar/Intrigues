@@ -97,9 +97,13 @@ public class BasicLoader : MonoBehaviour
 			AppDomain.CurrentDomain.AssemblyResolve += Resolver;
 			loadedAsms.Add ("ExternalCode");
 			loadedAsms.Add ("BlackboardsData");
-			bbloader = new BlackboardsLoader (Engine);
-			bbloader.Init ();
-            metricsLoader = new RelationsMetricsLoader("ScriptedTypes", "metrics", typeof(RelationsMetrics.RelationDelegate), Engine);
+            loadedAsms.Add("AgentsDatabases_" + typeof(Fact).Name);
+            loadedAsms.Add("AgentsDatabases_" + typeof(BackstoryElement).Name);
+            bbloader = new BlackboardsLoader (Engine);
+            factsLoader = new AgentDatabaseLoader(engine, "facts", typeof(Fact));
+            backstoryFactsLoader = new AgentDatabaseLoader(engine, "backstory", typeof(BackstoryElement));
+            bbloader.Init (); factsLoader.Init(); backstoryFactsLoader.Init();
+            metricsLoader = new MetricsLoader("ScriptedTypes", engine);
 			//eaBar = FindObjectOfType<ProgressBarSet> ().CreateBar (Color.green, "eaBar");
 			compileThread = new Thread (() => {
 				try
@@ -121,8 +125,11 @@ public class BasicLoader : MonoBehaviour
 			Engine.AddAssembly (asm);
 			asm = Assembly.LoadFile ((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/Content.dll");
 			Engine.AddAssembly (asm);
-
-			yield return null;
+            asm = Assembly.LoadFile((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/" + "AgentsDatabases_" + typeof(Fact).Name + ".dll");
+            Engine.AddAssembly(asm);
+            asm = Assembly.LoadFile((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/" + "AgentsDatabases_" + typeof(BackstoryElement).Name + ".dll");
+            Engine.AddAssembly(asm);
+            yield return null;
 
 			//foreach (var bar in this.pluginBars)
 			//	bar.Expire ();
@@ -137,12 +144,14 @@ public class BasicLoader : MonoBehaviour
 
 	}
 
-    RelationsMetricsLoader metricsLoader;
+    MetricsLoader metricsLoader;
 	BlackboardsLoader bbloader;
-	//ProgressBar eaBar;
-	//ProgressBar genBar;
-    
-	void OnExternalsCompiled ()
+    AgentDatabaseLoader factsLoader;
+    AgentDatabaseLoader backstoryFactsLoader;
+    //ProgressBar eaBar;
+    //ProgressBar genBar;
+
+    void OnExternalsCompiled ()
 	{
 		var loader = new EventActionsLoader ("ScriptedTypes", Engine);
 		//loader.CurProgressUpdated += x => eaBar.CurValue = x;
@@ -171,8 +180,7 @@ public class BasicLoader : MonoBehaviour
         }
 
 
-
-
+        
         bbloader.AddType (typeof(GameObject), "gameobject");
 		bbloader.AddType (typeof(int), "int");
 		bbloader.AddType (typeof(float), "float");
@@ -186,7 +194,30 @@ public class BasicLoader : MonoBehaviour
             foreach (var entry in genScript.Entries)
 			Debug.Log (entry);
 
-		blackboardsScript.Interpret ();
+        factsLoader.AddType(typeof(GameObject), "gameobject");
+        factsLoader.AddType(typeof(int), "int");
+        factsLoader.AddType(typeof(float), "float");
+        factsLoader.AddType(typeof(string), "string");
+        factsLoader.AddType(typeof(bool), "bool");
+        Script factsScripts = new Script("facts", factsLoader, Engine);
+        scriptFiles = Directory.GetFiles((BasicLoader.IsInEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/Mods/Facts", "*.def");
+        foreach (var file in scriptFiles)
+            factsScripts.LoadFile(file);
+
+        backstoryFactsLoader.AddType(typeof(GameObject), "gameobject");
+        backstoryFactsLoader.AddType(typeof(int), "int");
+        backstoryFactsLoader.AddType(typeof(float), "float");
+        backstoryFactsLoader.AddType(typeof(string), "string");
+        backstoryFactsLoader.AddType(typeof(bool), "bool");
+        Script backstoryScripts = new Script("backstory", backstoryFactsLoader, Engine);
+        scriptFiles = Directory.GetFiles((BasicLoader.IsInEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/Mods/BackstoryFacts", "*.def");
+        foreach (var file in scriptFiles)
+            backstoryScripts.LoadFile(file);
+
+        backstoryScripts.Interpret();
+        factsScripts.Interpret();
+        blackboardsScript.Interpret ();
+
 		Engine.InitPlugins ();
 		genScript.Interpret ();
 
