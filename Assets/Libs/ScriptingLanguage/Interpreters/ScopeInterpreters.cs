@@ -181,3 +181,47 @@ public class ThisInterpreter : ScopeInterpreter
 		newContextType = thisVar.Type;
 	}
 }
+[ScopeInterpreter("metric")]
+public class MetricInterpreter : ScopeInterpreter
+{
+    public override void Interpret(Expression[] args, FunctionBlock block, Type contextType, string exprVal, out string newExprVal, out FunctionBlock newCurBlock, out Type newContextType, bool isLast)
+    {
+        
+        string rootRef = null;
+        if (args.Length == 2)
+            rootRef = block.FindStatement<DeclareVariableStatement>(v => v.IsContext && v.Type == typeof(GameObject)).Name;
+        else
+            rootRef = ExprInter.InterpretExpression(args[1], block).ExprString;
+
+        var metricName = args[0].ToString();
+        var otherRef = ExprInter.InterpretExpression(args[2], block).ExprString;
+        var varName = "metrics" + DeclareVariableStatement.VariableId++;
+        block.Statements.Add("var {1} = {0} != null?{0}.GetComponent<Metrics>():null;".Fmt(rootRef, varName));
+        newExprVal = "({0} != null? {0}.Value(\"{1}\", {2}) : 0f)".Fmt(varName, metricName, otherRef);
+        newContextType = typeof(float);
+        newCurBlock = block;
+    }
+}
+
+[ScopeInterpreter("weighted_metric")]
+public class WeightMetricInterpreter : ScopeInterpreter
+{
+    public override void Interpret(Expression[] args, FunctionBlock block, Type contextType, string exprVal, out string newExprVal, out FunctionBlock newCurBlock, out Type newContextType, bool isLast)
+    {
+
+        string rootRef = null;
+        if (args.Length == 2)
+            rootRef = block.FindStatement<DeclareVariableStatement>(v => v.IsContext && v.Type == typeof(GameObject)).Name;
+        else
+            rootRef = ExprInter.InterpretExpression(args[1], block).ExprString;
+
+        var metricName = args[0].ToString().ClearFromBraces();
+        var otherRef = ExprInter.InterpretExpression(args[2], block).ExprString;
+        var varName = "metrics" + DeclareVariableStatement.VariableId++;
+        block.Statements.Add("var {1} = {0} != null?{0}.GetComponent<Metrics>():null;".Fmt(rootRef, varName));
+        newExprVal = "({0} != null? {0}.Weight(\"{1}\", {2}) : 0f)".Fmt(varName, metricName, otherRef);
+        newContextType = typeof(float);
+        newCurBlock = block;
+    }
+}
+

@@ -1,0 +1,22 @@
+test_common_reaction(test_event) = 
+{
+	scope = target.actor
+	action = 
+	{
+		log = "reacted to an event"
+		visuals_feed.push(root) = target.entity.position
+	}
+}
+
+test_common_personal_reaction(test_event) = 
+{
+	feed = visual_sensor
+	scope = facts
+	
+	action = 
+	{
+		ev = facts.add_noticed_test_event
+		log = metric(test_metrics, target)
+		log = weighted_metric(test_metrics, target)
+	}
+}

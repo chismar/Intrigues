@@ -29,7 +29,7 @@ public class CacheInterpreter : FunctionOperatorInterpreter
 //				varDecl.IsArg = true;
 
 				var exprValue = exprInter.InterpretExpression (op.Context as Expression, block);
-				Debug.Log (exprValue.ExprString);
+				//Debug.Log (exprValue.ExprString);
 				var field = new CodeMemberField (exprValue.Type, varName);
 				field.UserData.Add ("type", exprValue.Type);
 				block.Type.Members.Add (field);

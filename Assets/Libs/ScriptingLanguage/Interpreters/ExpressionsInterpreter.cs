@@ -489,7 +489,7 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 					if (i == 0 && prop == null)
 					{
 						var customVar = block.FindStatement<DeclareVariableStatement> (v => v.Name == scope [i] as string);
-                        if (!ScriptEngine.CompileDebug)
+                        if (ScriptEngine.CompileDebug)
                             Debug.LogFormat("{0} - {1} custom var", scope[i], customVar);
 						if (customVar == null)
 						{

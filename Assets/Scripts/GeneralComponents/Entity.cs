@@ -10,11 +10,13 @@ public class Entity : MonoBehaviour {
     
     public string PrefabName { get; set; }
 
-    public void Position(float x, float y)
+    public void SetPosition(float x, float y)
     {
         transform.position = new Vector3(x, y);
     }
-
+    
+    public Vector3 Position {  get { return transform.position; } }
+    
     
     public void RandomPosition(float x, float y, float range)
     {

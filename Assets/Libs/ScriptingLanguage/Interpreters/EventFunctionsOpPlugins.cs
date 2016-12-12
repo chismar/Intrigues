@@ -24,6 +24,7 @@ public class EventFunctionOperators : ScriptEnginePlugin
 	{
 		switches = Engine.GetPlugin<ContextSwitchesPlugin> ();
 		exprInter = Engine.GetPlugin<ExpressionInterpreter> ();
+        
 	}
 
 	public void AddInterpreter (string name, FunctionOperatorInterpreter inter)
@@ -81,6 +82,7 @@ public class EventFunctionOperators : ScriptEnginePlugin
 				{
 					VarAssignInterpreter varInter = new VarAssignInterpreter ();
 					varInter.Var = customVar;
+                    //Debug.Log(exprInter);
 					varInter.Inter = exprInter;
 					inter = varInter;
 				} else
@@ -114,8 +116,17 @@ public class VarAssignInterpreter : FunctionOperatorInterpreter
 
 	public override void Interpret (Operator op, FunctionBlock block)
 	{
-		block.Statements.Add (String.Format ("{0} = {1};", Var.Name, Inter.InterpretExpression (op.Context as Expression, block).ExprString));
-	}
+        try
+        {
+            block.Statements.Add(String.Format("{0} = {1};", Var.Name, Inter.InterpretExpression(op.Context as Expression, block).ExprString));
+
+        }
+        catch(Exception e)
+        {
+            Debug.LogFormat("Something gone wrong in {0} with the variable operator {1}, {2}, {3}", block, op, Var, Inter);
+            Debug.LogError(e);
+        }
+    }
 }
 
 public class VarDeclareInterpreter : FunctionOperatorInterpreter

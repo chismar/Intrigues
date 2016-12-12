@@ -1,5 +1,6 @@
 test_metric = 
 {
+	category = test_metrics
 	weight = 50
 	value = 
 	{
@@ -8,4 +9,16 @@ test_metric =
 	scope = actor.light_sensor
 	other_scope = actor.light_source
 
+}
+
+test_metric_actors =
+{
+	category = test_metrics
+	weight = 30
+	value = 
+	{
+		val = 0.4
+	}
+	scope = actor
+	other_scope = actor
 }

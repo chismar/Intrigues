@@ -23,7 +23,8 @@ public abstract class PersonalReaction
 {
     public GameObject Root { get; set; }
     public abstract Event Event { get; set; }
-    public abstract bool Filter();
+    public abstract bool RootFilter();
+    public virtual bool EventFilter() { return true; }
     public abstract void Action();
     public ReactionAttribute Meta { get; set; }
 }
@@ -31,7 +32,7 @@ public abstract class PersonalReaction
 public class ReactionAttribute
 {
     public bool IsRepeatable { get; set; }
-    public string EventFeed { get; set; }
+    public Type EventFeed { get; set; }
     public Type EventType { get; set; }
 }
 public class ReactionsLoader : ScriptInterpreter
@@ -61,8 +62,9 @@ public class ReactionsLoader : ScriptInterpreter
             CurProgress = i;
             var entry = script.Entries[i];
 
-            var eTypeName = NameTranslator.CSharpNameFromScript(entry.Args[0].ToString());
-            var eType = Engine.FindType(eTypeName);
+            var eTypeName = NameTranslator.CSharpNameFromScript(entry.Args[0].ToString().ClearFromBraces());
+            Debug.Log(eTypeName);
+            var eType = Engine.GetType(eTypeName);
             CodeTypeDeclaration codeType = new CodeTypeDeclaration();
             //codeType.CustomAttributes.
             codeType.BaseTypes.Add(new CodeTypeReference(typeof(Reaction)));
@@ -76,13 +78,13 @@ public class ReactionsLoader : ScriptInterpreter
             if (ctx == null)
                 continue;
             var actionMethod = typeof(Reaction).GetMethod("Action");
-            var scopeMethod = typeof(Reaction).GetMethod("Filter");
+            var scopeMethod = typeof(Reaction).GetMethod("RootFilter");
+            var eventScopeMethod = typeof(Reaction).GetMethod("EventFilter");
             CodeAttributeDeclaration attr = new CodeAttributeDeclaration("EventActionAttribute");
             codeType.CustomAttributes.Add(attr);
             CodeAttributeArgument repeatableArg = new CodeAttributeArgument("IsRepeatable", new CodeSnippetExpression("false"));
-            CodeAttributeArgument eventFeedArg = new CodeAttributeArgument("EventFeed", new CodeSnippetExpression("\"\""));
+            CodeAttributeArgument eventFeedArg;
             CodeAttributeArgument eventTypeArg = new CodeAttributeArgument("EventType", new CodeSnippetExpression("\"\""));
-            attr.Arguments.Add(eventFeedArg);
             attr.Arguments.Add(repeatableArg);
             attr.Arguments.Add(eventTypeArg);
             FunctionBlock dependenciesBlock = new FunctionBlock(null, null, codeType);
@@ -95,7 +97,12 @@ public class ReactionsLoader : ScriptInterpreter
                     continue;
                 if (op.Identifier as string == "feed")
                 {
-                    eventFeedArg.Value = new CodeSnippetExpression((op.Context as InternalDSL.Expression).Operands[0].ToString());
+                    var feedTypeName = (op.Context as InternalDSL.Expression).Operands[0].ToString();
+                    var type = Engine.FindType(NameTranslator.CSharpNameFromScript(feedTypeName));
+                    eventFeedArg = new CodeAttributeArgument("EventFeed",
+                        new CodeSnippetExpression("typeof({0})".Fmt(type.Name)));
+
+                    attr.Arguments.Add(eventFeedArg);
                     //here I should change the reaction to personal one
                     codeType.BaseTypes.Clear();
                     codeType.BaseTypes.Add(typeof(PersonalReaction));
@@ -125,7 +132,29 @@ public class ReactionsLoader : ScriptInterpreter
                     eventField.Type = eType;
                     eventField.InitExpression = "false";
                     string eventVar = "var event = this.event;";
-                    CreateEventFunction("Filter", op.Context, codeType, scopeMethod, false, retVal, eventField, eventVar);
+                    CreateEventFunction("RootFilter", op.Context, codeType, scopeMethod, false, retVal, eventField, eventVar);
+                    //CreateFilterFunction (op.Context as Expression, codeType);
+
+                }
+                else if (op.Identifier as string == "event_scope")
+                {
+                    //It's a filter function
+                    //					Debug.Log (op.Context.GetType ());
+                    if (ScriptEngine.AnalyzeDebug)
+                        Debug.Log((op.Context as Expression).Operands[0].GetType());
+
+                    (((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts.Add("true");
+                    DeclareVariableStatement retVal = new DeclareVariableStatement();
+                    retVal.IsReturn = true;
+                    retVal.Name = "applicable";
+                    retVal.Type = typeof(bool);
+                    retVal.InitExpression = "false";
+                    DeclareVariableStatement eventField = new DeclareVariableStatement();
+                    eventField.Name = "event";
+                    eventField.Type = eType;
+                    eventField.InitExpression = "false";
+                    string eventVar = "var event = this.event;";
+                    CreateEventFunction("EventFilterFilter", op.Context, codeType, scopeMethod, false, retVal, eventField, eventVar);
                     //CreateFilterFunction (op.Context as Expression, codeType);
 
                 }

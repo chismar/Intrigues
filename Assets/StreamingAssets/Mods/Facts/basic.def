@@ -5,3 +5,5 @@ most_basic_fact =
 	reference = gameobject
 	flag = bool
 }
+
+noticed_test_event = yes

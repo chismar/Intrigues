@@ -100,6 +100,7 @@ public class BasicLoader : MonoBehaviour
             loadedAsms.Add("AgentsDatabases_" + typeof(Fact).Name);
             loadedAsms.Add("AgentsDatabases_" + typeof(BackstoryElement).Name);
             bbloader = new BlackboardsLoader (Engine);
+            reactionsLoader = new ReactionsLoader("reactions", engine);
             factsLoader = new AgentDatabaseLoader(engine, "facts", typeof(Fact));
             backstoryFactsLoader = new AgentDatabaseLoader(engine, "backstory", typeof(BackstoryElement));
             bbloader.Init (); factsLoader.Init(); backstoryFactsLoader.Init();
@@ -145,7 +146,8 @@ public class BasicLoader : MonoBehaviour
 	}
 
     MetricsLoader metricsLoader;
-	BlackboardsLoader bbloader;
+    ReactionsLoader reactionsLoader;
+    BlackboardsLoader bbloader;
     AgentDatabaseLoader factsLoader;
     AgentDatabaseLoader backstoryFactsLoader;
     //ProgressBar eaBar;
@@ -218,7 +220,9 @@ public class BasicLoader : MonoBehaviour
         factsScripts.Interpret();
         blackboardsScript.Interpret ();
 
-		Engine.InitPlugins ();
+        
+
+        Engine.InitPlugins ();
 		genScript.Interpret ();
 
         Script metricsScript = new Script("metrics", metricsLoader);
@@ -226,6 +230,12 @@ public class BasicLoader : MonoBehaviour
         foreach (var file in scriptFiles)
             metricsScript.LoadFile(file);
         metricsScript.Interpret();
+
+        Script reactionsScript = new Script("reactions", reactionsLoader);
+        scriptFiles = Directory.GetFiles((BasicLoader.IsInEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/Mods/Reactions", "*.def");
+        foreach (var file in scriptFiles)
+            reactionsScript.LoadFile(file);
+        reactionsScript.Interpret();
         var compiler = Engine.GetPlugin<ScriptCompiler> ();
 		compiler.Compile (OnAssemblyCompiled);
 	}

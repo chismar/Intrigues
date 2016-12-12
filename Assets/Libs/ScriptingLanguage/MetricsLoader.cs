@@ -23,7 +23,7 @@ public abstract class Metric
     }
     public abstract bool RootFilter();
     public abstract float Value();
-    public bool FullFilterOther()
+    public bool OtherFilterFull()
     {
         GameObject cachedRoot = root;
         root = other;
@@ -174,7 +174,7 @@ public class MetricsLoader : ScriptInterpreter
                     retVal.Name = "applicable";
                     retVal.Type = typeof(bool);
                     retVal.InitExpression = "false";
-                    Debug.Log(otherScopeMethod);
+                    //Debug.Log(otherScopeMethod);
                     CreateEventFunction("OtherFilter", op.Context, codeType, otherScopeMethod, false, retVal);
                     //CreateFilterFunction (op.Context as Expression, codeType);
 
@@ -299,7 +299,6 @@ public class MetricsLoader : ScriptInterpreter
         otherVar.Name = "other";
         otherVar.Type = typeof(GameObject);
         otherVar.IsArg = true;
-        otherVar.IsContext = true;
 
         block.Statements.Add(otherVar);
 
