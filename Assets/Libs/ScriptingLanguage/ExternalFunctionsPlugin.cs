@@ -70,6 +70,17 @@ public class ExternalFunctionsPlugin : ScriptEnginePlugin
 			var field = new CodeMemberField (providerType, providerName);
 			field.Attributes = MemberAttributes.Private | MemberAttributes.Static;
 			decl.Members.Add (field);
+            if(provider.Members == null || provider.Members.Length == 0)
+            {
+                var providerProperty = new CodeMemberProperty();
+                providerProperty.Type = field.Type;
+                providerProperty.Name = provider.Instance.GetType().Name;
+                providerProperty.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                providerProperty.HasGet = true;
+                providerProperty.HasSet = false;
+                providerProperty.GetStatements.Add(new CodeSnippetStatement(String.Format("return {0};", providerName)));
+                decl.Members.Add(providerProperty);
+            }
 			foreach (var member in provider.Members)
 			{
 				CurProgress++;

@@ -11,6 +11,29 @@ using System;
 using System.Threading;
 using System.Text;
 
+public abstract class Reaction
+{
+    public abstract Event Root { get; set; }
+    public abstract bool Filter();
+    public abstract void Action();
+    public ReactionAttribute Meta { get; set; }
+}
+
+public abstract class PersonalReaction
+{
+    public GameObject Root { get; set; }
+    public abstract Event Event { get; set; }
+    public abstract bool Filter();
+    public abstract void Action();
+    public ReactionAttribute Meta { get; set; }
+}
+
+public class ReactionAttribute
+{
+    public bool IsRepeatable { get; set; }
+    public string EventFeed { get; set; }
+    public Type EventType { get; set; }
+}
 public class ReactionsLoader : ScriptInterpreter
 {
     List<CodeTypeDeclaration> codeTypes = new List<CodeTypeDeclaration>();
@@ -32,13 +55,17 @@ public class ReactionsLoader : ScriptInterpreter
         MaxProgress = script.Entries.Count;
         for (int i = 0; i < script.Entries.Count; i++)
         {
+
             if (!Engine.Working)
                 Thread.CurrentThread.Abort();
             CurProgress = i;
             var entry = script.Entries[i];
+
+            var eTypeName = NameTranslator.CSharpNameFromScript(entry.Args[0].ToString());
+            var eType = Engine.FindType(eTypeName);
             CodeTypeDeclaration codeType = new CodeTypeDeclaration();
             //codeType.CustomAttributes.
-            codeType.BaseTypes.Add(new CodeTypeReference(typeof(EventAction)));
+            codeType.BaseTypes.Add(new CodeTypeReference(typeof(Reaction)));
             codeType.Name = entry.Identifier as string;
             codeTypes.Add(codeType);
 
@@ -48,104 +75,37 @@ public class ReactionsLoader : ScriptInterpreter
             var ctx = entry.Context as Context;
             if (ctx == null)
                 continue;
-            var actionMethod = typeof(EventAction).GetMethod("Action");
-            var utMethod = typeof(EventAction).GetMethod("Utility");
-            var scopeMethod = typeof(EventAction).GetMethod("Filter");
+            var actionMethod = typeof(Reaction).GetMethod("Action");
+            var scopeMethod = typeof(Reaction).GetMethod("Filter");
             CodeAttributeDeclaration attr = new CodeAttributeDeclaration("EventActionAttribute");
             codeType.CustomAttributes.Add(attr);
-            CodeAttributeArgument maxArg = new CodeAttributeArgument("ShouldHaveMaxUtility", new CodeSnippetExpression("false"));
-            CodeAttributeArgument onceArg = new CodeAttributeArgument("OncePerObject", new CodeSnippetExpression("false"));
-            CodeAttributeArgument oncePerTurnArg = new CodeAttributeArgument("OncePerTurn", new CodeSnippetExpression("false"));
-            CodeAttributeArgument aiActionArg = new CodeAttributeArgument("IsAIAction", new CodeSnippetExpression("false"));
-            CodeAttributeArgument interactionArg = new CodeAttributeArgument("IsInteraction", new CodeSnippetExpression("false"));
-            CodeAttributeArgument tooltipArg = new CodeAttributeArgument("Tooltip", new CodeSnippetExpression("\"\""));
-            CodeAttributeArgument onceInCategory = new CodeAttributeArgument("OnceInCategory", new CodeSnippetExpression("false"));
-            attr.Arguments.Add(maxArg);
-            attr.Arguments.Add(onceArg);
-            attr.Arguments.Add(oncePerTurnArg);
-            attr.Arguments.Add(aiActionArg);
-            attr.Arguments.Add(tooltipArg);
-            attr.Arguments.Add(onceInCategory);
-            attr.Arguments.Add(interactionArg);
+            CodeAttributeArgument repeatableArg = new CodeAttributeArgument("IsRepeatable", new CodeSnippetExpression("false"));
+            CodeAttributeArgument eventFeedArg = new CodeAttributeArgument("EventFeed", new CodeSnippetExpression("\"\""));
+            CodeAttributeArgument eventTypeArg = new CodeAttributeArgument("EventType", new CodeSnippetExpression("\"\""));
+            attr.Arguments.Add(eventFeedArg);
+            attr.Arguments.Add(repeatableArg);
+            attr.Arguments.Add(eventTypeArg);
             FunctionBlock dependenciesBlock = new FunctionBlock(null, null, codeType);
             List<string> deps = new List<string>();
+            bool isPersonal = false;
             for (int j = 0; j < ctx.Entries.Count; j++)
             {
                 var op = ctx.Entries[j] as Operator;
                 if (op == null)
                     continue;
-                if (op.Identifier as string == "tooltip")
+                if (op.Identifier as string == "feed")
                 {
-                    tooltipArg.Value = new CodeSnippetExpression((op.Context as InternalDSL.Expression).Operands[0].ToString());
-
+                    eventFeedArg.Value = new CodeSnippetExpression((op.Context as InternalDSL.Expression).Operands[0].ToString());
+                    //here I should change the reaction to personal one
+                    codeType.BaseTypes.Clear();
+                    codeType.BaseTypes.Add(typeof(PersonalReaction));
+                    isPersonal = true;
                 }
-                else if (op.Identifier as string == "ai_action")
+                else if (op.Identifier as string == "is_repeatable")
                 {
-                    aiActionArg.Value = new CodeSnippetExpression("true");
 
-                }
-                else if (op.Identifier as string == "once_per_category")
-                {
-                    onceInCategory.Value = new CodeSnippetExpression("true");
+                    repeatableArg.Value = new CodeSnippetExpression("true");
 
-                }
-                else if (op.Identifier as string == "only_max_utility")
-                {
-                    maxArg.Value = new CodeSnippetExpression((op.Context as InternalDSL.Expression).Operands[0].ToString());
-
-                }
-                else if (op.Identifier as string == "category")
-                {
-                    var cat = (((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts[0].ToString();
-                    var type = Engine.FindType("ScriptedTypes." + cat);
-                    if (type != null)
-                    {
-                        var props = type.GetProperties();
-                        codeType.BaseTypes.Add(type);
-
-                        foreach (var propInfo in props)
-                        {
-                            var prop = new CodeMemberProperty();
-                            prop.HasGet = true;
-                            prop.HasSet = true;
-                            prop.Name = propInfo.Name;
-                            prop.Type = new CodeTypeReference(propInfo.PropertyType);
-                            var fieldName = NameTranslator.ScriptNameFromCSharp(prop.Name);
-                            prop.GetStatements.Add(new CodeSnippetStatement(String.Format("return {0}; ", fieldName)));
-                            prop.SetStatements.Add(new CodeSnippetStatement(String.Format("{0} = value; ", fieldName)));
-                            prop.PrivateImplementationType = new CodeTypeReference(type);
-                            if (!codeType.UserData.Contains(fieldName))
-                            {
-                                var field = new CodeMemberField();
-                                field.Name = fieldName;
-                                field.Type = new CodeTypeReference(propInfo.PropertyType);
-                                codeType.Members.Add(field);
-                                codeType.UserData.Add(fieldName, field);
-                                field.UserData.Add("type", propInfo.PropertyType);
-                            }
-                            codeType.Members.Add(prop);
-                        }
-                    }
-                    else
-                    {
-
-                        if (!cNamespace.UserData.Contains(cat))
-                        {
-                            CodeTypeDeclaration catInterface = new CodeTypeDeclaration(cat);
-                            catInterface.IsInterface = true;
-                            cNamespace.Types.Add(catInterface);
-                            cNamespace.UserData.Add(cat, catInterface);
-                        }
-                        codeType.BaseTypes.Add(cat);
-                    }
-                }
-                else if (op.Identifier as string == "once_per_object")
-                {
-                    onceArg.Value = new CodeSnippetExpression("true");
-                }
-                else if (op.Identifier as string == "once_per_turn")
-                {
-                    oncePerTurnArg.Value = new CodeSnippetExpression("true");
                 }
                 else if (op.Identifier as string == "scope")
                 {
@@ -160,162 +120,47 @@ public class ReactionsLoader : ScriptInterpreter
                     retVal.Name = "applicable";
                     retVal.Type = typeof(bool);
                     retVal.InitExpression = "false";
-
-                    CreateEventFunction("Filter", op.Context, codeType, scopeMethod, false, retVal);
+                    DeclareVariableStatement eventField = new DeclareVariableStatement();
+                    eventField.Name = "event";
+                    eventField.Type = eType;
+                    eventField.InitExpression = "false";
+                    string eventVar = "var event = this.event;";
+                    CreateEventFunction("Filter", op.Context, codeType, scopeMethod, false, retVal, eventField, eventVar);
                     //CreateFilterFunction (op.Context as Expression, codeType);
-
-                }
-                else if (op.Identifier as string == "interaction")
-                {
-                    //It's a filter function
-                    //					Debug.Log (op.Context.GetType ());
-                    if (ScriptEngine.AnalyzeDebug)
-                        Debug.Log((op.Context as Expression).Operands[0].GetType());
-
-                    (((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts.Add("true");
-                    DeclareVariableStatement retVal = new DeclareVariableStatement();
-                    retVal.IsReturn = true;
-                    retVal.Name = "applicable";
-                    retVal.Type = typeof(bool);
-                    retVal.InitExpression = "false";
-
-                    CreateEventFunction("Interaction", op.Context, codeType, scopeMethod, false, retVal);
-                    interactionArg.Value = new CodeSnippetExpression("true");
-                    //CreateFilterFunction (op.Context as Expression, codeType);
-
-                    var type = typeof(EventInteraction);
-                    var props = type.GetProperties();
-                    codeType.BaseTypes.Add(type);
-
-                    foreach (var propInfo in props)
-                    {
-                        var prop = new CodeMemberProperty();
-                        prop.HasGet = true;
-                        prop.HasSet = true;
-                        prop.Name = propInfo.Name;
-                        prop.Type = new CodeTypeReference(propInfo.PropertyType);
-                        var fieldName = NameTranslator.ScriptNameFromCSharp(prop.Name);
-                        prop.GetStatements.Add(new CodeSnippetStatement(String.Format("return {0}; ", fieldName)));
-                        prop.SetStatements.Add(new CodeSnippetStatement(String.Format("{0} = value; ", fieldName)));
-                        prop.PrivateImplementationType = new CodeTypeReference(type);
-                        if (!codeType.UserData.Contains(fieldName))
-                        {
-                            var field = new CodeMemberField();
-                            field.Name = fieldName;
-                            field.Type = new CodeTypeReference(propInfo.PropertyType);
-                            codeType.Members.Add(field);
-                            codeType.UserData.Add(fieldName, field);
-                            field.UserData.Add("type", propInfo.PropertyType);
-                        }
-                        codeType.Members.Add(prop);
-                    }
-
 
                 }
                 else if (op.Identifier as string == "action")
                 {
                     //It's an action function
+                    
                     CreateEventFunction(op.Identifier as string, op.Context, codeType, actionMethod, true);
-                }
-                else if (op.Identifier as string == "utility")
-                {
-                    DeclareVariableStatement utVal = new DeclareVariableStatement();
-                    utVal.IsReturn = true;
-                    utVal.Name = "ut";
-                    utVal.Type = typeof(float);
-                    utVal.InitExpression = "0";
-                    CreateEventFunction(op.Identifier as string, op.Context, codeType, utMethod, false, utVal);
-                }
-                else if (op.Identifier as string == "depends")
-                {
-                    //Debug.Log(op);
-                    //Debug.Log(((op.Context as Expression).Operands[0] as ExprAtom).Content.GetType().Name);
-                    var ctor = ((((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts[0] as FunctionCall);
-                    var type = Engine.FindType(NameTranslator.CSharpNameFromScript(ctor.Name));
-                    MethodInfo initMethod = type.GetMethod("Init");
-                    var args = initMethod.GetParameters();
-                    bool hasInteractable = false;
-                    bool hasInitiator = false;
-                    foreach (var param in args)
-                    {
-                        if (param.Name == "interactable")
-                        {
-                            hasInteractable = true;
-                        }
-                        else if (param.Name == "initiator")
-                        {
-                            hasInitiator = true;
-                        }
-                    }
-                    builder.Length = 0;
-                    builder.Append("new ");
-                    builder.Append(type.FullName);
-                    builder.Append("().Init");
-                    builder.Append("(");
-                    if (hasInteractable)
-                    {
-                        builder.Append("this.root");
-                        builder.Append(",");
-                    }
-                    if (hasInitiator)
-                    {
-                        builder.Append("this.initiator");
-                        builder.Append(",");
-                    }
-
-                    foreach (var funcArg in ctor.Args)
-                    {
-                        builder.Append(exprInter.InterpretExpression(funcArg, dependenciesBlock).ExprString);
-                        builder.Append(",");
-                    }
-                    if (builder[builder.Length - 1] == ',')
-                        builder.Length = builder.Length - 1;
-                    builder.Append(")");
-                    deps.Add(builder.ToString());
-                }
-                else
-                {
-                    //No idea
+                    
                 }
             }
-            if (deps.Count > 0)
+            CodeMemberProperty eventRootProp = new CodeMemberProperty();
+            eventRootProp.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+            CodeMemberField eventRootField = new CodeMemberField();
+            eventRootProp.Type = new CodeTypeReference(typeof(Event));
+            eventTypeArg.Value = new CodeSnippetExpression("typeof({0})".Fmt(eTypeName));
+            eventRootField.Type = new CodeTypeReference(eType);
+            codeType.Members.Add(eventRootField);
+            codeType.Members.Add(eventRootProp);
+            if(isPersonal)
             {
-                CodeMemberMethod getDepsOverride = new CodeMemberMethod();
-                getDepsOverride.ReturnType = new CodeTypeReference(typeof(List<Dependency>));
-                getDepsOverride.Name = "GetDependencies";
-                getDepsOverride.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-                codeType.Members.Add(getDepsOverride);
-                string listName = "list" + DeclareVariableStatement.VariableId++;
-                string listOp = String.Format("var {0} = new System.Collections.Generic.List<Dependency>({1});", listName, deps.Count);
-                dependenciesBlock.Statements.Add(listOp);
-                var addToListBlock = new FunctionBlock(dependenciesBlock);
-                foreach (var newDep in deps)
-                {
-                    addToListBlock.Statements.Add(String.Format("{0}.Add({1});", listName, newDep));
-                }
-                dependenciesBlock.Statements.Add(addToListBlock);
-                dependenciesBlock.Statements.Add(String.Format("return {0};", listName));
-                getDepsOverride.Statements.Add(new CodeSnippetStatement(dependenciesBlock.ToString()));
-
+                eventRootProp.Name = "Event";
+                eventRootField.Name = "event";
+                eventRootProp.GetStatements.Add(new CodeSnippetStatement("return event;"));
+                eventRootProp.SetStatements.Add(new CodeSnippetStatement("event = value as {0};".Fmt(eTypeName)));
             }
-            CodeMemberMethod initOverrideMethod = new CodeMemberMethod();
-            initOverrideMethod.Name = "Init";
-            initOverrideMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-            codeType.Members.Add(initOverrideMethod);
-            builder.Length = 0;
-            builder.Append("base.Init();").AppendLine();
-            foreach (var member in codeType.Members)
+            else
             {
-                var field = member as CodeMemberField;
-                if (field != null)
-                {
-                    builder.Append("this.").Append(field.Name).Append(" = ").Append("default(").Append((field.UserData["type"] as Type).FullName).Append(");").AppendLine();
-
-                }
+                eventRootProp.Name = "Root";
+                eventRootField.Name = "root";
+                eventRootProp.GetStatements.Add(new CodeSnippetStatement("return root;"));
+                eventRootProp.SetStatements.Add(new CodeSnippetStatement("root = value as {0};".Fmt(eTypeName)));
             }
-            initOverrideMethod.Statements.Add(new CodeSnippetStatement(builder.ToString()));
-
         }
+       
         CurProgress = MaxProgress;
         foreach (var type in codeTypes)
         {
@@ -430,5 +275,14 @@ public class ReactionsLoader : ScriptInterpreter
         method.Statements.Add(new CodeSnippetStatement(block.ToString()));
 
 
+    }
+}
+
+
+public static class StringFormatExt
+{
+    public static string Fmt(this string str, params object[] args)
+    {
+        return string.Format(str, args);
     }
 }
