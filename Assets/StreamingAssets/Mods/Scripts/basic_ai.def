@@ -70,3 +70,20 @@ basic_move =
 		}
 	}
 }
+
+
+facts_notice =
+{
+	ai_action = yes
+	category = testing
+	scope = facts
+	utility = {
+		if(facts.has_noticed_test_event) = {
+			log = "Utility: noticed test event" + root
+			ut = 1
+		}
+	}
+	action = {
+		log = "I've noticed an event!"
+	}
+}

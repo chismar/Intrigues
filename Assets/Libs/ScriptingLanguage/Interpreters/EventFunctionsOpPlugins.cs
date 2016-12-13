@@ -47,18 +47,13 @@ public class EventFunctionOperators : ScriptEnginePlugin
             if (ScriptEngine.AnalyzeDebug)
                 Debug.Log ("Transformed op " + op.ToString ());
 		}
-		interpreters.TryGetValue (op.Identifier as string, out inter);
 
 		if (inter == null)
 		{
 			var customVar = block.FindStatement<DeclareVariableStatement> (v => v.Name == (op.Identifier as string));
 			if (customVar == null)
 			{
-				foreach (var interPair in interpreters)
-				{
-					if (interPair.Value.Match (op, block))
-						return interPair.Value;
-				}
+				
 				var context = block.FindStatement<ContextStatement> (c => (inter = c.InterpretInContext (op, block)) != null);
                 if (ScriptEngine.AnalyzeDebug)
                 {
@@ -67,10 +62,11 @@ public class EventFunctionOperators : ScriptEnginePlugin
                     else
                         Debug.LogWarningFormat("{0} is not an operator of context, not found one", op.Identifier);
                 }
-                    
-//				if (context != null)
-//					inter = context.InterpretInContext (op, block);
-				if (inter == null && op.Context is Expression)
+                if(inter == null)
+                interpreters.TryGetValue(op.Identifier as string, out inter);
+                //				if (context != null)
+                //					inter = context.InterpretInContext (op, block);
+                if (inter == null && op.Context is Expression)
 				{
 					VarDeclareInterpreter declInter = new VarDeclareInterpreter ();
 					declInter.Inter = exprInter;

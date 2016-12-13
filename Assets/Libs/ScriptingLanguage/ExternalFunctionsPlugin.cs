@@ -70,8 +70,10 @@ public class ExternalFunctionsPlugin : ScriptEnginePlugin
 			var field = new CodeMemberField (providerType, providerName);
 			field.Attributes = MemberAttributes.Private | MemberAttributes.Static;
 			decl.Members.Add (field);
-            if(provider.Members == null || provider.Members.Length == 0)
+            Debug.Log("provider {0} members count {1}".Fmt(provider.Name, provider.Members.Length));
+            if (provider.Members == null || provider.Members.Length == 0)
             {
+                Debug.Log("provider as is " + provider.Name);
                 var providerProperty = new CodeMemberProperty();
                 providerProperty.Type = field.Type;
                 providerProperty.Name = provider.Instance.GetType().Name;

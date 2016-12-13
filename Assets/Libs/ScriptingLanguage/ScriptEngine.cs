@@ -73,8 +73,12 @@ public class ScriptEngine
 	{
 		return allTypes.Find (x => x.Name == name);
 	}
-
-	public struct TypeAttributePair<T> where T : Attribute
+    public void ListTypes()
+    {
+        foreach (var type in allTypes)
+            Debug.Log(type.Name);
+    }
+    public struct TypeAttributePair<T> where T : Attribute
 	{
 		public Type Type;
 		public T Attribute;

@@ -1,0 +1,11 @@
+npc_has_facts_and_backstory = 
+{
+	once_per_object = yes
+	scope = actor.entity
+	utility = 1
+	action = 
+	{
+		create = facts
+		create = backstory
+	}
+}

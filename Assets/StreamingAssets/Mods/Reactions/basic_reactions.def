@@ -15,7 +15,8 @@ test_common_personal_reaction(test_event) =
 	
 	action = 
 	{
-		ev = facts.add_noticed_test_event
+		facts.if(not has_noticed_test_event).ev = add_noticed_test_event
+		log = root + "has_noticed_test_event = " + facts.has_noticed_test_event
 		log = metric(test_metrics, target)
 		log = weighted_metric(test_metrics, target)
 	}

@@ -485,16 +485,19 @@ public class ContextPropertyInterpreter : FunctionOperatorInterpreter
 
         if (ScriptEngine.AnalyzeDebug)
             Debug.Log (block);
-		var sCtx = block.FindStatement<ContextStatement> (v => v.InterpretInContext (op, block) != null && v.ContextVar.IsContext || v.ContextVar.IsArg);
-		var context = sCtx != null ? sCtx.ContextVar : null;
+		var sCtx = block.FindStatement<ContextStatement> (v => v.InterpretInContext (op, block) != null && (v.ContextVar.IsContext || v.ContextVar.IsArg));
+        
+        var context = sCtx != null ? sCtx.ContextVar : null;
         if (ScriptEngine.AnalyzeDebug)
             Debug.LogFormat ("FOUND COUNTEXT {0} for {1}", context, op.Identifier);
-		if (listT == null)
+        if (listT == null)
 		{
-			if (!(op.Context is Expression))
+            
+            if (!(op.Context is Expression))
 				return;
             if (ScriptEngine.AnalyzeDebug)
                 Debug.Log ("PROPERTY " + propName);
+            
 			if (context == null)
 				block.Statements.Add (String.Format ("root.{0} = ({2})({1});", propName, exprInter.InterpretExpression (op.Context as Expression, block).ExprString, TypeName.NameOf (propType)));
 			else
@@ -699,7 +702,7 @@ public class ContextPropertySwitchInterpreter : ContextPropertyInterpreter
 		DeclareVariableStatement contextVar = block.FindStatement<DeclareVariableStatement> (v => v.Name == varName);
 		if (contextVar == null)
 		{
-			var sCtx = block.FindStatement<ContextStatement> (v => v.InterpretInContext (op, block) != null && v.ContextVar.IsContext);
+			var sCtx = block.FindStatement<ContextStatement> (v => v.InterpretInContext (op, block) != null && (v.ContextVar.IsContext || v.ContextVar.IsArg));
 			contextVar = sCtx != null ? sCtx.ContextVar : null;
 		}
 

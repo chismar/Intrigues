@@ -193,8 +193,8 @@ public class MetricInterpreter : ScopeInterpreter
         else
             rootRef = ExprInter.InterpretExpression(args[1], block).ExprString;
 
-        var metricName = args[0].ToString();
-        var otherRef = ExprInter.InterpretExpression(args[2], block).ExprString;
+        var metricName = args[0].ToString().ClearFromBraces().Trim(' ');
+        var otherRef = ExprInter.InterpretExpression(args.Length == 2? args[1] : args[2], block).ExprString;
         var varName = "metrics" + DeclareVariableStatement.VariableId++;
         block.Statements.Add("var {1} = {0} != null?{0}.GetComponent<Metrics>():null;".Fmt(rootRef, varName));
         newExprVal = "({0} != null? {0}.Value(\"{1}\", {2}) : 0f)".Fmt(varName, metricName, otherRef);
@@ -215,8 +215,8 @@ public class WeightMetricInterpreter : ScopeInterpreter
         else
             rootRef = ExprInter.InterpretExpression(args[1], block).ExprString;
 
-        var metricName = args[0].ToString().ClearFromBraces();
-        var otherRef = ExprInter.InterpretExpression(args[2], block).ExprString;
+        var metricName = args[0].ToString().ClearFromBraces().Trim(' ');
+        var otherRef = ExprInter.InterpretExpression(args.Length == 2 ? args[1] : args[2], block).ExprString;
         var varName = "metrics" + DeclareVariableStatement.VariableId++;
         block.Statements.Add("var {1} = {0} != null?{0}.GetComponent<Metrics>():null;".Fmt(rootRef, varName));
         newExprVal = "({0} != null? {0}.Weight(\"{1}\", {2}) : 0f)".Fmt(varName, metricName, otherRef);

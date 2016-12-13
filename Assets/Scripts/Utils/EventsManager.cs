@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using System;
+using System.Text;
 
 public class EventsManager : Root<EventsManager>
 {
@@ -72,10 +73,11 @@ public class EventsManager : Root<EventsManager>
             var list = feedDictionary.Get(reaction.Meta.EventType);
             list.Add(reaction);
         }
+        StartCoroutine(TestCoroutine());
     }
     IEnumerator TestCoroutine()
     {
-        yield return new WaitForSeconds(5);
+        yield return new WaitForSeconds(1);
         var utils = FindObjectOfType<ExternalUtilities>();
         var story = FindObjectOfType<Story>();
         while (true)
@@ -92,9 +94,12 @@ public class EventsManager : Root<EventsManager>
         }
     }
 
+    StringBuilder builder = new StringBuilder();
     List<Sensor> cachedSensors = new List<Sensor>();
     public void InitReactions(GameObject go)
     {
+        builder.Length = 0;
+        builder.Append("REACTIONS FOR: ").AppendLine(go.name);
         cachedSensors.Clear();
         go.GetComponents<Sensor>(cachedSensors);
         foreach(var sensor in cachedSensors)
@@ -110,11 +115,16 @@ public class EventsManager : Root<EventsManager>
                     var cachedRoot = reaction.Root;
                     reaction.Root = go;
                     if (reaction.RootFilter())
+                    {
+
                         sensorList.Add(reaction);
+                        builder.Append("  ").AppendLine(reaction.GetType().Name);
+                    }
                     reaction.Root = cachedRoot;
                 }
             }
         }
+        Debug.Log(builder.ToString());
     }
 }
 public class TestEvent : Event
@@ -125,6 +135,7 @@ public class Event
 {
     public GameObject Root;
     public HashSet<object> Reacted = new HashSet<object>();
+    public HashSet<object> PersonalReacted = new HashSet<object>();
     //should be in the events manager class
     List<EventsFeedClass> allFeeds = new List<EventsFeedClass>();
 
@@ -132,6 +143,7 @@ public class Event
     public void Init()
     {
         Reacted.Clear();
+        PersonalReacted.Clear();
     }
     public void Update()
     {
@@ -166,52 +178,11 @@ public abstract class EventsFeed
 
 public abstract class EventsFeedClass : MonoBehaviour
 { 
-    private void Awake()
+    public void Awake()
     {
+        Debug.Log(GetType().Name);
         FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this));
     }
-    
-}
-
-public class VisualsFeed : EventsFeedClass
-{
-
-    List<WeakReference> objectsFeeds = new List<WeakReference>();
-    public void Push(Event e, Vector3 position)
-    {
-        for ( int i =0; i < objectsFeeds.Count;i++)
-        {
-            if(!objectsFeeds[i].IsAlive)
-            {
-                objectsFeeds.RemoveAt(i);
-                i--;
-                continue;
-            }
-            var sensor = objectsFeeds[i].Target as VisualSensor;
-            if(sensor.IsVisibleToYou(position))
-            {
-                var reactions = sensor.GetReactionsTo(e.GetType());
-                for ( int j = 0; j < reactions.Count; j++)
-                {
-                    var reaction = reactions[i];
-                    if (reaction.Meta.IsRepeatable || !e.Reacted.Contains(reaction))
-                    {
-                        var cachedEvent = reaction.Event;
-                        reaction.Root = sensor.gameObject;
-                        reaction.Event = e;
-                        reaction.Action();
-                        e.Reacted.Add(reaction);
-                        reaction.Event = cachedEvent;
-                    }
-                }
-            }
-        }
-    }
-    public void AddFeed(VisualSensor sensor)
-    {
-        objectsFeeds.Add(new WeakReference(sensor));
-    }
-
     
 }
 
@@ -227,13 +198,6 @@ public class Sensor : MonoBehaviour
     }
 }
 
-public class VisualSensor : Sensor
-{
-    public bool IsVisibleToYou(Vector3 point)
-    {
-        return true;
-    }
-}
 
 public static class DictionaryExtensions
 {

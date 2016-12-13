@@ -6,8 +6,8 @@ using System.Text;
 
 public class Actor : MonoBehaviour {
 
-    Dictionary<Type, List<EventAction>> actionsSet = null;
-    List<EventAction> allActions = new List<EventAction>();
+    public Dictionary<Type, List<EventAction>> actionsSet = null;
+    public List<EventAction> allActions = new List<EventAction>();
     Dictionary<Type, int> actionsInUse = new Dictionary<Type, int>();
     Stack<ActionWrapper> actionsStack = new Stack<ActionWrapper>();
     ActionWrapper curAction = null;
@@ -18,20 +18,11 @@ public class Actor : MonoBehaviour {
     }
     private void Start()
     {
-        StartCoroutine(InitCoroutine());
         fuzziness  = new System.Random(UnityEngine.Random.Range(0, 500));
         Story.Instance.AttachNPC(gameObject);
     }
 
-    IEnumerator InitCoroutine()
-    {
-        while (!Actions.Instance.Loaded)
-            yield return null;
-        actionsSet = Actions.Instance.FormActionsSet(gameObject);
-        foreach (var cat in actionsSet)
-            foreach (var action in cat.Value)
-                allActions.Add(action);
-    }
+    
     System.Random fuzziness;
     private void Update()
     {
@@ -81,13 +72,13 @@ public class Actor : MonoBehaviour {
         List<EventAction> actions = allActions;
         if (category != null)
             actionsSet.TryGetValue(category, out actions);
-        //builder.Length = 0;
-        //builder.Append("Actor choosing action: ");
-        //builder.Append(gameObject.name).AppendLine();
+        builder.Length = 0;
+        builder.Append("Actor choosing action: ");
+        builder.Append(gameObject.name).AppendLine();
         foreach (var action in actions)
         {
             EventAction a = action;
-            //builder.Append(action.GetType().Name).Append(" ");
+            builder.Append(action.GetType().Name).Append(" ");
             int countUsed = 0;
             if (actionsInUse.TryGetValue(action.GetType(), out countUsed))
             {
@@ -99,7 +90,7 @@ public class Actor : MonoBehaviour {
             a.Root = gameObject;
             var ut = a.Utility();
             ut = ut * (1f + ((float)fuzziness.NextDouble() - 0.5f) * 2f * 0.1f);
-            //builder.Append(ut).Append(" ").Append(a.State).AppendLine();
+            builder.Append(ut).Append(" ").Append(a.State).AppendLine();
             var deps = a.GetDependencies();
             if (ut > maxUt && Traverse(deps))
             {
@@ -108,7 +99,7 @@ public class Actor : MonoBehaviour {
                 maxDeps = deps;
             }
         }
-        //Debug.Log(builder.ToString());
+        Debug.Log(builder.ToString());
         return maxAction;
     }
     public bool CanDo(Type interactionType)

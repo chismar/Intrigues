@@ -21,7 +21,8 @@ public abstract class Reaction
 
 public abstract class PersonalReaction
 {
-    public GameObject Root { get; set; }
+    protected GameObject root;
+    public GameObject Root { get { return root; } set { root = value; } }
     public abstract Event Event { get; set; }
     public abstract bool RootFilter();
     public virtual bool EventFilter() { return true; }
@@ -29,7 +30,7 @@ public abstract class PersonalReaction
     public ReactionAttribute Meta { get; set; }
 }
 
-public class ReactionAttribute
+public class ReactionAttribute : Attribute
 {
     public bool IsRepeatable { get; set; }
     public Type EventFeed { get; set; }
@@ -62,9 +63,11 @@ public class ReactionsLoader : ScriptInterpreter
             CurProgress = i;
             var entry = script.Entries[i];
 
-            var eTypeName = NameTranslator.CSharpNameFromScript(entry.Args[0].ToString().ClearFromBraces());
-            Debug.Log(eTypeName);
+            var eTypeName = NameTranslator.CSharpNameFromScript(entry.Args[0].ToString().ClearFromBraces()).TrimEnd(' ');
+            //Debug.Log(eTypeName);
+            //Engine.ListTypes();
             var eType = Engine.GetType(eTypeName);
+            //Debug.Log(eType);
             CodeTypeDeclaration codeType = new CodeTypeDeclaration();
             //codeType.CustomAttributes.
             codeType.BaseTypes.Add(new CodeTypeReference(typeof(Reaction)));
@@ -78,9 +81,11 @@ public class ReactionsLoader : ScriptInterpreter
             if (ctx == null)
                 continue;
             var actionMethod = typeof(Reaction).GetMethod("Action");
-            var scopeMethod = typeof(Reaction).GetMethod("RootFilter");
-            var eventScopeMethod = typeof(Reaction).GetMethod("EventFilter");
-            CodeAttributeDeclaration attr = new CodeAttributeDeclaration("EventActionAttribute");
+            var scopeMethod = typeof(Reaction).GetMethod("Filter");
+            var personalScopeMethod = typeof(PersonalReaction).GetMethod("RootFilter");
+            var eventScopeMethod = typeof(PersonalReaction).GetMethod("EventFilter");
+
+            CodeAttributeDeclaration attr = new CodeAttributeDeclaration("ReactionAttribute");
             codeType.CustomAttributes.Add(attr);
             CodeAttributeArgument repeatableArg = new CodeAttributeArgument("IsRepeatable", new CodeSnippetExpression("false"));
             CodeAttributeArgument eventFeedArg;
@@ -97,7 +102,7 @@ public class ReactionsLoader : ScriptInterpreter
                     continue;
                 if (op.Identifier as string == "feed")
                 {
-                    var feedTypeName = (op.Context as InternalDSL.Expression).Operands[0].ToString();
+                    var feedTypeName = (op.Context as InternalDSL.Expression).Operands[0].ToString().ClearFromBraces().TrimEnd(' ');
                     var type = Engine.FindType(NameTranslator.CSharpNameFromScript(feedTypeName));
                     eventFeedArg = new CodeAttributeArgument("EventFeed",
                         new CodeSnippetExpression("typeof({0})".Fmt(type.Name)));
@@ -127,12 +132,20 @@ public class ReactionsLoader : ScriptInterpreter
                     retVal.Name = "applicable";
                     retVal.Type = typeof(bool);
                     retVal.InitExpression = "false";
-                    DeclareVariableStatement eventField = new DeclareVariableStatement();
-                    eventField.Name = "event";
-                    eventField.Type = eType;
-                    eventField.InitExpression = "false";
-                    string eventVar = "var event = this.event;";
-                    CreateEventFunction("RootFilter", op.Context, codeType, scopeMethod, false, retVal, eventField, eventVar);
+
+                    if (isPersonal)
+                    {
+                        DeclareVariableStatement eventField = new DeclareVariableStatement();
+                        eventField.Name = "e";
+                        eventField.Type = eType;
+                        eventField.InitExpression = "false";
+                        eventField.IsArg = true;
+                        string eventVar = "var e = this.e;";
+                        CreateEventFunction("RootFilter", op.Context, typeof(GameObject), codeType, personalScopeMethod, false, retVal, eventField, eventVar);
+
+                    }
+                    else
+                        CreateEventFunction("Filter", op.Context, eType, codeType, scopeMethod, false, retVal);
                     //CreateFilterFunction (op.Context as Expression, codeType);
 
                 }
@@ -150,20 +163,32 @@ public class ReactionsLoader : ScriptInterpreter
                     retVal.Type = typeof(bool);
                     retVal.InitExpression = "false";
                     DeclareVariableStatement eventField = new DeclareVariableStatement();
-                    eventField.Name = "event";
+                    eventField.Name = "e";
                     eventField.Type = eType;
                     eventField.InitExpression = "false";
-                    string eventVar = "var event = this.event;";
-                    CreateEventFunction("EventFilterFilter", op.Context, codeType, scopeMethod, false, retVal, eventField, eventVar);
+                    eventField.IsArg = true;
+                    string eventVar = "var e = this.e;";
+                    CreateEventFunction("EventFilter", op.Context, typeof(GameObject), codeType, eventScopeMethod, false, retVal, eventField, eventVar);
+
                     //CreateFilterFunction (op.Context as Expression, codeType);
 
                 }
                 else if (op.Identifier as string == "action")
                 {
                     //It's an action function
-                    
-                    CreateEventFunction(op.Identifier as string, op.Context, codeType, actionMethod, true);
-                    
+                    if(isPersonal)
+                    {
+                        DeclareVariableStatement eventField = new DeclareVariableStatement();
+                        eventField.Name = "e";
+                        eventField.Type = eType;
+                        eventField.InitExpression = "false";
+                        eventField.IsArg = true;
+                        string eventVar = "var e = this.e;";
+                        CreateEventFunction(op.Identifier as string, op.Context, typeof(GameObject), codeType, actionMethod, false, eventField, eventVar);
+                    }
+                    else
+                    CreateEventFunction(op.Identifier as string, op.Context, eType, codeType, actionMethod, false);
+
                 }
             }
             CodeMemberProperty eventRootProp = new CodeMemberProperty();
@@ -177,9 +202,9 @@ public class ReactionsLoader : ScriptInterpreter
             if(isPersonal)
             {
                 eventRootProp.Name = "Event";
-                eventRootField.Name = "event";
-                eventRootProp.GetStatements.Add(new CodeSnippetStatement("return event;"));
-                eventRootProp.SetStatements.Add(new CodeSnippetStatement("event = value as {0};".Fmt(eTypeName)));
+                eventRootField.Name = "e";
+                eventRootProp.GetStatements.Add(new CodeSnippetStatement("return e;"));
+                eventRootProp.SetStatements.Add(new CodeSnippetStatement("e = value as {0};".Fmt(eTypeName)));
             }
             else
             {
@@ -205,7 +230,7 @@ public class ReactionsLoader : ScriptInterpreter
     }
 
 
-    void CreateEventFunction(string name, object context, CodeTypeDeclaration codeType, MethodInfo baseMethod, bool isAction, params object[] initStatements)
+    void CreateEventFunction(string name, object context, Type rootType, CodeTypeDeclaration codeType, MethodInfo baseMethod, bool isAction, params object[] initStatements)
     {
         CodeMemberMethod method = new CodeMemberMethod();
         method.Name = NameTranslator.CSharpNameFromScript(name);
@@ -246,7 +271,7 @@ public class ReactionsLoader : ScriptInterpreter
         }
         var rootVar = new DeclareVariableStatement();
         rootVar.Name = "root";
-        rootVar.Type = typeof(GameObject);
+        rootVar.Type = rootType;
         rootVar.IsArg = true;
         rootVar.IsContext = true;
 

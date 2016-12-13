@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using System.Text;
 
 public class MetricsManager : Root<MetricsManager>
 {
@@ -39,12 +40,18 @@ public class MetricsManager : Root<MetricsManager>
         }
     }
 
-
-    public void InitMetrics(Metrics metricsCmp)
+    StringBuilder builder = new StringBuilder();
+    public void InitMetrics(GameObject go)
     {
-        
+        builder.Length = 0;
+        builder.Append("METRICS FOR: ");
+        builder.AppendLine(go.name);
+        Metrics metricsCmp = go.GetComponent<Metrics>();
+        if (metricsCmp == null)
+            return;
         foreach (var cat in metrics)
         {
+
             List<Metric> list = new List<Metric>();
             foreach ( var metric in cat.Value)
             {
@@ -53,52 +60,15 @@ public class MetricsManager : Root<MetricsManager>
                     list.Add(metric);
             }
             if (list.Count > 0)
+            {
                 metricsCmp.Dictionary.Add(cat.Key, list);
-        }
-    }
-}
-
-public class Metrics : MonoBehaviour
-{
-    public Dictionary<string, List<Metric>> Dictionary = new Dictionary<string, List<Metric>>();
-
-    public float Value(string metricCategory, GameObject other)
-    {
-        List<Metric> catMetrics = null;
-        if(Dictionary.TryGetValue(metricCategory, out catMetrics))
-        {
-            float result = 0f;
-            foreach ( var metric in catMetrics)
-            {
-                var cachedOther = metric.Other;
-                var cachedRoot = metric.Root;
-                metric.Other = other;
-                metric.Root = gameObject;
-                result += metric.OtherFilterFull()?metric.Value():0f;
-                metric.Other = cachedOther;
-                metric.Root = cachedRoot;
+                builder.AppendLine(cat.Key);
+                foreach (var metric in list)
+                {
+                    builder.Append("  ").AppendLine(metric.GetType().Name);
+                }
             }
         }
-        return 0f;
-    }
-
-    public float Weight(string metricCategory, GameObject other)
-    {
-        List<Metric> catMetrics = null;
-        if (Dictionary.TryGetValue(metricCategory, out catMetrics))
-        {
-            float result = 0f;
-            foreach (var metric in catMetrics)
-            {
-                var cachedOther = metric.Other;
-                var cachedRoot = metric.Root;
-                metric.Other = other;
-                metric.Root = gameObject;
-                result += metric.OtherFilterFull() ? metric.Value() * metric.Meta.Weight: 0f;
-                metric.Other = cachedOther;
-                metric.Root = cachedRoot;
-            }
-        }
-        return 0f;
+        Debug.Log(builder.ToString());
     }
 }
