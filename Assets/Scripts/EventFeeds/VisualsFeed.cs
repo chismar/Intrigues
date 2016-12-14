@@ -16,6 +16,8 @@ public class VisualsFeed : EventsFeedClass
             {
                 Debug.Log("SENSOR NOTICED EVENT: " + sensor);
                 var reactions = sensor.GetReactionsTo(e.GetType());
+                if (reactions == null)
+                    continue;
                 e.PersonalReacted.Clear();
                 for (int j = 0; j < reactions.Count; j++)
                 {

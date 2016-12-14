@@ -52,6 +52,7 @@ public class Actor : MonoBehaviour {
         }
     }
 
+    static bool DebugFindAction = false;
     StringBuilder builder = new StringBuilder();
     void ChooseAction(Type category = null)
     {
@@ -72,13 +73,18 @@ public class Actor : MonoBehaviour {
         List<EventAction> actions = allActions;
         if (category != null)
             actionsSet.TryGetValue(category, out actions);
-        builder.Length = 0;
-        builder.Append("Actor choosing action: ");
-        builder.Append(gameObject.name).AppendLine();
+        if(DebugFindAction)
+        {
+            builder.Length = 0;
+            builder.Append("Actor choosing action: ");
+            builder.Append(gameObject.name).AppendLine();
+        }
+        
         foreach (var action in actions)
         {
             EventAction a = action;
-            builder.Append(action.GetType().Name).Append(" ");
+            if (DebugFindAction)
+                builder.Append(action.GetType().Name).Append(" ");
             int countUsed = 0;
             if (actionsInUse.TryGetValue(action.GetType(), out countUsed))
             {
@@ -90,7 +96,8 @@ public class Actor : MonoBehaviour {
             a.Root = gameObject;
             var ut = a.Utility();
             ut = ut * (1f + ((float)fuzziness.NextDouble() - 0.5f) * 2f * 0.1f);
-            builder.Append(ut).Append(" ").Append(a.State).AppendLine();
+            if (DebugFindAction)
+                builder.Append(ut).Append(" ").Append(a.State).AppendLine();
             var deps = a.GetDependencies();
             if (ut > maxUt && Traverse(deps))
             {
@@ -99,7 +106,8 @@ public class Actor : MonoBehaviour {
                 maxDeps = deps;
             }
         }
-        Debug.Log(builder.ToString());
+        if (DebugFindAction)
+            Debug.Log(builder.ToString());
         return maxAction;
     }
     public bool CanDo(Type interactionType)
