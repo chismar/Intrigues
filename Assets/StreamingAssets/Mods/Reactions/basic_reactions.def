@@ -3,7 +3,6 @@ test_common_reaction(test_event) =
 	scope = target.actor
 	action = 
 	{
-		log = "reacted to an event"
 		visuals_feed.push(root) = target.entity.position
 	}
 }

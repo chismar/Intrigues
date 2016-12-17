@@ -9,3 +9,16 @@ npc_has_facts_and_backstory =
 		create = backstory
 	}
 }
+
+
+player_has_controls = 
+{
+	once_per_object = yes
+	scope = player_marker
+	utility = 1
+	action = {
+		create = movable_controller
+		create = turn_follow_mouse_controller
+		create = interactable_controller
+	}
+}

@@ -14,7 +14,7 @@ public class VisualsFeed : EventsFeedClass
             var sensor = objectsFeeds[i];
             if (sensor.IsVisibleToYou(position))
             {
-                Debug.Log("SENSOR NOTICED EVENT: " + sensor);
+                //Debug.Log("SENSOR NOTICED EVENT: " + sensor);
                 var reactions = sensor.GetReactionsTo(e.GetType());
                 if (reactions == null)
                     continue;

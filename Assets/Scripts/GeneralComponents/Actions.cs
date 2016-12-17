@@ -356,7 +356,35 @@ public class Actions : Root<Actions>
         }
         return set;            
     }
-    
+
+    public Dictionary<Type, List<EventAction>> FormInteractionsSet(GameObject go)
+    {
+        //Debug.Log("Forming actions set", go);
+        Dictionary<Type, List<EventAction>> set = new Dictionary<Type, List<EventAction>>();
+        foreach (var cat in interactionsByCategory)
+        {
+            var list = listsPool.Get();
+            //Debug.Log(cat.Key.Name);
+            foreach (var action in cat.Value)
+            {
+
+                //Debug.LogFormat("Check {0} to {1}", action.GetType().Name, go);
+                
+                var prevRoot = action.Root;
+                action.Root = go;
+
+                if (action.Interaction())
+                    list.Add(GetAction(action.GetType()));
+                action.Root = prevRoot;
+            }
+            if (list.Count == 0)
+                listsPool.Return(list);
+            else
+                set.Add(cat.Key, list);
+        }
+        return set;
+    }
+
     public void NotifyOfAct(GameObject go, EventAction action)
     {
         if (action.Meta.OncePerObject || action.Meta.OnceInCategory)

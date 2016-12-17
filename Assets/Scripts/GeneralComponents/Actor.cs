@@ -7,6 +7,8 @@ using System.Text;
 public class Actor : MonoBehaviour {
 
     public Dictionary<Type, List<EventAction>> actionsSet = null;
+    public Dictionary<Type, List<EventAction>> interactionsSet = null;
+    public List<EventAction> allInteractions = new List<EventAction>();
     public List<EventAction> allActions = new List<EventAction>();
     Dictionary<Type, int> actionsInUse = new Dictionary<Type, int>();
     Stack<ActionWrapper> actionsStack = new Stack<ActionWrapper>();
@@ -34,8 +36,9 @@ public class Actor : MonoBehaviour {
         {
             //Debug.Log("Update " + curAction.Action.GetType().Name);
             curAction.Update(this);
-            if(curAction.Action.State == EventAction.ActionState.Failed || curAction.Action.State == EventAction.ActionState.Finished)
+            if(curAction.Action.State == EventAction.ActionState.Finished)
             {
+                
                 //Debug.Log(curAction.Action.State);
                 var aType = curAction.GetType();
                 int countUsed = 0;
@@ -48,6 +51,12 @@ public class Actor : MonoBehaviour {
                 }
 
                 curAction = actionsStack.Count > 0 ? actionsStack.Pop() : null;
+            }
+            else if(curAction.Action.State == EventAction.ActionState.Failed)
+            {
+                actionsStack.Clear();
+                curAction = null;
+                actionsInUse.Clear();
             }
         }
     }
@@ -113,6 +122,7 @@ public class Actor : MonoBehaviour {
     public bool CanDo(Type interactionType)
     {
         var a =  Actions.Instance.GetAction(interactionType);
+        //(a as EventInteraction).Initiator = gameObject;
         a.Root = gameObject;
         bool res =  a.Interaction();
         return res;
@@ -198,6 +208,7 @@ public class ActionWrapper
     public EventAction Action;
     public List<Dependency> Deps;
     Dependency currentDep;
+
     public void Update(Actor actor)
     {
         if(Action.State == EventAction.ActionState.None)
@@ -219,8 +230,10 @@ public class ActionWrapper
             }
             if (satisfied)
             {
-                //Debug.Log("Performing " + Action.GetType().Name);
-                Action.Action();
+                if (Action.Filter())
+                    Action.Action();
+                else
+                    Action.State = EventAction.ActionState.Failed;
 
             }
             else

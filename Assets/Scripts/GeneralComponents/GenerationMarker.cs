@@ -25,14 +25,25 @@ public class GenerationMarker : MonoBehaviour
             builder.Append("Actor: ").AppendLine(gameObject.name);
             while (!Actions.Instance.Loaded)
                 yield return null;
-
+            builder.Append("actions:").AppendLine();
             actor.actionsSet = Actions.Instance.FormActionsSet(gameObject);
             foreach (var cat in actor.actionsSet)
                 foreach (var action in cat.Value)
                 {
                     builder.Append(action.GetType().Name).AppendLine();
                     actor.allActions.Add(action);
+                    
                 }
+            builder.Append("interactions:").AppendLine();
+            actor.interactionsSet = Actions.Instance.FormInteractionsSet(gameObject);
+            foreach (var cat in actor.interactionsSet)
+                foreach (var action in cat.Value)
+                {
+                    builder.Append(action.GetType().Name).AppendLine();
+                    actor.allInteractions.Add(action);
+
+                }
+
             Debug.Log(builder.ToString());
         }
         

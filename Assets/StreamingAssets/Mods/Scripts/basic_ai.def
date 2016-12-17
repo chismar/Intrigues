@@ -1,7 +1,7 @@
 interaction_lit_up_manual = 
 {
 	interaction = manual
-	scope = interactable.light_source.manual.fit(not lit_up)
+	scope = interactable.light_source.manual_controller.fit(not lit_up)
 	depends = closer_than(1)
 	action = 
 	{
@@ -12,7 +12,7 @@ interaction_lit_up_manual =
 interaction_lit_up_remote =
 {
 	interaction = manual
-	scope = interactable.manual.remote_controller.controlled.light_source.fit(not lit_up)
+	scope = interactable.manual_controller.remote_controller.controlled.light_source.fit(not lit_up)
 	depends = closer_than(1)
 	action = 
 	{
@@ -70,18 +70,3 @@ basic_move =
 	}
 }
 
-
-facts_notice =
-{
-	ai_action = yes
-	category = testing
-	scope = facts
-	utility = {
-		if(facts.has_noticed_test_event) = {
-			ut = 1
-		}
-	}
-	action = {
-		log = "I've noticed an event!"
-	}
-}

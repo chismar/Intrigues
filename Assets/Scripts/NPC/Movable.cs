@@ -51,7 +51,7 @@ public class Movable : MonoBehaviour {
         if (IsMoving = distance > OKDistance)
         {
             var normalVector = difVector / distance;
-            rigidBody.velocity = normalVector * Speed;
+            rigidBody.velocity = normalVector * Mathf.Min(Speed, distance);
             NearTarget = false;
         }
         else
