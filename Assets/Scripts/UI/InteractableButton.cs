@@ -22,61 +22,79 @@ public class InteractableButton : MonoBehaviour
         Button.onClick.AddListener(OnButtonClicked);
         InterAvailable();
         RebuildTooltip();
+        wasAvailable = !InterAvailable();
     }
 
     void OnButtonClicked()
     {
-        if(InterAvailable() && Interaction.Filter())
+        if (InterAvailable() && Interaction.Filter())
         {
             Interaction.Action();
         }
     }
-    List<string> satisfiedDeps = new List<string>();
-    List<string> unsatisfiedDeps = new List<string>();
+    static ObjectPool<List<Dependency>> lists = new ObjectPool<List<Dependency>>();
+    List<Dependency> satisfiedDeps = new List<Dependency>();
+    List<Dependency> unsatisfiedDeps = new List<Dependency>();
     StringBuilder depsTooltipBuilder = new StringBuilder();
     string depsData;
+    bool wasAvailable = false;
     private void Update()
     {
-       
-        
 
-        if(InterAvailable())
-        {
-            Button.interactable = true;
-        }
+
+        var nowAvailable = InterAvailable();
+        if (nowAvailable == wasAvailable)
+            return;
         else
         {
-            Button.interactable = false;
+            if (nowAvailable)
+            {
+                Button.interactable = true;
+            }
+            else
+            {
+                Button.interactable = false;
+            }
+            wasAvailable = nowAvailable;
         }
+        
 
     }
 
     bool InterAvailable()
     {
         bool available = true;
+        bool changed = false;
         if (deps != null)
         {
-            int satCount = satisfiedDeps.Count;
-            int unSatCount = satisfiedDeps.Count;
-            satisfiedDeps.Clear();
-            unsatisfiedDeps.Clear();
-            foreach (var dep in deps)
+            var unSatList = lists.Get();
+            unSatList.Clear();
+            var satList = lists.Get();
+            satList.Clear();
+            for (int i = 0; i < deps.Count;i++)
             {
+                var dep = deps[i];
                 if (!dep.Satisfied())
                 {
                     available = false;
-                    unsatisfiedDeps.Add(dep.GetType().Name);
+                    unSatList.Add(dep);
+                    if (satisfiedDeps.Contains(dep))
+                        changed = true;
                 }
                 else
                 {
-                    satisfiedDeps.Add(dep.GetType().Name);
+                    satList.Add(dep);
+                    if (unsatisfiedDeps.Contains(dep))
+                        changed = true;
                 }
             }
 
-            if (satCount != satisfiedDeps.Count || unSatCount != unsatisfiedDeps.Count)
-            {
+            lists.Return(satisfiedDeps);
+            lists.Return(unsatisfiedDeps);
+            satisfiedDeps = satList;
+            unsatisfiedDeps = unSatList;
+            if(changed)
                 RebuildTooltip();
-            }
         }
         return available;
     }
@@ -85,12 +103,12 @@ public class InteractableButton : MonoBehaviour
     {
         depsTooltipBuilder.Append("<color=green>");
         foreach (var satDep in satisfiedDeps)
-            depsTooltipBuilder.Append(satDep).AppendLine();
+            depsTooltipBuilder.Append(satDep.ToString()).AppendLine();
         depsTooltipBuilder.Append("</color>").AppendLine();
 
         depsTooltipBuilder.Append("<color=red>");
         foreach (var satDep in unsatisfiedDeps)
-            depsTooltipBuilder.Append(satDep).AppendLine();
+            depsTooltipBuilder.Append(satDep.ToString()).AppendLine();
         depsTooltipBuilder.Append("</color>").AppendLine();
         depsData = depsTooltipBuilder.ToString();
         tooltip.Text = depsData;

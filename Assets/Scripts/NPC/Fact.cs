@@ -3,6 +3,6 @@ using System.Collections;
 
 public interface Fact
 {
-    bool KnownByTheCourt { get; set; }
+    int KnownTreshold { get; set; }
     
 }

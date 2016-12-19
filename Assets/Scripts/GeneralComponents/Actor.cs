@@ -315,6 +315,11 @@ public class CloserThan : Dependency
     {
         return (targetTransform.position - rootTransform.position).magnitude < distance;
     }
+
+    public override string ToString()
+    {
+        return "Distance between {0} and {1} should be less than {2}".Fmt(targetTransform.name, rootTransform.name, distance);
+    }
 }
 
 namespace ScriptedTypes

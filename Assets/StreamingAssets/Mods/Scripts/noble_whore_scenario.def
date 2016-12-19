@@ -1,0 +1,80 @@
+noble_whore_scenario = 
+{
+	scope = story
+	once_per_object = yes
+	utility = 1
+	action = 
+	{
+
+		noble = no_one
+		whore = no_one
+		noble_wife = no_one
+		whore_lover = no_one
+
+		if(story.actors_count > story.target_actors_count).noble = 
+			find_object("npc", actor.scenarios_count < 2 and noble_role.influence > 80 and aged.age > 30 and man_role and not facts.has_husband_to)
+		
+		if(story.actors_count > story.target_actors_count).whore = 
+			find_object("npc", actor.scenarios_count < 2 and folk_role.woman_role)
+		
+		if(story.actors_count > story.target_actors_count).noble_wife = 
+			find_object("npc", actor.scenarios_count < 2 and noble_role.woman_role and not facts.has_wife_to)
+		
+		if(story.actors_count > story.target_actors_count).whore_lover = 
+			find_object("npc", actor.scenarios_count < 2 and noble_role and aged.age < 30)
+
+
+		if(not has(noble)).spawn_prefab("npc", "noble") =
+		{
+			create(noble_role).influence = 90
+			create(aged).age = 50
+			create = man_role
+		}
+
+		if(not has(whore)).spawn_prefab("npc", "whore") =
+		{
+			create = folk_role
+			create = woman_role
+		}
+
+		if(not has(noble_wife)).spawn_prefab("npc", "noble_wife") =
+		{
+			create = noble_role
+			create = woman_role
+		}
+
+
+		noble_wife.facts.add_wife_to.whom = noble
+		noble.facts.add_husband_to.whom = noble_wife
+		noble.facts.add_lover = {
+			of_whom = whore
+			known_treshold = 80
+		}
+		if(not has(whore_lover)).spawn_prefab("npc", "whore_lover") =
+		{
+			create(noble_role).influence = 40
+			create = man_role
+			aged.age = 25
+		}
+
+		whore_lover.facts.add_lover = {
+				of_whom = whore
+				known_treshold = 80
+			}
+		whore.facts ={
+			add_lover = {
+				of_whom = noble
+				known_treshold = 80
+			}
+			add_lover = {
+				of_whom = noble
+				known_treshold = 80
+			}
+		}
+
+
+	}
+
+}
+
+

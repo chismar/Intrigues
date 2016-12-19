@@ -50,7 +50,7 @@ public class IfOperator : FunctionOperatorInterpreter
 			if (op.Args [1].Operands [0] is IdWrapper)
 			{
 
-				var id = (IdWrapper)op.Args [1].Operands [0] as string;
+				var id = ((IdWrapper)op.Args [1].Operands [0]).ToString();
 				declareVar.Name = id;
 				declareVar.Type = typeof(bool);
 				declareVar.InitExpression = "false";

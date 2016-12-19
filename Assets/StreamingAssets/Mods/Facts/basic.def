@@ -7,3 +7,18 @@ most_basic_fact =
 }
 
 noticed_test_event = yes
+
+
+husband_to = 
+{
+	whom = gameobject
+}
+
+wife_to =
+{
+	whom = gameobject
+}
+
+lover = {
+	of_whom = gameobject
+}

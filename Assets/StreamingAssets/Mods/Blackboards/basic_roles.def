@@ -1,6 +1,9 @@
 king_role = yes
 feudal_landlord_role = yes
-noble_role = yes
+noble_role = 
+{
+	influence = int
+}
 rival_role = {
 	of_whom = gameobject
 }
@@ -11,6 +14,7 @@ servant_role =
 cook_role = yes
 criminal_role = yes
 woman_role = yes
+man_role = yes
 heir_role = 
 {
 	of_whom = gameobject
@@ -18,4 +22,10 @@ heir_role =
 in_love = 
 {
 	with_whom = gameobject
+}
+
+folk_role = yes
+aged = 
+{
+	age = int
 }
