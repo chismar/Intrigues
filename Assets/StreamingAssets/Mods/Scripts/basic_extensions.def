@@ -7,6 +7,7 @@ npc_has_facts_and_backstory =
 	{
 		create = facts
 		create = backstory
+		create = personality
 	}
 }
 

@@ -2,11 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class ExternalUtilities : MonoBehaviour
+public class ExternalUtilities : Root<ExternalUtilities>
 {
 
+    public int NextID { get; set; }
     private void Awake()
     {
+        base.Awake();
         FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne"));
     }
     //ayn

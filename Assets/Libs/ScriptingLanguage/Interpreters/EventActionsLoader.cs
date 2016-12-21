@@ -174,6 +174,8 @@ public class EventActionsLoader : ScriptInterpreter
                 {
                     var cat = (((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts[0].ToString();
                     var type = Engine.FindType("ScriptedTypes." + cat);
+                    if (type == null)
+                        type = Engine.FindType(NameTranslator.CSharpNameFromScript(cat));
                     if (type != null)
                     {
                         var props = type.GetProperties();

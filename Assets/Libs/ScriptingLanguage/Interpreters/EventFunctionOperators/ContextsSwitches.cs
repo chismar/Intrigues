@@ -354,10 +354,20 @@ public class ContextFunctionCallInterpreter : FunctionOperatorInterpreter
 			isNotNull.TrueBlock = new FunctionBlock (block);
 			block.Statements.Add (isNotNull);
 			block = isNotNull.TrueBlock;
-			for (int i = 0; i < ctx.Entries.Count; i++)
-			{
-				ops.GetInterpreter (ctx.Entries [i] as Operator, block).Interpret (ctx.Entries [i] as Operator, block);
-			}
+            int opIter = 0;
+            try
+            {
+                for (opIter = 0; opIter < ctx.Entries.Count; opIter++)
+                {
+
+                    ops.GetInterpreter(ctx.Entries[opIter] as Operator, block).Interpret(ctx.Entries[opIter] as Operator, block);
+                }
+            }
+            catch(Exception e)
+            {
+                Debug.LogException(e);
+                Debug.LogErrorFormat("Something is wrong in {0} at index {1} = {2}", ctx, opIter, ctx.Entries[opIter]);
+            }
 		} else
 		{
 			//Func doesn't return a context, while maybe allows for either lambda as value or context addition
@@ -499,9 +509,9 @@ public class ContextPropertyInterpreter : FunctionOperatorInterpreter
                 Debug.Log ("PROPERTY " + propName);
             
 			if (context == null)
-				block.Statements.Add (String.Format ("root.{0} = ({2})({1});", propName, exprInter.InterpretExpression (op.Context as Expression, block).ExprString, TypeName.NameOf (propType)));
+				block.Statements.Add (String.Format ("root.{0} = ({2})({1});", propName, exprInter.InterpretExpression (op.Context as Expression, block, propType).ExprString, TypeName.NameOf (propType)));
 			else
-				block.Statements.Add (String.Format ("{2}.{0} = ({3})({1});", propName, exprInter.InterpretExpression (op.Context as Expression, block).ExprString, context.Name, TypeName.NameOf (propType)));
+				block.Statements.Add (String.Format ("{2}.{0} = ({3})({1});", propName, exprInter.InterpretExpression (op.Context as Expression, block, propType).ExprString, context.Name, TypeName.NameOf (propType)));
 			
 		} else
 		{
@@ -616,51 +626,59 @@ public class ContextPropertySwitchInterpreter : ContextPropertyInterpreter
 		var thisKey = new PropKey (type, propName);
 		if (!allPropSwitches.ContainsKey (thisKey))
 			allPropSwitches.Add (thisKey, this);
-		if (typeof(MonoBehaviour).IsAssignableFrom (type) && type != typeof(MonoBehaviour))
+		if ((typeof(MonoBehaviour).IsAssignableFrom (type) && type != typeof(MonoBehaviour)) || engine.IsLocalType(type))
         {
             //if (ScriptEngine.AnalyzeDebug)
             //    Debug.Log ("It's a component! " + type);
-			foreach (var prop in props)
-			{
-				//Debug.Log (prop.Name);
-				if (prop.PropertyType != typeof(string) && (prop.PropertyType.IsClass || (prop.PropertyType.IsValueType && !prop.PropertyType.IsEnum &&
-				    prop.PropertyType != typeof(bool) && prop.PropertyType != typeof(float) && prop.PropertyType != typeof(int))))
-				{
-					var key = new PropKey (prop.PropertyType, prop.Name);
-					if (allPropSwitches.ContainsKey (key))
-						contextSwitches.Add (NameTranslator.ScriptNameFromCSharp (prop.Name), allPropSwitches [key]);
-					else
-					{
-						ContextPropertySwitchInterpreter inter = new ContextPropertySwitchInterpreter (prop.Name, prop.PropertyType, engine);
-						contextSwitches.Add (NameTranslator.ScriptNameFromCSharp (prop.Name), inter);
+            try
+            {
+                foreach (var prop in props)
+                {
+                    //Debug.Log (prop.Name);
+                    if (prop.PropertyType != typeof(string) && (prop.PropertyType.IsClass || (prop.PropertyType.IsValueType && !prop.PropertyType.IsEnum &&
+                        prop.PropertyType != typeof(bool) && prop.PropertyType != typeof(float) && prop.PropertyType != typeof(int))))
+                    {
+                        var key = new PropKey(prop.PropertyType, prop.Name);
+                        if (allPropSwitches.ContainsKey(key))
+                            contextSwitches.Add(NameTranslator.ScriptNameFromCSharp(prop.Name), allPropSwitches[key]);
+                        else
+                        {
+                            ContextPropertySwitchInterpreter inter = new ContextPropertySwitchInterpreter(prop.Name, prop.PropertyType, engine);
+                            contextSwitches.Add(NameTranslator.ScriptNameFromCSharp(prop.Name), inter);
 
-						inter.Engine = Engine;
-					}
+                            inter.Engine = Engine;
+                        }
 
-                   // if (ScriptEngine.AnalyzeDebug)
-                  //      Debug.Log ("SubContext " + NameTranslator.ScriptNameFromCSharp (prop.Name));
-				} else
-				{
-					ContextPropertyInterpreter inter = new ContextPropertyInterpreter (prop.Name, prop.PropertyType, engine);
-					inter.Engine = Engine;
-                  //  if (ScriptEngine.AnalyzeDebug)
-                  //      Debug.Log (inter.Engine);
-					properties.Add (NameTranslator.ScriptNameFromCSharp (prop.Name), inter);
-                 //   if (ScriptEngine.AnalyzeDebug)
-                  //      Debug.Log (NameTranslator.ScriptNameFromCSharp (prop.Name));
-				}
+                        // if (ScriptEngine.AnalyzeDebug)
+                        //      Debug.Log ("SubContext " + NameTranslator.ScriptNameFromCSharp (prop.Name));
+                    }
+                    else
+                    {
+                        ContextPropertyInterpreter inter = new ContextPropertyInterpreter(prop.Name, prop.PropertyType, engine);
+                        inter.Engine = Engine;
+                        //  if (ScriptEngine.AnalyzeDebug)
+                        //      Debug.Log (inter.Engine);
+                        properties.Add(NameTranslator.ScriptNameFromCSharp(prop.Name), inter);
+                        //   if (ScriptEngine.AnalyzeDebug)
+                        //      Debug.Log (NameTranslator.ScriptNameFromCSharp (prop.Name));
+                    }
 
-			}
+                }
 
-			foreach (var method in methods)
-			{
-				if (method.GetCustomAttributes (typeof(CompilerGeneratedAttribute), false).Length > 0)
-					continue;
-               // if (ScriptEngine.AnalyzeDebug)
-                //    Debug.Log ("Context method " + method.Name);
-				ContextFunctionCallInterpreter inter = new ContextFunctionCallInterpreter (method, Engine);
-				functions.Add (NameTranslator.ScriptNameFromCSharp (method.Name), inter);
-			}
+                foreach (var method in methods)
+                {
+                    if (method.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Length > 0)
+                        continue;
+                    // if (ScriptEngine.AnalyzeDebug)
+                    //    Debug.Log ("Context method " + method.Name);
+                    ContextFunctionCallInterpreter inter = new ContextFunctionCallInterpreter(method, Engine);
+                    functions.Add(NameTranslator.ScriptNameFromCSharp(method.Name), inter);
+                }
+            }
+			catch(Exception e)
+            {
+                Debug.LogWarning("Possible error: " + e);
+            }
 		}
 
 	}

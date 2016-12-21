@@ -16,6 +16,9 @@ public class Actions : Root<Actions>
     Dictionary<Type, List<EventAction>> interactionsByCategory = new Dictionary<Type, List<EventAction>>();
 
     Dictionary<Type, List<EventAction>> actionsByCategory = new Dictionary<Type, List<EventAction>>();
+
+
+    Dictionary<Type, List<EventAction>> dialogsByCategory = new Dictionary<Type, List<EventAction>>();
     public bool Loaded = false;
 
     void Awake()
@@ -48,6 +51,13 @@ public class Actions : Root<Actions>
 
                 actions.Add(action);
             var categories = type.GetInterfaces();
+            if (categories.Length > 1 && categories.First(x => x == typeof(DialogOption)) != null)
+            {
+                var cat = categories.First(x => x != typeof(DialogOption));
+
+                action.Meta.Category = cat.Name;
+                cats = dialogsByCategory;
+            }
             if (categories.Length == 1)
                 action.Meta.Category = categories[0].Name;
             else if (categories.Length == 0)
@@ -59,6 +69,8 @@ public class Actions : Root<Actions>
                 }
                 catList.Add(action);
             }
+
+            
                 
             foreach ( var cat in categories)
             {

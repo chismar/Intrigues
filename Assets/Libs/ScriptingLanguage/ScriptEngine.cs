@@ -14,7 +14,7 @@ public class ScriptEngine
 	public static bool AnalyzeDebug = false;
 	public static bool CompileDebug = false;
 	List<Type> allTypes = new List<Type> ();
-
+    List<Type> localTypes = new List<Type>();
 	public IEnumerable<Assembly> Addons { get; internal set; }
 
 	Dictionary<Type, ScriptEnginePlugin> plugins = new Dictionary<Type, ScriptEnginePlugin> ();
@@ -36,12 +36,19 @@ public class ScriptEngine
 			var asm = AppDomain.CurrentDomain.Load (plugin.GetName ());
 			var pluginTypes = asm.GetTypes ();
 			for (int i = 0; i < pluginTypes.Length; i++)
-				allTypes.Add (pluginTypes [i]);
+            {
+                localTypes.Add(pluginTypes[i]);
+                allTypes.Add(pluginTypes[i]);
+            }
 		}
 
 		var coreTypes = Assembly.GetExecutingAssembly ().GetTypes ();
 		for (int i = 0; i < coreTypes.Length; i++)
-			allTypes.Add (coreTypes [i]);
+        {
+
+            localTypes.Add(coreTypes[i]);
+            allTypes.Add(coreTypes[i]);
+        }
 
 		var enginePlugins = FindTypesCastableTo<ScriptEnginePlugin> ();
 		for (int i = 0; i < enginePlugins.Count; i++)
@@ -157,6 +164,9 @@ public class ScriptEngine
 		Debug.LogWarning (builder.ToString ());
 	}
 
-
+    internal bool IsLocalType(Type type)
+    {
+        return localTypes.Contains(type);
+    }
 }
 

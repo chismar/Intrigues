@@ -3,11 +3,17 @@ using System.Collections;
 
 public class Entity : MonoBehaviour {
 
+
+    public int Id { get; internal set; }
 	public void ComponentAdded()
     {
 
     }
-    
+
+    private void Awake()
+    {
+        Id = ExternalUtilities.Instance.NextID++;
+    }
     public string PrefabName { get; set; }
 
     public void SetPosition(float x, float y)

@@ -119,8 +119,10 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 		var methodInfo = closureType.GetMethod ("Invoke");
 		var args = methodInfo.GetParameters ();
 		FunctionBlock lambdaBlock = new FunctionBlock (block, block.Method, block.Type);
-		lambdaBlock.DefaultScope = args [0].Name;
-
+        if (args.Length > 0)
+            lambdaBlock.DefaultScope = args[0].Name;
+        else
+            lambdaBlock.DefaultScope = block.FindStatement<DeclareVariableStatement>(v => v.Type == typeof(GameObject) && v.IsContext && !v.IsTemp).Name;
 		closureBuilder.Append ("(");
 		DeclareVariableStatement lastArg = null;
 		foreach (var param in args)
@@ -149,7 +151,15 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 		return new Expr (){ ExprString = closureBuilder.ToString () };
 		//return InterpretExpression (expression, block);
 	}
-
+    public Expr InterpretExpression(Expression expression, FunctionBlock block, Type type)
+    {
+        if (type.IsSubclassOf(typeof(Delegate)))
+        {
+            return InterpretClosure(expression, block, type);
+        }
+        else
+            return InterpretExpression(expression, block);
+    }
 	public Expr InterpretExpression (Expression expression, FunctionBlock block, bool isFirst = true, bool isBool = false)
 	{
 //		for (int i = 0; i < CleanUpContextes.Count; i++)
@@ -548,7 +558,7 @@ public class ExpressionInterpreter : ScriptEnginePlugin
                         if (ScriptEngine.AnalyzeDebug)
                             Debug.LogWarning ("Component found " + type);
                         var storedVar = curBlock.FindStatement<DeclareVariableStatement> (v => v.Type == type && v.storedOf != null && storedFromName == v.storedOf);
-                        
+                        var prevType = contextType;
 						contextType = type;
 						if (storedVar == null)
 						{
@@ -556,11 +566,22 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 							CleanUpContextes.Push (storedVar);
 							storedVar.IsTemp = true;
 							storedVar.IsContext = true;
-							curBlock.Statements.Add (storedVar);//block.FindStatement<DeclareVariableStatement> (v => !v.IsContext && v.Type == type);
 							storedVar.Name = "StoredVariable" + DeclareVariableStatement.VariableId++;
 							storedVar.Type = type;
 
                             storedVar.storedOf = hasSign ? exprBuilder.ToString(1, exprBuilder.Length) : exprBuilder.ToString(0, exprBuilder.Length);
+                            if(prevType != typeof(GameObject) && !typeof(MonoBehaviour).IsAssignableFrom(prevType))
+                            {
+                                exprBuilder.Length = hasSign ? 1 : 0;
+                                var ctx = block.FindStatement<DeclareVariableStatement>(
+                                        v => v.IsContext && (v.Type == typeof(GameObject) || typeof(MonoBehaviour).IsAssignableFrom(v.Type))
+                                        ).Name;
+                                if (ctx == null)
+                                    ctx = block.DefaultScope;
+                                exprBuilder.Append(ctx).Append('.');
+                            }
+
+                            curBlock.Statements.Add(storedVar);
                             exprBuilder.Append (String.Format ("GetComponent(typeof({0})))", type));
 							exprBuilder.Insert (0, String.Format ("(({0})", type));
 							if (hasSign)

@@ -1,0 +1,4 @@
+personality = 
+{
+	trust(0,1) = float
+}

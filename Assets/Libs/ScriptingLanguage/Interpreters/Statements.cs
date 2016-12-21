@@ -18,9 +18,23 @@ public static class TypeName
 		{
 			return String.Format ("System.Collections.Generic.List<{0}>", type.GetGenericArguments () [0]);
 		}
-		return type.FullName;
+		return type.FullName.ReplacePlusWithDots();
 	}
+    static StringBuilder builder = new StringBuilder();
+    public static string ReplacePlusWithDots(this string str)
+    {
+        builder.Length = 0;
+        for (int i = 0; i < str.Length; i++)
+        {
+            if (str[i] == '+')
+                builder.Append('.');
+            else
+                builder.Append(str[i]);
+        }
+        return builder.ToString();
+    }
 }
+
 
 public class IfStatement
 {

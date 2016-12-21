@@ -22,3 +22,7 @@ wife_to =
 lover = {
 	of_whom = gameobject
 }
+
+rival = {
+	of_whom = gameobject
+}

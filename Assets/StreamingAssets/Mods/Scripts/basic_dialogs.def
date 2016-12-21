@@ -1,0 +1,31 @@
+rival_story = 
+{
+	category = dialog_option
+	
+	scope = facts.talkable.markers.relationships.personality.
+	fit(has_rival and can_talk and relations_with(other) > trust)
+
+	utility = 1
+	action = {
+		talkable = {
+			facts.query_rival = 
+			{
+				rival_of_root = this.of_whom
+				dialog = {
+					id = rival_story  + rival_of_root.entity.id
+					hook = looks_anxious
+					utility = 1
+					allowed = not markers.has_marker(id)
+					say = {
+						string = "say_about_rival"
+						reaction = {
+							markers.set_marker = id
+						}
+					}
+				}
+			}
+		}
+			
+		
+	}
+}
