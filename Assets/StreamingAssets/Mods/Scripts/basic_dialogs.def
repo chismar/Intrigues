@@ -2,20 +2,21 @@ rival_story =
 {
 	category = dialog_option
 	
-	scope = facts.talkable.markers.relationships.personality.
-	fit(has_rival and can_talk and relations_with(other) > trust)
+	scope = facts.listener.markers.relationships.personality.
+	fit(has_rival and can_talk and relations_with(other) >= trust)
 
 	utility = 1
 	action = {
-		talkable = {
-			facts.query_rival = 
+		listener = {
+			facts.get_rival = 
 			{
-				rival_of_root = this.of_whom
+				rival_of_root = who_is
 				dialog = {
 					id = rival_story  + rival_of_root.entity.id
 					hook = looks_anxious
 					utility = 1
 					allowed = not markers.has_marker(id)
+					log = id
 					say = {
 						string = "say_about_rival"
 						reaction = {
@@ -25,7 +26,5 @@ rival_story =
 				}
 			}
 		}
-			
-		
 	}
 }

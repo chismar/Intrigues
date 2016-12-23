@@ -297,7 +297,9 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 
                 if (ScriptEngine.AnalyzeDebug)
                     Debug.LogWarningFormat ("scope part {0} {1} {2}", scope [i], contextType.IsGenericType, contextType.IsGenericType ? (contextType.GetGenericTypeDefinition () == typeof(List<>)).ToString () : "");
-				if (contextType.IsGenericType && contextType.GetGenericTypeDefinition () == typeof(List<>))
+                if (contextType == null)
+                    Debug.LogErrorFormat("Context type is null, {0}, \r\n {1}", operand, block.ToString());
+                if (contextType.IsGenericType && contextType.GetGenericTypeDefinition () == typeof(List<>))
 				{
 					if (firstTimeList)
 					{
@@ -432,7 +434,8 @@ public class ExpressionInterpreter : ScriptEnginePlugin
                                     }
                                     catch (IndexOutOfRangeException e)
                                     {
-                                        Debug.LogErrorFormat("Index out of range {0} in args of {1}. Script: {2}", j, method.Name, operand);
+                                        Debug.Log(e);
+                                        Debug.LogErrorFormat("Index out of range {0} in args of {1}. Script: {2}, Args count: {3}", j, method.Name, operand, argsDef.Length);
                                     }
 								}
 								if (callArgs.Length > 0)

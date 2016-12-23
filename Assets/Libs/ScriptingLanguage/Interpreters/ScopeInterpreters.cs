@@ -176,6 +176,7 @@ public class ThisInterpreter : ScopeInterpreter
 	public override void Interpret (Expression[] args, FunctionBlock block, Type contextType, string exprVal, out string newExprVal, out FunctionBlock newCurBlock, out Type newContextType, bool isLast)
 	{
 		var thisVar = block.FindStatement<DeclareVariableStatement> (v => v.IsContext && !v.IsTemp);
+        //Debug.Log("This var " + thisVar);
 		newExprVal = thisVar.Name;
 		newCurBlock = block;
 		newContextType = thisVar.Type;

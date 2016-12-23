@@ -12,11 +12,13 @@ public class Actor : MonoBehaviour {
     public List<EventAction> allActions = new List<EventAction>();
     Dictionary<Type, int> actionsInUse = new Dictionary<Type, int>();
     Stack<ActionWrapper> actionsStack = new Stack<ActionWrapper>();
-    ActionWrapper curAction = null;
+    public ActionWrapper curAction = null;
     public int ScenariosCount { get; set; }
-
+    bool isPlayer = false;
     private void Awake()
     {
+
+        isPlayer = GetComponent<PlayerMarker>() != null;
     }
     private void Start()
     {
@@ -28,9 +30,9 @@ public class Actor : MonoBehaviour {
     System.Random fuzziness;
     private void Update()
     {
-        if (actionsSet == null)
+        if (actionsSet == null && !isPlayer)
             return;
-        if (curAction == null)
+        if (curAction == null && !isPlayer)
             ChooseAction();
         if (curAction != null)
         {

@@ -7,12 +7,15 @@ public class Entity : MonoBehaviour {
     public int Id { get; internal set; }
 	public void ComponentAdded()
     {
-
+        
     }
 
     private void Awake()
     {
         Id = ExternalUtilities.Instance.NextID++;
+        var e = EventsManager.Instance.GetEvent<EntityCreated>();
+        e.Root = gameObject;
+        EventsManager.Instance.FireEvent(e);
     }
     public string PrefabName { get; set; }
 
@@ -38,3 +41,7 @@ public class Entity : MonoBehaviour {
             OnDeath(gameObject);
     }
 }
+
+
+public class EntityCreated : Event
+{ }

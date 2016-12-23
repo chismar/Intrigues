@@ -155,6 +155,7 @@ public class ScriptEngine
 //			Debug.Log (types [i]);
 
 			allTypes.Add (types [i]);
+            localTypes.Add(types[i]);
 		}
 
 		var asms = AppDomain.CurrentDomain.GetAssemblies ();

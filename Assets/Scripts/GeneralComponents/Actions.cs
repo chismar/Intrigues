@@ -57,9 +57,16 @@ public class Actions : Root<Actions>
 
                 action.Meta.Category = cat.Name;
                 cats = dialogsByCategory;
+                Debug.Log("Add dialog");
             }
             if (categories.Length == 1)
+            {
+                if(categories[0] == typeof(DialogOption))
+                {
+                    cats = dialogsByCategory;
+                }
                 action.Meta.Category = categories[0].Name;
+            }
             else if (categories.Length == 0)
             {
                 if (!cats.TryGetValue(typeof(EventAction), out catList))
@@ -224,7 +231,7 @@ public class Actions : Root<Actions>
 
     }
 
-    public IEnumerator GenerateCoroutine(GameObject go, float fuzzy = 0f)
+    public IEnumerator GenerateCoroutine(GameObject go, float fuzzy = 0f, float deltaTimeMax = 5f, GameObject dialogOpponent = null)
     {
 
         var debugBuilder = debugBuilders.Get();
@@ -253,7 +260,10 @@ public class Actions : Root<Actions>
                 if (iterations++ > 50)
                     break;
             oneMoreRun = false;
-            foreach (var categoryPair in eventsByCategory)
+            var dict = (dialogOpponent != null ? dialogsByCategory : eventsByCategory);
+            debugBuilder.AppendLine(dialogOpponent == null ? "Events" : "Dialogs");
+            float timeStart = Time.realtimeSinceStartup;
+            foreach (var categoryPair in dict)
             {
                 var category = categoryPair.Value;
                 if (DebugGeneration)
@@ -261,7 +271,12 @@ public class Actions : Root<Actions>
                 maximizeActions.Clear();
                 foreach (var action in category)
                 {
-
+                    var delta = Time.realtimeSinceStartup - timeStart;
+                    if(delta > deltaTimeMax)
+                    {
+                        timeStart = Time.realtimeSinceStartup;
+                        yield return null;
+                    }
                     if (DebugGeneration)
                         debugBuilder.Append("  ").Append(action.GetType().Name).Append(" = ");
                     if (ActedThisWayAndShouldNoMore(go, action) || (action.Meta.OncePerTurn && performedActions.Contains(action)))
@@ -272,6 +287,16 @@ public class Actions : Root<Actions>
                     if (!action.Meta.ShouldHaveMaxUtility)
                     {
                         var cachedRoot = action.Root;
+                        GameObject cachedOther = null;
+                        var dialogOption = action as DialogOption;
+                        
+                        if (dialogOpponent != null)
+                        {
+                            if (dialogOption == null)
+                                continue;
+                            cachedOther = dialogOption.Other;
+                            dialogOption.Other = dialogOpponent;
+                        }
                         action.Root = go;
                         if (action.Filter())
                         {
@@ -296,6 +321,12 @@ public class Actions : Root<Actions>
                         if (DebugGeneration)
                             debugBuilder.AppendLine("NO");
                         action.Root = cachedRoot;
+                        if (dialogOpponent != null)
+                        {
+                            if (dialogOption == null)
+                                continue;
+                            dialogOption.Other = cachedOther;
+                        }
                     }
                     else
                     {
@@ -324,9 +355,10 @@ public class Actions : Root<Actions>
             }
             eaListPool.Return(maximizeActions);
             eaPool.Return(performedActions);
+            if (oneMoreRun)
+                if (dialogOpponent != null)
+                    oneMoreRun = false;
         }
-        if (DebugGeneration)
-            debugBuilder.AppendLine("INTERACTIONS:");
         /*var inter = go.GetComponent<Interactable>();
         if (inter != null)
         {

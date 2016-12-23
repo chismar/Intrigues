@@ -9,7 +9,7 @@ public class ExternalUtilities : Root<ExternalUtilities>
     private void Awake()
     {
         base.Awake();
-        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne"));
+        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "SelectByWeight", "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne"));
     }
     //ayn
     System.Random rand = new System.Random();
@@ -28,6 +28,22 @@ public class ExternalUtilities : Root<ExternalUtilities>
         return null;
     }
 
+    public delegate float GOFloatDelegate(GameObject go);
+    public GameObject SelectByWeight(List<GameObject> list, GOFloatDelegate weight)
+    {
+        GameObject mostWeight = null;
+        float maxWeight = 0.05f;
+        foreach(var go in list)
+        {
+            var w = weight(go);
+            if(w > maxWeight)
+            {
+                maxWeight = w;
+                mostWeight = go;
+            }
+        }
+        return mostWeight;
+    }
     public bool Log(object data)
     {
         Debug.Log(data);

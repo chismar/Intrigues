@@ -13,7 +13,7 @@ using System.Text;
 
 public abstract class Reaction
 {
-    public abstract Event Root { get; set; }
+    public abstract Event Event { get; set; }
     public abstract bool Filter();
     public abstract void Action();
     public ReactionAttribute Meta { get; set; }
@@ -67,7 +67,8 @@ public class ReactionsLoader : ScriptInterpreter
             //Debug.Log(eTypeName);
             //Engine.ListTypes();
             var eType = Engine.GetType(eTypeName);
-            //Debug.Log(eType);
+            if (eType == null)
+                Debug.LogErrorFormat("Can't find event {0} in {1}", eTypeName, entry);
             CodeTypeDeclaration codeType = new CodeTypeDeclaration();
             //codeType.CustomAttributes.
             codeType.BaseTypes.Add(new CodeTypeReference(typeof(Reaction)));
@@ -135,17 +136,27 @@ public class ReactionsLoader : ScriptInterpreter
 
                     if (isPersonal)
                     {
-                        DeclareVariableStatement eventField = new DeclareVariableStatement();
-                        eventField.Name = "e";
-                        eventField.Type = eType;
-                        eventField.InitExpression = "false";
-                        eventField.IsArg = true;
-                        string eventVar = "var e = this.e;";
-                        CreateEventFunction("RootFilter", op.Context, typeof(GameObject), codeType, personalScopeMethod, false, retVal, eventField, eventVar);
+                        DeclareVariableStatement rootField = new DeclareVariableStatement();
+                        rootField.Name = "root";
+                        rootField.Type = typeof(GameObject);
+                        rootField.InitExpression = "false";
+                        rootField.IsArg = true;
+                        rootField.IsContext = true;
+                        string eventVar = "var root = this.root;";
+                        CreateEventFunction("RootFilter", op.Context, eType, codeType, personalScopeMethod, false, retVal, rootField, eventVar);
 
                     }
                     else
-                        CreateEventFunction("Filter", op.Context, eType, codeType, scopeMethod, false, retVal);
+                    {
+                        DeclareVariableStatement rootField = new DeclareVariableStatement();
+                        rootField.Name = "trigger_root";
+                        rootField.Type = typeof(GameObject);
+                        rootField.InitExpression = "false";
+                        rootField.IsArg = true;
+                        rootField.IsContext = true;
+                        string eventVar = "var trigger_root = this.trigger.Root;";
+                        CreateEventFunction("Filter", op.Context, eType, codeType, scopeMethod, true, rootField, eventVar, retVal);
+                    }
                     //CreateFilterFunction (op.Context as Expression, codeType);
 
                 }
@@ -162,13 +173,21 @@ public class ReactionsLoader : ScriptInterpreter
                     retVal.Name = "applicable";
                     retVal.Type = typeof(bool);
                     retVal.InitExpression = "false";
-                    DeclareVariableStatement eventField = new DeclareVariableStatement();
-                    eventField.Name = "e";
-                    eventField.Type = eType;
-                    eventField.InitExpression = "false";
-                    eventField.IsArg = true;
-                    string eventVar = "var e = this.e;";
-                    CreateEventFunction("EventFilter", op.Context, typeof(GameObject), codeType, eventScopeMethod, false, retVal, eventField, eventVar);
+                    DeclareVariableStatement rootField = new DeclareVariableStatement();
+                    rootField.Name = "root";
+                    rootField.Type = typeof(GameObject);
+                    rootField.InitExpression = "false";
+                    rootField.IsArg = true;
+                    rootField.IsContext = false;
+                    string eventVar = "var root = this.root;";
+                    DeclareVariableStatement triggerRoot = new DeclareVariableStatement();
+                    triggerRoot.Name = "trigger_root";
+                    triggerRoot.Type = typeof(GameObject);
+                    triggerRoot.InitExpression = "false";
+                    triggerRoot.IsArg = true;
+                    triggerRoot.IsContext = true;
+                    string triggerRootVar = "var trigger_root = this.trigger.Root;";
+                    CreateEventFunction("EventFilter", op.Context, eType, codeType, eventScopeMethod, true, retVal, rootField, triggerRoot, triggerRootVar, eventVar);
 
                     //CreateFilterFunction (op.Context as Expression, codeType);
 
@@ -178,16 +197,33 @@ public class ReactionsLoader : ScriptInterpreter
                     //It's an action function
                     if(isPersonal)
                     {
-                        DeclareVariableStatement eventField = new DeclareVariableStatement();
-                        eventField.Name = "e";
-                        eventField.Type = eType;
-                        eventField.InitExpression = "false";
-                        eventField.IsArg = true;
-                        string eventVar = "var e = this.e;";
-                        CreateEventFunction(op.Identifier as string, op.Context, typeof(GameObject), codeType, actionMethod, false, eventField, eventVar);
+                        DeclareVariableStatement rootField = new DeclareVariableStatement();
+                        rootField.Name = "root";
+                        rootField.Type = typeof(GameObject);
+                        rootField.InitExpression = "false";
+                        rootField.IsArg = true;
+                        rootField.IsContext = true;
+                        string eventVar = "var root = this.root;";
+                        DeclareVariableStatement triggerRoot = new DeclareVariableStatement();
+                        triggerRoot.Name = "trigger_root";
+                        triggerRoot.Type = typeof(GameObject);
+                        triggerRoot.InitExpression = "false";
+                        triggerRoot.IsArg = true;
+                        triggerRoot.IsContext = false;
+                        string triggerRootVar = "var trigger_root = this.trigger.Root;";
+                        CreateEventFunction(op.Identifier as string, op.Context, eType, codeType, actionMethod, false, rootField, triggerRoot, triggerRootVar, eventVar);
                     }
                     else
-                    CreateEventFunction(op.Identifier as string, op.Context, eType, codeType, actionMethod, false);
+                    {
+                        DeclareVariableStatement triggerRoot = new DeclareVariableStatement();
+                        triggerRoot.Name = "trigger_root";
+                        triggerRoot.Type = typeof(GameObject);
+                        triggerRoot.InitExpression = "false";
+                        triggerRoot.IsArg = true;
+                        triggerRoot.IsContext = true;
+                        string triggerRootVar = "var trigger_root = this.trigger.Root;";
+                        CreateEventFunction(op.Identifier as string, op.Context, eType, codeType, actionMethod, true, triggerRoot, triggerRootVar);
+                    }
 
                 }
             }
@@ -202,16 +238,16 @@ public class ReactionsLoader : ScriptInterpreter
             if(isPersonal)
             {
                 eventRootProp.Name = "Event";
-                eventRootField.Name = "e";
-                eventRootProp.GetStatements.Add(new CodeSnippetStatement("return e;"));
-                eventRootProp.SetStatements.Add(new CodeSnippetStatement("e = value as {0};".Fmt(eTypeName)));
+                eventRootField.Name = "trigger";
+                eventRootProp.GetStatements.Add(new CodeSnippetStatement("return trigger;"));
+                eventRootProp.SetStatements.Add(new CodeSnippetStatement("trigger = value as {0};".Fmt(eTypeName)));
             }
             else
             {
-                eventRootProp.Name = "Root";
-                eventRootField.Name = "root";
-                eventRootProp.GetStatements.Add(new CodeSnippetStatement("return root;"));
-                eventRootProp.SetStatements.Add(new CodeSnippetStatement("root = value as {0};".Fmt(eTypeName)));
+                eventRootProp.Name = "Event";
+                eventRootField.Name = "trigger";
+                eventRootProp.GetStatements.Add(new CodeSnippetStatement("return trigger;"));
+                eventRootProp.SetStatements.Add(new CodeSnippetStatement("trigger = value as {0};".Fmt(eTypeName)));
             }
         }
        
@@ -230,7 +266,7 @@ public class ReactionsLoader : ScriptInterpreter
     }
 
 
-    void CreateEventFunction(string name, object context, Type rootType, CodeTypeDeclaration codeType, MethodInfo baseMethod, bool isAction, params object[] initStatements)
+    void CreateEventFunction(string name, object context, Type rootType, CodeTypeDeclaration codeType, MethodInfo baseMethod, bool isEventContext, params object[] initStatements)
     {
         CodeMemberMethod method = new CodeMemberMethod();
         method.Name = NameTranslator.CSharpNameFromScript(name);
@@ -238,9 +274,7 @@ public class ReactionsLoader : ScriptInterpreter
         method.ReturnType = new CodeTypeReference(baseMethod.ReturnType);
         var args = baseMethod.GetParameters();
         FunctionBlock block = new FunctionBlock(null, method, codeType);
-        if (isAction)
-            block.Statements.Add("this.state = EventAction.ActionState.Started;");
-        block.Statements.Add("var root = this.root;");
+        block.Statements.Add("var trigger = this.trigger;");
 
         //block.Statements.Add ("UnityEngine.Debug.Log(root.ToString() + IfStatement.AntiMergeValue++);");
         var externVar = new DeclareVariableStatement()
@@ -270,10 +304,10 @@ public class ReactionsLoader : ScriptInterpreter
             block.Statements.Add(paramVar);
         }
         var rootVar = new DeclareVariableStatement();
-        rootVar.Name = "root";
+        rootVar.Name = "trigger";
         rootVar.Type = rootType;
         rootVar.IsArg = true;
-        rootVar.IsContext = true;
+        rootVar.IsContext = isEventContext;
 
         block.Statements.Add(rootVar);
 
@@ -324,8 +358,6 @@ public class ReactionsLoader : ScriptInterpreter
             //retVal.IsArg = true;
             block.Statements.Add(String.Format("return ({1}){0};", exprInter.InterpretExpression(expr, block).ExprString, TypeName.NameOf(retVal.Type)));
         }
-        if (isAction)
-            block.Statements.Add("this.state = EventAction.ActionState.Finished;");
         method.Statements.Add(new CodeSnippetStatement(block.ToString()));
 
 

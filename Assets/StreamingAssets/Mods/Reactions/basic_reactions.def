@@ -3,7 +3,7 @@ test_common_reaction(test_event) =
 	scope = target.actor
 	action = 
 	{
-		visuals_feed.push(root) = target.entity.position
+		visuals_feed.push(trigger) = target.entity.position
 	}
 }
 
@@ -15,6 +15,48 @@ test_common_personal_reaction(test_event) =
 	action = 
 	{
 		facts.if(not has_noticed_test_event).ev = add_noticed_test_event
+		
+	}
+}
+
+player_initiate_dialog(dialog_accepted) = 
+{
+	scope = initiator.player_marker
+	action = 
+	{
+		log = "init dialog for " + initiator
+		init_dialog_ui = initiator
+	}
+}
+
+dialog_rejected_while_talking(dialog_rejected) = 
+{
+	scope = initiator.player_marker
+	action = 
+	{
+		close_dialog_ui = yes
+	}
+}
+
+close_on_dialog_finished(dialog_finished) = 
+{
+	scope = initiator.player_marker
+	action = 
+	{
+		close_dialog_ui = yes
+	}
+}
+
+
+npc_extension_personality(entity_created) = 
+{
+	scope = actor.entity
+	action = 
+	{
+		log = "Added personality"
+		create = facts
+		create = backstory
+		create = personality
 		
 	}
 }

@@ -87,7 +87,7 @@ public class BasicLoader : MonoBehaviour
 		var lastBuildString = PlayerPrefs.GetString (ProjectPrefix + "_last_build");
 		Debug.Log (lastBuildString);
 		Debug.Log (lastWriteTime);
-		if (String.IsNullOrEmpty (lastBuildString) || (!String.IsNullOrEmpty (lastBuildString) && DateTime.Parse (lastBuildString) < lastWriteTime))
+		if (Application.isEditor || String.IsNullOrEmpty (lastBuildString) || (!String.IsNullOrEmpty (lastBuildString) && DateTime.Parse (lastBuildString) < lastWriteTime))
 		{
 			Debug.Log ("Loading scripts");
 			yield return null;
@@ -122,14 +122,15 @@ public class BasicLoader : MonoBehaviour
 			//Load dlls
 			var asm = Assembly.LoadFile ((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/ExternalCode.dll");
 			ExternalFunctions.OnCompiled (asm);
-			asm = Assembly.LoadFile ((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/BlackboardsData.dll");
-			Engine.AddAssembly (asm);
-			asm = Assembly.LoadFile ((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/Content.dll");
-			Engine.AddAssembly (asm);
             asm = Assembly.LoadFile((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/" + "AgentsDatabases_" + typeof(Fact).Name + ".dll");
             Engine.AddAssembly(asm);
             asm = Assembly.LoadFile((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/" + "AgentsDatabases_" + typeof(BackstoryElement).Name + ".dll");
             Engine.AddAssembly(asm);
+            asm = Assembly.LoadFile ((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/BlackboardsData.dll");
+			Engine.AddAssembly (asm);
+            asm = Assembly.LoadFile ((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/Content.dll");
+			Engine.AddAssembly (asm);
+            
             yield return null;
 
 			//foreach (var bar in this.pluginBars)

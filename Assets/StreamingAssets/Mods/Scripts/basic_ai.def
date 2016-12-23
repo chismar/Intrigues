@@ -16,7 +16,7 @@ interaction_lit_up_remote =
 	depends = closer_than(1)
 	action = 
 	{
-		log = remote_controller.controlled.light_source
+		
 		remote_controller.controlled.light_source.lit_up = yes
 	}
 }
@@ -28,7 +28,7 @@ lit_up_room_manual =
 	scope = light_sensor.actor.can_do(interaction_lit_up_manual)
 	utility = 
 	{
-		cache(light) = any(all_objects, interactable.can(interaction_lit_up_manual))
+		cache(light) = any(all_objects, interactable.can(interaction_lit_up_manual, root))
 		if(light).ut = 10 - light_sensor.light
 	}
 	action = {
@@ -43,7 +43,7 @@ lit_up_room_remote =
 	scope = light_sensor.actor.can_do(interaction_lit_up_remote)
 	utility = 
 	{
-		cache(remote_c) = any(all_objects, remote.controller.interactable.can(interaction_lit_up_remote)).remote.controller
+		cache(remote_c) = any(all_objects, remote.controller.interactable.can(interaction_lit_up_remote, root)).remote.controller
 		if(remote_c).ut = 10 - light_sensor.light
 	}
 	action = {
@@ -65,8 +65,36 @@ basic_move =
 		movable = 
 		{
 			goto(distance) = target
-			wait(is_moving and log("updated basic_move"), not is_moving and not near_target) = yes
+			wait(is_moving, not is_moving and not near_target) = yes
 		}
 	}
 }
 
+
+
+interaction_talk_to =
+{
+	interaction = speaker.fit(can_talk)
+	scope = listener.fit(can_talk and talks_to = no_one and initiator.speaker.talks_to = no_one)
+	depends = closer_than(1)
+	action = 
+	{
+		initiator.speaker = {
+			talk_to = root
+			wait(talks_to = initiator, not (talks_to = initiator)) = yes
+		}
+	}
+}
+
+talk_to_someone = 
+{
+	ai_action = yes
+	scope = actor.can_do(interaction_talk_to)
+	utility = 0.3
+	action = 
+	{
+		other = select_by_weight(all_objects, interactable.can(interaction_talk_to, root).metric(talk_desire, go))
+		if(has(other)).do(interaction_talk_to) = other
+		if(not has(other)).wait(yes, yes) = yes
+	}
+}

@@ -46,6 +46,20 @@ public abstract class EventAction
     {
         return false;
     }
+    public event VoidDelegate Stopped;
+    public void StopAction()
+    {
+        OnStop();
+        if (Stopped != null)
+            Stopped();
+        Coroutine = null;
+        state = ActionState.Failed;
+    }
+
+    public virtual void OnStop()
+    {
+
+    }
     public IEnumerator Coroutine;
 
     public void Update()

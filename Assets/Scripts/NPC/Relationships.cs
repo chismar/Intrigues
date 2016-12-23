@@ -32,11 +32,7 @@ public class Relationships : MonoBehaviour
     {
         all.Remove(go);
     }
-
-    private void Start()
-    {
-
-    }
+    
     
 }
 

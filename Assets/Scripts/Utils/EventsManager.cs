@@ -38,6 +38,12 @@ public class EventsManager : Root<EventsManager>
     {
         pools.Add(typeof(T), new ObjectPool<T>());
     }
+    public void AddEventType(Type t)
+    {
+        Debug.Log("Registered event: " + t.Name);
+        pools.Add(t, Activator.CreateInstance(typeof(ObjectPool<>).MakeGenericType(t)) );
+    }
+
 
     Dictionary<Type, List<Reaction>> commonReactions = new Dictionary<Type, List<Reaction>>();
     //feed type, event type, reactions
@@ -45,8 +51,8 @@ public class EventsManager : Root<EventsManager>
     private void Awake()
     {
         base.Awake();
-        AddEventType<TestEvent>();
         FindObjectOfType<BasicLoader>().Loaded += OnLoad;
+        
     }
 
     void OnLoad()
@@ -54,7 +60,10 @@ public class EventsManager : Root<EventsManager>
         var engine = FindObjectOfType<BasicLoader>().Engine;
         var commonReactionTypes = engine.FindTypesCastableTo<Reaction>();
         var personalReactionTypes = engine.FindTypesCastableTo<PersonalReaction>();
-
+        var eventTypes = engine.FindTypesCastableTo<Event>();
+        Debug.Log(eventTypes.Count);
+        foreach (var eventType in eventTypes)
+            AddEventType(eventType);
         foreach ( var crType in commonReactionTypes)
         {
             var reaction = Activator.CreateInstance(crType) as Reaction;
@@ -133,7 +142,8 @@ public class TestEvent : Event
 }
 public class Event
 {
-    public GameObject Root;
+    protected GameObject root;
+    public GameObject Root { get { return root; } set { root = value; } }
     public HashSet<object> Reacted = new HashSet<object>();
     public HashSet<object> PersonalReacted = new HashSet<object>();
     //should be in the events manager class
@@ -154,8 +164,8 @@ public class Event
             var reaction = commonReactions[i];
             if( reaction.Meta.IsRepeatable || !Reacted.Contains(reaction))
             {
-                var cachedRoot = reaction.Root;
-                reaction.Root = this;
+                var cachedRoot = reaction.Event;
+                reaction.Event = this;
                 bool available = reaction.Filter();
                 if(available)
                 {
@@ -163,7 +173,7 @@ public class Event
                     reaction.Action();
                     Reacted.Add(reaction);
                 }
-                reaction.Root = cachedRoot;
+                reaction.Event = cachedRoot;
             }
         }
         

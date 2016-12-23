@@ -14,12 +14,28 @@ public class InteractableController : MonoBehaviour
     private void Update()
     {
         if (Input.GetMouseButtonUp(0))
-            if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100f))
-        {
-                if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
-                    return;
-            SnapToInteractable(hit.transform.gameObject);
-        }
+            if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+                return;
+            else
+            {
+                bool foundInter = false;
+                if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100f))
+                {
+
+                    foundInter = SnapToInteractable(hit.transform.gameObject);
+                    
+                }
+                if(!foundInter)
+                {
+                    var hit = Physics2D.GetRayIntersection(Camera.main.ScreenPointToRay(Input.mousePosition));
+                    Debug.Log(hit.transform);
+                    if (hit.transform)
+                        SnapToInteractable(hit.transform.gameObject);
+                    else
+                        ClearSelection();
+                }
+            }
+        
         if (Input.GetMouseButtonUp(1))
         {
             ClearSelection();
@@ -27,20 +43,21 @@ public class InteractableController : MonoBehaviour
     }
     Interactable interactable;
     List<EventAction> availableInteractions = new List<EventAction>();
-    public void SnapToInteractable(GameObject go)
+    Actor actor;
+    public bool SnapToInteractable(GameObject go)
     {
         Debug.Log(go);
         ClearSelection();
         interactable = go.GetComponent<Interactable>();
         if (interactable == null)
-            return;
+            return false;
         var highlight = go.GetComponent<Highlightable>();
         if (highlight != null)
             highlight.LitUp();
 
-        var actor = GetComponent<Actor>();
+        actor = GetComponent<Actor>();
         if (actor == null)
-            return;
+            return false;
         availableInteractions.Clear();
         foreach (var inter in actor.allInteractions)
         {
@@ -49,10 +66,24 @@ public class InteractableController : MonoBehaviour
             if (inter.Filter())
                 availableInteractions.Add(inter);
         }
-        view.ShowInteractions(availableInteractions);
-        
+        view.ShowInteractions(availableInteractions, this);
+        return true;
     }
 
+    public List<EventAction> UpdateInteractions(HashSet<System.Type> interactionsToIgnore)
+    {
+        availableInteractions.Clear();
+        foreach (var inter in actor.allInteractions)
+        {
+            if (interactionsToIgnore.Contains(inter.GetType()))
+                continue;
+            (inter as EventInteraction).Initiator = gameObject;
+            inter.Root = interactable.gameObject;
+            if (inter.Filter())
+                availableInteractions.Add(inter);
+        }
+        return availableInteractions;
+    }
     void ClearSelection()
     {
         if (interactable == null)
@@ -61,6 +92,6 @@ public class InteractableController : MonoBehaviour
         if (highlight != null)
             highlight.LitDown();
         interactable = null;
-        view.ShowInteractions(null);
+        view.ShowInteractions(null, this);
     }
 }

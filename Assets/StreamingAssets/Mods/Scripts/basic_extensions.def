@@ -1,15 +1,3 @@
-npc_has_facts_and_backstory = 
-{
-	once_per_object = yes
-	scope = actor.entity
-	utility = 1
-	action = 
-	{
-		create = facts
-		create = backstory
-		create = personality
-	}
-}
 
 
 player_has_controls = 
@@ -21,5 +9,15 @@ player_has_controls =
 		create = movable_controller
 		create = turn_follow_mouse_controller
 		create = interactable_controller
+	}
+}
+
+interactable_is_highlatable = 
+{
+	once_per_object = yes
+	scope = interactable
+	utility = 1
+	action = {
+		create = highlightable
 	}
 }

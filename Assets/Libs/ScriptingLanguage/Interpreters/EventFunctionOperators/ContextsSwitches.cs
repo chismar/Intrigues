@@ -227,7 +227,15 @@ public class ContextSwitchInterpreter : FunctionOperatorInterpreter
            // if (ScriptEngine.AnalyzeDebug)
            //     Debug.Log ("Context method " + method.Name);
 			ContextFunctionCallInterpreter inter = new ContextFunctionCallInterpreter (method, Engine);
-			functions.Add (NameTranslator.ScriptNameFromCSharp (method.Name), inter);
+            try
+            {
+
+                functions.Add(NameTranslator.ScriptNameFromCSharp(method.Name), inter);
+            }
+            catch(ArgumentException e)
+            {
+                Debug.LogWarningFormat("{0} has a duplicate function named {1}", type, method.Name);
+            }
 		}
 	}
 
@@ -503,37 +511,102 @@ public class ContextPropertyInterpreter : FunctionOperatorInterpreter
         if (listT == null)
 		{
             
-            if (!(op.Context is Expression))
-				return;
-            if (ScriptEngine.AnalyzeDebug)
-                Debug.Log ("PROPERTY " + propName);
-            
-			if (context == null)
-				block.Statements.Add (String.Format ("root.{0} = ({2})({1});", propName, exprInter.InterpretExpression (op.Context as Expression, block, propType).ExprString, TypeName.NameOf (propType)));
-			else
-				block.Statements.Add (String.Format ("{2}.{0} = ({3})({1});", propName, exprInter.InterpretExpression (op.Context as Expression, block, propType).ExprString, context.Name, TypeName.NameOf (propType)));
-			
-		} else
+            if (op.Context is Expression)
+            {
+                if (ScriptEngine.AnalyzeDebug)
+                    Debug.Log("PROPERTY " + propName);
+
+                if (context == null)
+                    block.Statements.Add(String.Format("root.{0} = ({2})({1});", propName, exprInter.InterpretExpression(op.Context as Expression, block, propType).ExprString, TypeName.NameOf(propType)));
+                else
+                    block.Statements.Add(String.Format("{2}.{0} = ({3})({1});", propName, exprInter.InterpretExpression(op.Context as Expression, block, propType).ExprString, context.Name, TypeName.NameOf(propType)));
+
+            }
+            else if(typeof(Delegate).IsAssignableFrom(propType))
+            {
+                Debug.Log("LAMBDA!");
+                //Interpret as lambda
+                LambdaStatement lambda = new LambdaStatement();
+                lambda.DelegateType = propType;
+                var method = propType.GetMethod("Invoke");
+                lambda.Params = method.GetParameters();
+                lambda.Name = "Lambda" + DeclareVariableStatement.VariableId++;
+                block.Statements.Add(lambda);
+                lambda.Block = new FunctionBlock(block);
+
+                //DeclareVariableStatement lastVar = null;
+                foreach (var param in lambda.Params)
+                {
+                    var argVar = new DeclareVariableStatement();
+                    //	lastVar = argVar;
+                    argVar.Name = param.Name;
+                    argVar.IsArg = true;
+                    argVar.Type = param.ParameterType;
+                    lambda.Block.Statements.Add(argVar);
+                }
+                //if (lastVar != null)
+                //	lastVar.IsContext = true;
+
+                var retType = lambda.DelegateType.GetMethod("Invoke").ReturnType;
+                bool hasReturn = false;
+                if (retType != null && retType != typeof(void))
+                {
+                    hasReturn = true;
+                    lambda.Block.Statements.Add(new DeclareVariableStatement()
+                    {
+                        Name = "return_value",
+                        InitExpression = string.Format("default({0})", retType),
+                        IsReturn = true,
+                        Type = retType
+                    });
+                }
+
+                foreach (var entry in (op.Context as Context).Entries)
+                {
+                    var subOp = entry as Operator;
+                    ops.GetInterpreter(subOp, lambda.Block).Interpret(subOp, lambda.Block);
+                }
+                if (hasReturn)
+                    lambda.Block.Statements.Add("return return_value;");
+                if (context == null)
+                    block.Statements.Add(String.Format("root.{0} = ({2})({1});", propName,lambda.Name, TypeName.NameOf(propType)));
+                else
+                    block.Statements.Add(String.Format("{2}.{0} = ({3})({1});", propName, lambda.Name, context.Name, TypeName.NameOf(propType)));
+
+            }
+            else
+                return;
+
+        } else
 		{
-			Debug.Log ("list of" + listT);
+			//Debug.Log ("list of" + listT);
 			ForStatement statement = new ForStatement ();
-			string listVarName = context == null ? "root." + propName : context.Name + "." + propName;
-			string iterName = "i" + DeclareVariableStatement.VariableId++;
+			string listVarContent = context == null ? "root." + propName : context.Name + "." + propName;
+            string listVarName = "list" + DeclareVariableStatement.VariableId++;
+            DeclareVariableStatement listVar = new DeclareVariableStatement();
+            listVar.IsTemp = true;
+            listVar.Name = listVarName;
+            listVar.InitExpression = listVarContent;
+            listVar.Type = propType;
+
+            block.Statements.Add(listVar);
+            string iterName = "i" + DeclareVariableStatement.VariableId++;
 			statement.InsideExpr = String.Format ("int {0} = 0; {1} != null && {0} < {1}.Count; {0}++", iterName,
-			                                      listVarName);
+                                                  listVarName);
 			FunctionBlock repeatBlock = new FunctionBlock (block, block.Method, block.Type);
 			statement.RepeatBlock = repeatBlock;
 			block.Statements.Add (statement);
 			Operator listVarOp = new Operator ();
 
-			DeclareVariableStatement listVar = new DeclareVariableStatement ();
-			listVar.Name = "iter" + DeclareVariableStatement.VariableId++;
-			listVar.IsContext = true;
-			listVar.IsNew = true;
-			listVar.Type = listT;
-			listVar.InitExpression = String.Format ("{0}[{1}]", listVarName, iterName);
+			DeclareVariableStatement iterVar = new DeclareVariableStatement ();
+            iterVar.Name = "iter" + DeclareVariableStatement.VariableId++;
+            iterVar.IsContext = true;
+            iterVar.IsNew = true;
+            iterVar.Type = listT;
+            iterVar.IsListIter = true;
+            iterVar.InitExpression = String.Format ("{0}[{1}]", listVarName, iterName);
 
-			statement.RepeatBlock.Statements.Add (listVar);
+			statement.RepeatBlock.Statements.Add (iterVar);
 			var inter = switches.GetInterByType (listT);
             //Debug.Log(inter);
 			inter.Interpret (op, repeatBlock);
@@ -626,8 +699,10 @@ public class ContextPropertySwitchInterpreter : ContextPropertyInterpreter
 		var thisKey = new PropKey (type, propName);
 		if (!allPropSwitches.ContainsKey (thisKey))
 			allPropSwitches.Add (thisKey, this);
-		if ((typeof(MonoBehaviour).IsAssignableFrom (type) && type != typeof(MonoBehaviour)) || engine.IsLocalType(type))
+        //Debug.Log("Context property switch: " + type);
+        if ((typeof(MonoBehaviour).IsAssignableFrom (type) && type != typeof(MonoBehaviour)) || engine.IsLocalType(type))
         {
+            //Debug.Log("Context property switch analyzed: " + type);
             //if (ScriptEngine.AnalyzeDebug)
             //    Debug.Log ("It's a component! " + type);
             try
@@ -717,7 +792,8 @@ public class ContextPropertySwitchInterpreter : ContextPropertyInterpreter
 		declareVar.Name = "subContext" + DeclareVariableStatement.VariableId++;
 		declareVar.IsContext = true;
 
-		DeclareVariableStatement contextVar = block.FindStatement<DeclareVariableStatement> (v => v.Name == varName);
+		DeclareVariableStatement contextVar = block.FindStatement<DeclareVariableStatement> (v => (v.Name == varName) ||
+        (v.Type == propType && v.IsContext && v.IsListIter));
 		if (contextVar == null)
 		{
 			var sCtx = block.FindStatement<ContextStatement> (v => v.InterpretInContext (op, block) != null && (v.ContextVar.IsContext || v.ContextVar.IsArg));

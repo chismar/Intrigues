@@ -153,7 +153,7 @@ public class AgentDatabaseLoader : ScriptInterpreter
                     }
                     field.Attributes = MemberAttributes.Public;
                     prop.Type = field.Type;
-                    prop.Attributes = MemberAttributes.Public;
+                    prop.Attributes = MemberAttributes.Public | MemberAttributes.Final;
                     dbElement.Members.Add(prop);
                     dbElement.Members.Add(field);
 
@@ -164,9 +164,16 @@ public class AgentDatabaseLoader : ScriptInterpreter
             }
             //Get\Query[Type], Add[Type], Remove[Type], Remove[Type]Where, Has[Type], Has[Type]Where
 
-            var getThisTypeMethod = new CodeMemberMethod();
+            var getThisTypeMethod = new CodeMemberProperty();
             getThisTypeMethod.Attributes = MemberAttributes.Public | MemberAttributes.Final;
             getThisTypeMethod.Name = "Get" + NameTranslator.CSharpNameFromScript(dbElement.Name);
+            getThisTypeMethod.HasGet = true;
+            getThisTypeMethod.HasSet = false;
+            getThisTypeMethod.Type = new CodeTypeReference(string.Format("System.Collections.Generic.List<ScriptedTypes.{0}>", dbElement.Name));
+            getThisTypeMethod.GetStatements.Add(new CodeSnippetStatement(
+                string.Format("var list = this.Get<ScriptedTypes.{0}>(); return list;", dbElement.Name)));
+            dbComponentType.Members.Add(getThisTypeMethod);
+
             if (returnedLists.Add(dbElement.Name))
             {
                 var listExt = string.Format("public static class {0} {{ static ObjectPool<System.Collections.Generic.List<ScriptedTypes.{1}>> pool = new ObjectPool<System.Collections.Generic.List<ScriptedTypes.{1}>>(); {2} }}",
@@ -175,10 +182,6 @@ public class AgentDatabaseLoader : ScriptInterpreter
                     dbElement.Name));
                 listExtensions.Add(listExt);
             }
-            getThisTypeMethod.ReturnType = new CodeTypeReference(string.Format("System.Collections.Generic.List<ScriptedTypes.{0}>", dbElement.Name));
-            getThisTypeMethod.Statements.Add(new CodeSnippetStatement(
-                string.Format("var list = this.Get<ScriptedTypes.{0}>(); return list;", dbElement.Name)));
-            dbComponentType.Members.Add(getThisTypeMethod);
 
             var queryThisTypeMethod = new CodeMemberMethod();
             queryThisTypeMethod.Attributes = MemberAttributes.Public | MemberAttributes.Final;

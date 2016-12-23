@@ -90,9 +90,11 @@ public class DeclareVariableStatement
 	public bool IsTemp = false;
 	public bool IsReturn = false;
 	public bool IsDeclaration = true;
-	//	public object Lambda;
+    public bool IsListIter = false;
 
-	public override string ToString ()
+    //	public object Lambda;
+
+    public override string ToString ()
 	{
 //		if (Lambda != null)
 //		{
@@ -102,8 +104,21 @@ public class DeclareVariableStatement
 			InitExpression = InitExpression.Substring (0, InitExpression.Length - 1);
 			
 		if (IsArg || IsHidden)
-			return "";
-		if (!IsDeclaration)
+        {
+            if (!IsDeclaration)
+            {
+                if (InitExpression == null)
+                    return string.Format("//{0} {1}; //IsContext = {2} IsNew = {3}", "", Name, IsContext, IsNew);
+                else
+                    return string.Format("//{0} {1} = {2}; //IsContext = {3} IsNew = {4}", "", Name, InitExpression, IsContext, IsNew);
+            }
+            if (InitExpression == null)
+                return string.Format("//{0} {1}; //IsContext = {2} IsNew = {3}", TypeName.NameOf(Type), Name, IsContext, IsNew);
+            else
+                return string.Format("//{0} {1} = {2}; //IsContext = {3} IsNew = {4}", TypeName.NameOf(Type), Name, InitExpression, IsContext, IsNew);
+
+        }
+        if (!IsDeclaration)
 		{
 			if (InitExpression == null)
 				return string.Format ("{0} {1}; //IsContext = {2} IsNew = {3}", "", Name, IsContext, IsNew);

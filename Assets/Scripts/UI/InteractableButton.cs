@@ -9,7 +9,7 @@ public class InteractableButton : MonoBehaviour
     public Text InteractionName;
     public Button Button;
     public EventAction Interaction;
-
+    public InteractionsView View;
     List<Dependency> deps;
     HoverTooltip tooltip;
     private void Start()
@@ -30,7 +30,10 @@ public class InteractableButton : MonoBehaviour
         if (InterAvailable() && Interaction.Filter())
         {
             Interaction.Action();
+            if (Interaction.Coroutine != null)
+                Interaction.Coroutine.MoveNext();
         }
+        View.UpdateView();
     }
     static ObjectPool<List<Dependency>> lists = new ObjectPool<List<Dependency>>();
     List<Dependency> satisfiedDeps = new List<Dependency>();
