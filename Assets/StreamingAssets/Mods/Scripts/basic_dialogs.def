@@ -18,7 +18,7 @@ rival_story =
 					allowed = not markers.has_marker(id)
 					log = id
 					say = {
-						string = "say_about_rival"
+						string = format("say_about_rival", who = rival_of_root)
 						reaction = {
 							markers.set_marker = id
 						}

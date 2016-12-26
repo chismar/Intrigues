@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using InternalDSL;
 using System;
+using System.Text;
 
 public class HasComponentScope : ScopeInterpreter
 {
@@ -226,3 +227,31 @@ public class WeightMetricInterpreter : ScopeInterpreter
     }
 }
 
+[ScopeInterpreter("format")]
+public class FormatInterpreter : ScopeInterpreter
+{
+    StringBuilder codeBuilder = new StringBuilder();
+    public override void Interpret(Expression[] args, FunctionBlock block, Type contextType, string exprVal, out string newExprVal, out FunctionBlock newCurBlock, out Type newContextType, bool isLast)
+    {
+        codeBuilder.Length = 0;
+        var dictName = "dict" + DeclareVariableStatement.VariableId++;
+        codeBuilder.Append("var ").Append(dictName).Append("= new System.Collections.Generic.Dictionary<string, object>();");
+        var strName = "localizedString" + DeclareVariableStatement.VariableId++;
+        codeBuilder.AppendLine();
+        codeBuilder.Append("var ").Append(strName).Append("= new LocalizedString(");
+
+        codeBuilder.Append(args[0].ToString().ClearFromBraces().Trim(' ')).Append(',').Append(dictName).Append(");");
+
+        for ( int i =1; i < args.Length;i++)
+        {
+            var paramName = args[i].Operands[0].ToString().ClearFromBraces().Trim(' ');
+            var value = ExprInter.InterpretExpression((args[i].Operands[2] as ExprAtom).Content as Expression, block).ExprString;
+            codeBuilder.Append(dictName).Append(".Add(\"").Append(paramName).Append("\",").Append(value).AppendLine(");");
+
+        }
+        block.Statements.Add(codeBuilder.ToString());
+        newExprVal = strName;
+        newCurBlock = block;
+        newContextType = typeof(LocalizedString);
+    }
+}

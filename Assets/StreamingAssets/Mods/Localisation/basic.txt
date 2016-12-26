@@ -1,0 +1,1 @@
+say_about_rival : I'm really concerned about {name.who}. {@pronoun.who} is my rival and I really, bloody, want {who_pronoun.who} dead. I'll offer you my support if you get rid of {owner_pronoun.who}.

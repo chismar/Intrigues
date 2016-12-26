@@ -104,7 +104,7 @@ public class ScriptEngine
 		for (int i = 0; i < allTypes.Count; i++)
 		{
 			Type curType = allTypes [i];
-			var attrs = curType.GetCustomAttributes (attrType, false);
+			var attrs = curType.GetCustomAttributes (attrType, true);
 			if (attrs.Length == 1)
 				pairs.Add (new TypeAttributePair<T> (curType, attrs [0] as T));
 		}
@@ -152,7 +152,7 @@ public class ScriptEngine
 		var	types = asm.GetTypes ();
 		for (int i = 0; i < types.Length; i++)
 		{
-//			Debug.Log (types [i]);
+			//Debug.Log (types [i]);
 
 			allTypes.Add (types [i]);
             localTypes.Add(types[i]);

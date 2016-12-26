@@ -47,10 +47,10 @@ public class DialogUI : MonoBehaviour
         }
     }
 
-    public void ReceiveLine(string line)
+    public void ReceiveLine(LocalizedString line)
     {
         InitDialogUi(listener.TalksTo);
-        Text.text = line;
+        Text.text = line.Render(listener.gameObject);
 
     }
 

@@ -2,3 +2,7 @@ personality =
 {
 	trust(0,1) = float
 }
+
+named = {
+	full_name = string
+}

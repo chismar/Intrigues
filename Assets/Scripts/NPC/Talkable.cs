@@ -95,7 +95,7 @@ public class Dialog
 
 public class DialogLine
 {
-    public string String { get; set; }
+    public LocalizedString String { get; set; }
 
     public VoidDelegate Reaction { get; set; }
 }

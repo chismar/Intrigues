@@ -97,12 +97,14 @@ public class BasicLoader : MonoBehaviour
 			AppDomain.CurrentDomain.AssemblyResolve += Resolver;
 			loadedAsms.Add ("ExternalCode");
 			loadedAsms.Add ("BlackboardsData");
+            loadedAsms.Add("LocalisationTags");
             loadedAsms.Add("AgentsDatabases_" + typeof(Fact).Name);
             loadedAsms.Add("AgentsDatabases_" + typeof(BackstoryElement).Name);
             bbloader = new BlackboardsLoader (Engine);
             reactionsLoader = new ReactionsLoader("reactions", engine);
             factsLoader = new AgentDatabaseLoader(engine, "facts", typeof(Fact));
             backstoryFactsLoader = new AgentDatabaseLoader(engine, "backstory", typeof(BackstoryElement));
+            localisationLoader = new LocalisationTagsLoader("ScriptedTypes", engine);
             bbloader.Init (); factsLoader.Init(); backstoryFactsLoader.Init();
             metricsLoader = new MetricsLoader("ScriptedTypes", engine);
 			//eaBar = FindObjectOfType<ProgressBarSet> ().CreateBar (Color.green, "eaBar");
@@ -130,7 +132,9 @@ public class BasicLoader : MonoBehaviour
 			Engine.AddAssembly (asm);
             asm = Assembly.LoadFile ((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/Content.dll");
 			Engine.AddAssembly (asm);
-            
+            asm = Assembly.LoadFile((Application.isEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/DLLs/LocalisationTags.dll");
+            Engine.AddAssembly(asm);
+
             yield return null;
 
 			//foreach (var bar in this.pluginBars)
@@ -151,6 +155,7 @@ public class BasicLoader : MonoBehaviour
     BlackboardsLoader bbloader;
     AgentDatabaseLoader factsLoader;
     AgentDatabaseLoader backstoryFactsLoader;
+    LocalisationTagsLoader localisationLoader;
     //ProgressBar eaBar;
     //ProgressBar genBar;
 
@@ -237,6 +242,15 @@ public class BasicLoader : MonoBehaviour
         foreach (var file in scriptFiles)
             reactionsScript.LoadFile(file);
         reactionsScript.Interpret();
+
+        scriptFiles = Directory.GetFiles((BasicLoader.IsInEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/Mods/LocalisationTags", "*.def");
+        Script localisationScript = new Script("localisations", localisationLoader);
+        foreach (var file in scriptFiles)
+        {
+            localisationScript.LoadFile(file);
+        }
+
+        localisationScript.Interpret();
         var compiler = Engine.GetPlugin<ScriptCompiler> ();
 		compiler.Compile (OnAssemblyCompiled);
 	}

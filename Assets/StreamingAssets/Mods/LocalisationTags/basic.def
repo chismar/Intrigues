@@ -1,0 +1,29 @@
+pronoun(he) = {
+	scope = man_role
+	utility = 1
+} 
+pronoun(she) = woman_role
+
+
+who_pronoun(him) = {
+	scope = man_role
+	utility = 1
+} 
+who_pronoun(her) = {
+	scope = woman_role
+	utility = 1
+} 
+owner_pronoun(his) = {
+	scope = man_role
+	utility = 1
+} 
+owner_pronoun(her) = {
+	scope = woman_role
+	utility = 1
+} 
+
+name = {
+	scope = named
+	utility = 1
+	value = named.full_name
+}

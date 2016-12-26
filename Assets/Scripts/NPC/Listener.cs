@@ -101,7 +101,7 @@ public class Listener : MonoBehaviour
     }
 
 
-    public string ChooseHook(string hook)
+    public LocalizedString ChooseHook(string hook)
     {
         var hookedDialogs = hooksToDialogs[hook];
         Dialog maxDialog = null;
