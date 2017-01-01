@@ -34,7 +34,6 @@ public class NamesResources : MonoBehaviour
 					list.Add (lines [i]);
 			}
 		}
-
 		FindObjectOfType<BasicLoader> ().EFunctions.Add (new BasicLoader.ExternalFunctions (this, "RandomName"));
 	}
 

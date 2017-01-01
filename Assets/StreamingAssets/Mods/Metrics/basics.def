@@ -22,3 +22,4 @@ test_metric_actors =
 	scope = actor
 	other_scope = actor
 }
+

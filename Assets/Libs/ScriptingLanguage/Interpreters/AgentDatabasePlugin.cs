@@ -111,7 +111,7 @@ public class AgentDatabaseLoader : ScriptInterpreter
             }
             if (entry.Context is Context)
             {
-                
+
                 foreach (var fieldOp in (entry.Context as Context).Entries)
                 {
                     var op = fieldOp as Operator;
@@ -160,8 +160,36 @@ public class AgentDatabaseLoader : ScriptInterpreter
 
                 }
 
-                
+
             }
+
+            //OnAdd, OnRemove
+            var elementName = (entry.Identifier as string).CSharp();
+            var onAddEvent = new CodeTypeDeclaration(elementName + "Added");
+            onAddEvent.BaseTypes.Add(new CodeTypeReference(typeof(DelayedEvent)));
+            var onRemoveEvent = new CodeTypeDeclaration(elementName + "Removed");
+            onRemoveEvent.BaseTypes.Add(new CodeTypeReference(typeof(DelayedEvent)));
+
+            var elementProp = new CodeMemberProperty();
+            elementProp.Name = "Fact";
+            elementProp.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+            elementProp.Type = new CodeTypeReference(dbElement.Name);
+            var elementField = new CodeMemberField();
+            elementField.Name = "fact";
+            elementField.Type = new CodeTypeReference(dbElement.Name);
+            elementProp.HasGet = true;
+            elementProp.HasSet = true;
+            elementProp.SetStatements.Add(new CodeSnippetStatement("fact = value;"));
+            elementProp.GetStatements.Add(new CodeSnippetStatement("return fact;"));
+
+            onAddEvent.Members.Add(elementProp);
+            onAddEvent.Members.Add(elementField);
+
+            onRemoveEvent.Members.Add(elementProp);
+            onRemoveEvent.Members.Add(elementField);
+
+            cNamespace.Types.Add(onAddEvent);
+            cNamespace.Types.Add(onRemoveEvent);
             //Get\Query[Type], Add[Type], Remove[Type], Remove[Type]Where, Has[Type], Has[Type]Where
 
             var getThisTypeMethod = new CodeMemberProperty();
@@ -203,7 +231,7 @@ public class AgentDatabaseLoader : ScriptInterpreter
 
             deleteWhere.Parameters.Add(new CodeParameterDeclarationExpression(dbElement.Name + "_queryDelegate", "queryDel"));
             deleteWhere.Statements.Add(new CodeSnippetStatement(
-                string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list == null) return; for(int i =0; i < list.Count; i++) if(queryDel(list[i])) {{ list.RemoveAt(i); i--; }}", dbElement.Name)));
+                string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list == null) return; for(int i =0; i < list.Count; i++) if(queryDel(list[i])) {{ var e = EventsManager.Instance.GetEvent<ScriptedTypes.{1}>(); e.Root = gameObject; e.Fact = list[i]; EventsManager.Instance.FireEvent(e); list.RemoveAt(i); i--; }}", dbElement.Name, onRemoveEvent.Name)));
             dbComponentType.Members.Add(deleteWhere);
 
 
@@ -213,7 +241,7 @@ public class AgentDatabaseLoader : ScriptInterpreter
 
             delete.Parameters.Add(new CodeParameterDeclarationExpression(dbElement.Name, "obj"));
             delete.Statements.Add(new CodeSnippetStatement(
-                string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list != null) list.Remove(obj);", dbElement.Name)));
+                string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list != null) {{ list.Remove(obj); var e = EventsManager.Instance.GetEvent<ScriptedTypes.{1}>(); e.Root = gameObject; e.Fact = obj; EventsManager.Instance.FireEvent(e);}} ", dbElement.Name, onRemoveEvent.Name)));
             dbComponentType.Members.Add(delete);
 
             var add = new CodeMemberMethod();
@@ -221,7 +249,7 @@ public class AgentDatabaseLoader : ScriptInterpreter
             add.Name = "Add" + NameTranslator.CSharpNameFromScript(dbElement.Name);
             add.ReturnType = new CodeTypeReference("ScriptedTypes." + dbElement.Name);
             add.Statements.Add(new CodeSnippetStatement(
-                string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list == null) {{ list = ScriptedTypes.{0}ListExt.Get(); data.Add(typeof(ScriptedTypes.{0}), list); }} var e = new ScriptedTypes.{0}(); list.Add(e); return e;", dbElement.Name)));
+                string.Format("var list = this.Get<ScriptedTypes.{0}>(); if(list == null) {{ list = ScriptedTypes.{0}ListExt.Get(); data.Add(typeof(ScriptedTypes.{0}), list); }} var e = new ScriptedTypes.{0}(); list.Add(e); var ev = EventsManager.Instance.GetEvent<ScriptedTypes.{1}>(); ev.Root = gameObject; ev.Fact = e; EventsManager.Instance.FireEvent(ev); return e;", dbElement.Name, onAddEvent.Name)));
             dbComponentType.Members.Add(add);
 
             var has = new CodeMemberMethod();

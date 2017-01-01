@@ -15,12 +15,20 @@ public class EventsManager : Root<EventsManager>
         e.commonReactions = commonReactions[typeof(T)];
         return e;
     }
-
+    List<DelayedEvent> delayedEvents = new List<DelayedEvent>();
     public void FireEvent<T>(T e) where T : Event, new()
     {
-        e.Update();
-        var pool = pools[typeof(T)] as ObjectPool<T>;
-        pool.Return(e);
+        if(e is DelayedEvent)
+        {
+            delayedEvents.Add(e as DelayedEvent);
+        }
+        else
+        {
+            e.Update();
+            var pool = pools[typeof(T)] as ObjectPool<T>;
+            pool.Return(e);
+        }
+        
     }
     
     public void UpdateEvent<T>(T e) where T : Event, new()
@@ -42,6 +50,7 @@ public class EventsManager : Root<EventsManager>
     {
         Debug.Log("Registered event: " + t.Name);
         pools.Add(t, Activator.CreateInstance(typeof(ObjectPool<>).MakeGenericType(t)) );
+        commonReactions.Add(t, new List<Reaction>());
     }
 
 
@@ -135,6 +144,18 @@ public class EventsManager : Root<EventsManager>
         }
         Debug.Log(builder.ToString());
     }
+
+    private void Update()
+    {
+        for ( int i = 0; i < delayedEvents.Count; i++)
+        {
+            var e = delayedEvents[i];
+            e.Update();
+            var pool = pools[e.GetType()] as ObjectPool;
+            pool.Return(e);
+        }
+        delayedEvents.Clear();
+    }
 }
 public class TestEvent : Event
 {
@@ -180,6 +201,10 @@ public class Event
     }
 }
 
+public class DelayedEvent : Event
+{
+
+}
 
 public abstract class EventsFeed
 {

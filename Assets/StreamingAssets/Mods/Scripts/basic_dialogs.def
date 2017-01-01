@@ -16,9 +16,8 @@ rival_story =
 					hook = looks_anxious
 					utility = 1
 					allowed = not markers.has_marker(id)
-					log = id
 					say = {
-						string = format("say_about_rival", who = rival_of_root)
+						string = format("say_about_rival", who = rival_of_root, money = 100)
 						reaction = {
 							markers.set_marker = id
 						}

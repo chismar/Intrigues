@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-public class ObjectPool<T> where T:new()
+using System;
+
+public class ObjectPool<T> : ObjectPool where T:new()
 {
     Stack<T> ts = new Stack<T>();
     public T Get()
@@ -16,5 +18,21 @@ public class ObjectPool<T> where T:new()
     {
         ts.Push(t);
     }
-    
+
+    object ObjectPool.Get()
+    {
+        return Get();
+    }
+
+    void ObjectPool.Return(object o)
+    {
+        ts.Push((T)o);
+    }
+}
+
+
+public interface ObjectPool
+{
+    object Get();
+    void Return(object o);
 }

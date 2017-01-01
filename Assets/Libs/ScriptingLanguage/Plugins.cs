@@ -102,6 +102,44 @@ public static class NameTranslator
 		}
 		return builder.ToString ();
 	}
+
+    public static string CSharp(this string name)
+    {
+        builder.Length = 0;
+        builder.Append(Char.ToUpper(name[0]));
+        for (int i = 1; i < name.Length; i++)
+        {
+            if (name[i] == '_')
+            {
+                builder.Append(Char.ToUpper(name[i + 1]));
+                i++;
+            }
+            else
+                builder.Append(name[i]);
+        }
+        return builder.ToString();
+    }
+
+    public static string Script(this string name)
+    {
+        builder.Length = 0;
+        builder.Append(Char.ToLower(name[0]));
+        for (int i = 1; i < name.Length; i++)
+        {
+            char lower = Char.ToLower(name[i]);
+            char possibleUpper = name[i];
+            if (lower == possibleUpper)
+            {
+                builder.Append(lower);
+            }
+            else
+            {
+                builder.Append('_');
+                builder.Append(lower);
+            }
+        }
+        return builder.ToString();
+    }
 }
 
 public class ScriptCompiler : ScriptEnginePlugin
