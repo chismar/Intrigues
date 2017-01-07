@@ -21,7 +21,7 @@ public class Entity : MonoBehaviour {
 
     public void SetPosition(float x, float y)
     {
-        transform.position = new Vector3(x, y);
+        transform.position = new Vector3(x, 0, y);
     }
     
     public Vector3 Position {  get { return transform.position; } }
@@ -29,7 +29,7 @@ public class Entity : MonoBehaviour {
     
     public void RandomPosition(float x, float y, float range)
     {
-        transform.position = new Vector3(x + Random.Range(-range, range), y + Random.Range(-range, range));
+        transform.position = new Vector3(x + Random.Range(-range, range), 0, y + Random.Range(-range, range));
     }
 
     public delegate void GODelegate(GameObject go);

@@ -22,7 +22,10 @@ public class InteractableController : MonoBehaviour
                 if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100f))
                 {
 
-                    foundInter = SnapToInteractable(hit.transform.gameObject);
+				if (hit.transform)
+					foundInter = SnapToInteractable(hit.transform.gameObject);
+				else
+					ClearSelection();
                     
                 }
                 if(!foundInter)

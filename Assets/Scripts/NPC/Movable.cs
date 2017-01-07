@@ -1,16 +1,17 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-[RequireComponent(typeof(Rigidbody2D))]
 public class Movable : MonoBehaviour {
 
-    Rigidbody2D rigidBody;
+    Rigidbody rigidBody;
     [SerializeField]
     float speed;
     public float Speed { get { return speed; } set { speed = Mathf.Clamp(value, 0 , 1000); } }
     public bool IsMoving { get; internal set; }
-    public bool NearTarget { get; internal set; }
-    Vector3 target;
+	public bool NearTarget { get; internal set; }
+	[SerializeField]
+	Vector3 target;
+	[SerializeField]
     Transform targetGo;
     float OKDistance;
     public void GotoPoint(float OKDistance, Vector2 point)
@@ -33,7 +34,7 @@ public class Movable : MonoBehaviour {
 
     private void Awake()
     {
-        rigidBody = GetComponent<Rigidbody2D>();
+        rigidBody = GetComponent<Rigidbody>();
     }
 
     void Start()
@@ -51,7 +52,9 @@ public class Movable : MonoBehaviour {
         if (IsMoving = distance > OKDistance)
         {
             var normalVector = difVector / distance;
-            rigidBody.velocity = normalVector * Mathf.Min(Speed, distance);
+			Debug.DrawLine (transform.position, transform.position + normalVector);
+			rigidBody.velocity = normalVector * Mathf.Min(Speed, distance);
+			Debug.DrawLine (transform.position, transform.position + rigidBody.velocity, Color.red);
             NearTarget = false;
         }
         else
