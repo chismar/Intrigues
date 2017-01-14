@@ -197,7 +197,7 @@ public class MetricsLoader : ScriptInterpreter
             if (deps.Count > 0)
             {
                 CodeMemberMethod getDepsOverride = new CodeMemberMethod();
-                getDepsOverride.ReturnType = new CodeTypeReference(typeof(List<Dependency>));
+                getDepsOverride.ReturnType = new CodeTypeReference(typeof(List<Condition>));
                 getDepsOverride.Name = "GetDependencies";
                 getDepsOverride.Attributes = MemberAttributes.Public | MemberAttributes.Override;
                 codeType.Members.Add(getDepsOverride);

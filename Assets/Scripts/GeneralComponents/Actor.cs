@@ -67,7 +67,7 @@ public class Actor : MonoBehaviour {
     StringBuilder builder = new StringBuilder();
     void ChooseAction(Type category = null)
     {
-        List<Dependency> maxDeps = null;
+        List<Condition> maxDeps = null;
         var maxAction = FindAction(category, out maxDeps);
         //Debug.Log("choose action");
         if (maxAction != null)
@@ -76,7 +76,7 @@ public class Actor : MonoBehaviour {
         }
 
     }
-    public EventAction FindAction(Type category, out List<Dependency> maxDeps, Dependency targetDep = null)
+    public EventAction FindAction(Type category, out List<Condition> maxDeps, Condition targetDep = null)
     {
         var maxUt = 0f;
         EventAction maxAction = null;
@@ -131,7 +131,7 @@ public class Actor : MonoBehaviour {
     }
     HashSet<Type> externalDependencies = new HashSet<Type>();
 
-    public void Act(EventAction action, List<Dependency> deps = null)
+    public void Act(EventAction action, List<Condition> deps = null)
     {
         //Debug.Log("Act " + action.GetType().Name, gameObject);
         //Debug.Log(action.State);
@@ -170,7 +170,7 @@ public class Actor : MonoBehaviour {
         curAction = wrapper;
     }
 
-    public bool Traverse(List<Dependency> deps)
+    public bool Traverse(List<Condition> deps)
     {
         if (deps == null)
             return true;
@@ -208,8 +208,8 @@ public class Actor : MonoBehaviour {
 public class ActionWrapper
 {
     public EventAction Action;
-    public List<Dependency> Deps;
-    Dependency currentDep;
+    public List<Condition> Deps;
+    Condition currentDep;
 
     public void Update(Actor actor)
     {
@@ -277,7 +277,7 @@ public class ActionWrapper
     }
 }
 
-public abstract class Dependency
+public abstract class Condition
 {
     public abstract System.Type ActionCategory();
     public abstract bool Satisfied(); //Внутри оно так же должно прекращать
@@ -286,12 +286,12 @@ public abstract class Dependency
     public ActionWrapper ActionWrapper { get; set; }
 }
 
-public class CloserThan : Dependency
+public class CloserThan : Condition
 {
     Transform targetTransform;
     Transform rootTransform;
     float distance;
-    public Dependency Init(GameObject interactable, GameObject initiator, float distance)
+    public Condition Init(GameObject interactable, GameObject initiator, float distance)
     {
         if (interactable == null || initiator == null)
             return this;

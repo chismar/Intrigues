@@ -58,7 +58,6 @@ noble_whore_scenario =
 				who_is = whore
 				log = who_is
 			}
-			get_rival.log = who_is
 		}
 		noble.facts.add_husband_to.whom = noble_wife
 		noble.facts.add_lover = {

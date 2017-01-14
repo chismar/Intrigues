@@ -38,7 +38,7 @@ public abstract class EventAction
 	{
 
 	}
-    public virtual List<Dependency> GetDependencies()
+    public virtual List<Condition> GetDependencies()
     {
         return null;
     }
@@ -373,7 +373,7 @@ public class EventActionsLoader : ScriptInterpreter
             if(deps.Count > 0)
             {
                 CodeMemberMethod getDepsOverride = new CodeMemberMethod();
-                getDepsOverride.ReturnType = new CodeTypeReference(typeof(List<Dependency>));
+                getDepsOverride.ReturnType = new CodeTypeReference(typeof(List<Condition>));
                 getDepsOverride.Name = "GetDependencies";
                 getDepsOverride.Attributes = MemberAttributes.Public | MemberAttributes.Override;
                 codeType.Members.Add(getDepsOverride);
@@ -423,7 +423,7 @@ public class EventActionsLoader : ScriptInterpreter
 	}
     
 
-	void CreateEventFunction (string name, object context, CodeTypeDeclaration codeType, MethodInfo baseMethod, bool isAction, params object[] initStatements)
+	void CreateEventFunction (string name, object context, CodeTypeDeclaration codeType, MethodInfo baseMethod, params object[] initStatements)
 	{
 		CodeMemberMethod method = new CodeMemberMethod ();
 		method.Name = NameTranslator.CSharpNameFromScript (name);
