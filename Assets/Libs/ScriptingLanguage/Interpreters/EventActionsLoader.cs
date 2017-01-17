@@ -423,7 +423,7 @@ public class EventActionsLoader : ScriptInterpreter
 	}
     
 
-	void CreateEventFunction (string name, object context, CodeTypeDeclaration codeType, MethodInfo baseMethod, params object[] initStatements)
+	void CreateEventFunction (string name, object context, CodeTypeDeclaration codeType, MethodInfo baseMethod, bool isAction, params object[] initStatements)
 	{
 		CodeMemberMethod method = new CodeMemberMethod ();
 		method.Name = NameTranslator.CSharpNameFromScript (name);

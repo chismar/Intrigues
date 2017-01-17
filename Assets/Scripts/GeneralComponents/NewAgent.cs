@@ -1,15 +1,17 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-
+using System.Linq;
+using System;
 public class NewAgent : MonoBehaviour
 {
 	List<Behaviour> behaviours = new List<Behaviour>();
 	Behaviour curBehaviour = null;
 
+	Dictionary<Type, HashSet<Type>> tasksSet = new Dictionary<Type, HashSet<Type>>(); 
 
 	void UpdateAI()
 	{
-		float maxUt = curBehaviour == null ? 0f : curBehaviour.Utility ();
+		float maxUt = curBehaviour == null ? 0f : curBehaviour.Utility () + 0.1;
 		Behaviour maxBeh = null;
 		for (int i = 0; i < behaviours.Count; i++) {
 			var ut = behaviours [i].Utility ();
@@ -19,8 +21,13 @@ public class NewAgent : MonoBehaviour
 			}
 		}
 		if (curBehaviour != maxBeh) {
+			if (curBehaviour != null)
+				curBehaviour.Pause ();
 			curBehaviour = maxBeh;
-			curBehaviour.Perform ();
+			if (curBehaviour.Paused)
+				curBehaviour.Resume ();
+			else
+				curBehaviour.Perform ();
 		}
 
 	}
@@ -28,12 +35,22 @@ public class NewAgent : MonoBehaviour
 	void Update()
 	{
 		if (curBehaviour != null) {
-			curBehaviour.Update ();
-			if (curBehaviour.Done ()) {
-				curBehaviour = null;	
-			}
-		
+			if (curTaskBehaviour == null) {
+				
+				curBehaviour.Update ();
+				if (curBehaviour.Done ()) {
+					curBehaviour = null;	
+				}
+			} else if (curTaskBehaviour.Done ())
+				curTaskBehaviour = null;
+			else
+				curTaskBehaviour.Update ();
 		}
+	}
+	PrimitiveBehaviour curTaskBehaviour;
+	public void RegisterPrimitiveBehaviourToUpdate(PrimitiveBehaviour b)
+	{
+		curTaskBehaviour = b;
 	}
 
 	public bool CanDo(System.Type type)
@@ -58,6 +75,12 @@ public class NewAgent : MonoBehaviour
 
 public abstract class Behaviour
 {
+	protected static float ImpossiblePenaltyValue = 0.2f;
+	protected static float ImpossiblePenaltyDuration = 30f;
+	protected static float FailPenaltyValue = 0.1f;
+	protected static float FailPenaltyDuration = 15f;
+	public bool Paused { get; internal set; }
+	public Penalties Penalties { get; set; }
 	protected abstract Task Task { get; set; }
 	protected NewAgent Agent { get; private set; }
 	public TaskState State { get { return Task.State; } } 
@@ -67,7 +90,7 @@ public abstract class Behaviour
 	}
 	public void Perform()
 	{
-		
+		Task.Penalties = Penalties;
 		Do ();
 	}
 	protected abstract void Do ();
@@ -85,12 +108,26 @@ public abstract class Behaviour
 		} else if (task is RecurrentTask) {
 			beh = new RecurrentBehaviour ();
 		} else if (task is ComplexTask) {
-			beh = ComplexBehaviour ();
+			beh = new ComplexBehaviour ();
 		} 
 		beh.Agent = agent;
 		beh.Task = task;
+		return beh;
+	}
+	public void Pause ()
+	{
+		Paused = true;
+		OnPause ();
 	}
 
+	public void Resume()
+	{
+		Paused = false;
+		OnResume ();
+	}
+
+	protected abstract void OnPause();
+	protected abstract void OnResume();
 }
 
 public class PrimitiveBehaviour : Behaviour
@@ -244,7 +281,7 @@ public class PrimitiveBehaviour : Behaviour
 		if (curConditionToSatisfy.Behaviour == null) {
 			//Вот тут он должен или найти другое, в надежде, что когда он его удовлетворит, уже можно будет удовлетворить и это
 			//либо просто зафейлится, что он будет делать пока что
-			State = TaskState.Failed;
+			Task.State = TaskState.Failed;
 			return false;
 		}
 		curConditionToSatisfy.Behaviour.Perform ();
@@ -258,6 +295,16 @@ public class PrimitiveBehaviour : Behaviour
 		for (int i = 0; i < cons.Count; i++)
 			cons [i].Behaviour = null;
 		task.OnStart ();
+	}
+
+	protected override void OnPause ()
+	{
+		Interrupt ();
+	}
+
+	protected override void OnResume ()
+	{
+		InternalResume ();
 	}
 }
 
@@ -302,32 +349,86 @@ public static class ConditionsExt
 public class ComplexBehaviour : Behaviour
 {
 
-	ComplexTask task;
+	protected ComplexTask task;
 	protected override Task Task {
 		get { return task; }
 		set { task = value as ComplexTask; }
 	}
+	Behaviour curBehaviour;
+	IEnumerator<Task> decomposition;
 	protected override void Do ()
 	{
-		task.Perform ();
+		task.State = TaskState.None;
+		task.Init ();
+		decomposition = task.Decomposition ();
+		if (decomposition.MoveNext ()) {
+			curBehaviour = Behaviour.FromTask (Agent, decomposition.Current);
+			task.State = TaskState.Waits;
+		}
+		else
+			task.State = TaskState.Failed;
+	}
+
+	public override void Update ()
+	{
+		switch (curBehaviour.State) {
+		case TaskState.None:
+			if (task.State != TaskState.Waits) {
+				
+				curBehaviour.Perform ();
+				task.State = TaskState.Waits;
+			}
+			break;
+		case TaskState.Active:
+			curBehaviour.Update ();
+			break;
+		case TaskState.Finished:
+			if (decomposition.MoveNext ())
+				curBehaviour = Behaviour.FromTask (Agent, decomposition.Current);
+			else
+				task.State = TaskState.Finished;
+			break;
+		case TaskState.Impossible:
+			task.State = TaskState.Failed;
+			if (task.OnImpossible != null)
+				task.OnImpossible ();
+			break;
+		case TaskState.Failed:
+			task.State = TaskState.Failed;
+			if (task.OnFail != null)
+				task.OnFail ();
+			break;
+		}
+
 	}
 }
 
-public class RecurrentBehaviour : Behaviour
+public class RecurrentBehaviour : ComplexBehaviour
 {
-	RecurrentTask task;
-	protected override Task Task {
-		get { return task; }
-		set { task = value as RecurrentTask; }
-	}
+	RecurrentTask rTask { get { return task as RecurrentTask; } }
 	protected override void Do ()
 	{
-		//start a coroutine?
+		base.Do ();
+	}
+
+	public override void Update ()
+	{
+		var finished = rTask.Finished ();
+		if (finished)
+			Task.State = TaskState.Finished;
+		else {
+			base.Update ();
+			if (Task.State == TaskState.Finished) {
+				Task.State = TaskState.None;
+				Do ();
+
+			}
+		}
 	}
 }
 
 
-public class NewCondition
+public abstract class NewCondition
 {
 
 	public abstract System.Type TaskCategory();
@@ -343,7 +444,112 @@ public class NewCondition
 	public Behaviour Behaviour { get; set; }
 }
 
-public class Constraint : NewCondition
+public abstract class Constraint : NewCondition
 {
 	public bool Interruptive { get; set; }
+}
+
+
+
+public class Penalties
+{
+
+	Dictionary<System.Type, Penalties> penaltiesByType = new Dictionary<System.Type, Penalties>();
+	class Penalty
+	{
+		public float StartTime { get; set;}
+		public float Duration { get;set;}
+		public float Value {get;set;}
+		public bool Expired { get { return StartTime + Duration < Time.realtimeSinceStartup; } }
+	}
+	Dictionary<object, Penalty> penalties = new Dictionary<object, Penalty>();
+	static List<object> timedOutObjects = new List<object>();
+	public bool ClearSelf { get { return penalties.Count == 0 && penaltiesByType.Count == 0; } }
+	static ObjectPool<List<System.Type>> clearLists = new ObjectPool<List<System.Type>>();
+	public void ClearFromHere()
+	{
+		Update ();
+		Clear ();
+	}
+	void Clear()
+	{
+
+		var clearList = clearLists.Get ();
+		clearList.Clear ();
+
+		foreach (var penalties in penaltiesByType) {
+			penalties.Value.Clear ();
+			if (penalties.Value.ClearSelf)
+				clearList.Add (penalties.Key);	
+		}
+		for (int i = 0; i < clearList.Count; i++)
+			penaltiesByType.Remove (clearList [i]);
+		clearList.Clear ();
+		clearLists.Return (clearList);
+
+	}
+	public void Update()
+	{
+		foreach (var penalties in penaltiesByType)
+			penalties.Value.Update ();
+		timedOutObjects.Clear ();
+		foreach (var penalty in penalties) {
+			if (penalty.Value.Expired)
+				timedOutObjects.Add (penalty.Key);
+		}
+		for (int i = 0; i < timedOutObjects.Count; i++) {
+			penalties.Remove (timedOutObjects [i]);
+		}
+		timedOutObjects.Clear ();
+
+
+	}
+
+	public void SetPenalty(object obj, float duration, float value)
+	{
+		Penalty p = null;
+		if (!penalties.TryGetValue (obj, out p)) {
+			p = new Penalty ();
+			penalties.Add (obj, p);
+		}
+		p.StartTime = Time.realtimeSinceStartup;
+		p.Duration = duration;
+		p.Value = value;
+	}
+
+	public void AddPenalty(object obj, float duration, float value)
+	{
+		Penalty p = null;
+		if (!penalties.TryGetValue (obj, out p)) {
+			p = new Penalty ();
+			penalties.Add (obj, p);
+		}
+		p.StartTime = Time.realtimeSinceStartup;
+		p.Duration = duration;
+		p.Value += value;
+	}
+
+	public float GetPenalty(object obj)
+	{
+		var p = penalties.TryGet (obj);
+		if (p == null)
+			return 0f;
+		else if (p.Expired) {
+			penalties.Remove (obj);
+			return 0f;
+		}
+		return p.Value;
+	}
+
+	public void Init(Behaviour b)
+	{
+		var type = b.GetType ();
+		var p = penaltiesByType.TryGet (type);
+		if (p == null) {
+
+			p = new Penalties ();
+			penaltiesByType.Add (type, p);
+		}
+		b.Penalties = p;
+	}
 }

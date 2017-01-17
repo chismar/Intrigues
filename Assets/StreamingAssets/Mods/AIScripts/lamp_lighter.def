@@ -1,0 +1,75 @@
+litting_up_room = 
+{
+	scope = light_sensor:actor:can_do(turn_on)
+	utility = {
+		if(has(inter)).ut = 1 - light_sensor:light	
+	}
+	prepare = {
+		inter = any(all_objects, light_source:interactable:interaction(turn_on, root))
+	}
+	inter = do
+
+	finished = not has(inter)
+}
+
+turn_on_manually = 
+{
+	interaction = manual
+	scope = switcher:manually_controlled
+	actor_animation = turn_on
+	animation = turn_on
+	constraint = in_front(1)
+	constraint = not switcher:on
+	time = 5
+	finish = {
+		switcher:on = yes
+	}
+}
+
+get_in_front = 
+{
+	category = distanced
+	scope = actor:fit(can_do(move_to) and can_do(turn_to))
+
+	move_to = {
+		when = distance_to(other) > distance
+		target = other
+		ok_distance = distance
+	}
+
+	turn_to = {
+		when = angle_to(other) > in_front_angle 
+		target = other
+	}
+
+}
+
+move_by_feet = 
+{
+	scope = movable
+	category = move_to
+	utility = 
+	{
+		cache(path) = movable:path_to(target)
+		if(path):ut = 1
+	}
+	finished = distance_to(target) < ok_distance
+	update = {
+		path = follow
+	}
+	constraint = path:valid
+	resume = {
+		path = movable:path_to(target)
+	}
+}
+
+turn_by_feet = 
+{
+	scope = movable
+	category = move_to
+	utility = 1
+	finished = angle_to(other) < in_front_angle
+	update = {
+		movable:turn_to = other
+	}
+}
