@@ -8,6 +8,7 @@ public class Agent : MonoBehaviour
 {
 	public List<AgentBehaviour> behaviours = new List<AgentBehaviour>();
 
+	Dictionary<Type, List<ObjectPool>> tasksSet;
 	PrimitiveAgentBehaviour currentTaskBehaviour;
 
 	AgentBehaviour currentBehaviour;
@@ -29,6 +30,58 @@ public class Agent : MonoBehaviour
 	public void SetExecutingTask(PrimitiveAgentBehaviour beh)
 	{
 		currentTaskBehaviour = beh;
+	}
+
+	List<Task> tasksList = new List<Task>();
+	public AgentBehaviour GetSatisfactor(NewCondition c)
+	{
+		var satTaskCat = c.TaskCategory ();
+		var catList = tasksSet.Get (satTaskCat);
+		tasksList.Clear ();
+		for (int i = 0; i < catList.Count; i++)
+			tasksList.Add (catList [i].Get () as Task);
+		float maxUt = 0;
+		Task maxTask;
+		int maxTaskIndex;
+		for (int i = 0; i < tasksList.Count; i++) {
+			var task = tasksList [i];
+			c.InitTask (task);
+
+			bool doableInTheory = true;
+			var pTask = task as PrimitiveTask;
+			if (pTask != null) {
+				var deps = pTask.Dependencies ();
+				var cons = pTask.Constraints ();
+				for (int j = 0; j < deps.Count; j++)
+					if (!tasksSet.ContainsKey (deps [i].TaskCategory ())) {
+						doableInTheory = false;
+						break;
+					}
+				if(doableInTheory)
+				for (int j = 0; j < cons.Count; j++)
+					if (!tasksSet.ContainsKey (cons [i].TaskCategory ())) {
+						doableInTheory = false;
+						break;
+					}
+			}
+			if (doableInTheory) {
+				float taskUt = task.Utility ();
+				if (taskUt > maxUt) {
+					if(maxTask != null)
+						catList [maxTaskIndex].Return (maxTask);
+					maxTask = task;
+					maxUt = taskUt;
+					maxTaskIndex = i;
+				}
+				else
+					catList [i].Return (task);
+			} else
+				catList [i].Return (task);
+
+		}
+
+		return AgentBehaviour.FromTask (maxTask);
+		
 	}
 }
 
@@ -69,17 +122,14 @@ public abstract class AgentBehaviour
 {
 	protected Task Task { get; private set; }
 	protected Agent Agent { get; private set; }
-	public AgentBehaviour(Agent agent, Task task)
+	public virtual void Init(Agent agent, Task task)
 	{
 		Task = task;
 		Agent = agent;
 		state = BehaviourState.None;
-	}
-
-	public virtual void Clean()
-	{
 		Task.Init ();
 	}
+
 	BehaviourState state;
 	public BehaviourState State { 
 		get { return state; } 
@@ -91,10 +141,25 @@ public abstract class AgentBehaviour
 		return Task.Utility ();
 	}
 
-	protected static ObjectPool<StringBuilder> builders = new ObjectPool<StringBuilder>();
+
+	public static AgentBehaviour FromTask(Agent agent, Task task)
+	{
+		AgentBehaviour b = null;
+		if (task == null)
+			return null;
+		if (task is PrimitiveTask) { 
+			var pTask = task as PrimitiveTask;
+			b = new PrimitiveAgentBehaviour ();
+
+		} else if (task is ComplexTask) {
+			var cTask = task as ComplexTask;
+			b = new ComplexAgentBehaviour ();
+		}
+		b.Init (agent, task);
+		return b;
+	}
 
 }
-
 public class PrimitiveAgentBehaviour : AgentBehaviour
 {
 	PrimitiveTask selfTask { get { return Task as PrimitiveTask; } }
@@ -102,9 +167,9 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 	List<Constraint> cons;
 	List<NewCondition> deps;
 
-	public override void Clean ()
+	public override void Init (Agent agent, Task task)
 	{
-		base.Clean ();
+		base.Init (agent, task);
 		cons = null;
 		deps = null;
 		satisfactionBehaviour = null;
@@ -126,18 +191,41 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	void ProcessPreconditions()
 	{
-		NewCondition unsatCond = null;
-		if (AreAllConditionsSatisfied (out unsatCond)) {
-			Activate ();
-		} else {
-			satisfactionBehaviour = GetSatisfactor (unsatCond);
-			if (satisfactionBehaviour == null) {
-				State = BehaviourState.ImpossibleToStart;
-				return;
+		if (satisfactionBehaviour == null) {
+			NewCondition unsatCond = null;
+			if (AreAllConditionsSatisfied (out unsatCond)) {
+				Activate ();
 			} else {
-				WaitSatisfaction ();
+				satisfactionBehaviour = Agent.GetSatisfactor (unsatCond);
+				if (satisfactionBehaviour == null) {
+					State = BehaviourState.ImpossibleToStart;
+					return;
+				} else {
+					State = BehaviourState.Waiting;
+				}
+			}	
+		} else {
+			//State == Waiting
+			switch (satisfactionBehaviour.State) {
+			case BehaviourState.Failed:
+			case BehaviourState.ImpossibleToStart:
+				//Set penalty for it
+				//either fail or try other
+				//in any case - clean the behaiour
+				//for now - fail
+				State = BehaviourState.ImpossibleToStart;
+				satisfactionBehaviour = null;
+				break;
+			case BehaviourState.Finished:
+				satisfactionBehaviour = null;
+				break;
+			default:
+				satisfactionBehaviour.Do ();
+				
 			}
+
 		}
+
 	}
 	public void Update()
 	{
@@ -147,10 +235,12 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 			UpdateActiveTask ();
 			break;
 		case TaskState.Finished:
+			selfTask.OnFinish ();
 			Agent.SetExecutingTask (null);
 			State = BehaviourState.Finished;
 			break;
 		case TaskState.Failed:
+			selfTask.OnTerminate ();
 			Agent.SetExecutingTask (null);
 			State = BehaviourState.Failed;
 			break;
@@ -159,6 +249,8 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 		
 	bool AreAllConditionsSatisfied(out NewCondition nextUnsatisfiedCondition)
 	{
+		cons.Update ();
+		deps.Update ();
 		var unsatisfiedCond = cons.Unsatisfied ();
 		var isResuming = Task.State == TaskState.Paused;
 		if (unsatisfiedCond == null)
@@ -184,14 +276,8 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 		selfTask.OnResume ();
 	}
 
-	AgentBehaviour GetSatisfactor(NewCondition c)
-	{
-	}
 
-	void WaitSatisfaction()
-	{
-		State = BehaviourState.Waiting;
-	}
+
 
 	void Activate()
 	{
@@ -207,8 +293,12 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 	void UpdateActiveTask()
 	{
 		NewCondition unsatCond = null;
-		if (AreAllConditionsSatisfied (out unsatCond))
-			selfTask.OnUpdate ();
+		if (AreAllConditionsSatisfied (out unsatCond)) {
+			if (selfTask.Finished ())
+				selfTask.State = TaskState.Finished;
+			else
+				selfTask.OnUpdate ();
+		}
 		else {
 			switch (Task.Interruption ()) {
 			case InterruptionType.Terminal:
@@ -228,10 +318,98 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 			}
 		}
 	}
+
 }
 
 public class ComplexAgentBehaviour : AgentBehaviour
 {
+	ComplexTask cTask = null;
+	List<NewCondition> tasks = new List<NewCondition>();
+	IEnumerator<NewCondition> tasksEnumeration;
+	NewCondition currentTask;
+	public override void Init (Agent agent, Task task)
+	{
+		base.Init (agent, task);
+		cTask = task as ComplexTask;
+		tasks = cTask.Decomposition ();
+		tasksEnumeration = TasksEnumerator ();
+	
+	}
+	public override void Do ()
+	{
+		switch (Task.State) {
+		case BehaviourState.None:
+			tasksEnumeration.Reset ();
+			Task.State = TaskState.Active;
+			break;
+		case BehaviourState.Active:
+			if (currentTask == null) {
+				if (tasksEnumeration.MoveNext ()) {
+					currentTask = tasksEnumeration.Current;
+					currentTask.Behaviour = Agent.GetSatisfactor (currentTask);
+					if (currentTask.Behaviour == null)
+						State = BehaviourState.ImpossibleToStart;
+					else
+						State = BehaviourState.Waiting;
+				} else {
+					if (!IsFinishedOrTerminated ())
+						Task.State = TaskState.None;
+				}
+			} else
+				State = BehaviourState.Waiting;
+			break;
+		case BehaviourState.Waiting:
+			switch (currentTask.Behaviour.State) {
+			case BehaviourState.Failed:
+				currentTask = null;
+				State = BehaviourState.Failed;
+				break;
+			case BehaviourState.Finished:
+				currentTask = null;
+				State = BehaviourState.Active;
+				break;
+			case BehaviourState.ImpossibleToStart:
+				currentTask = null;
+				State = BehaviourState.Failed;
+				break;
+			default:
+				currentTask.Behaviour.Do ();
+				break;
+			}
+			break;
+		case BehaviourState.Paused:
+			switch (Task.Interruption ()) {
+			case InterruptionType.Restartable:
+				Task.State = TaskState.None;
+				break;
+			case InterruptionType.Resumable:
+				Task.State = TaskState.Active;
+				break;
+			}
+			break;
+		}
+	}
+
+
+	bool IsFinishedOrTerminated()
+	{
+		if (cTask.Finished ()) {
+			State = BehaviourState.Finished;
+			return true;
+		}
+		if (cTask.Terminated ()) {
+			State = BehaviourState.Failed;
+			return true;
+		}
+
+		return false;
+	}
+	IEnumerator<NewCondition> TasksEnumerator()
+	{
+		for (int i = 0; i < tasks.Count; i++)
+			if (!tasks [i].Update ())
+				yield return tasks [i];
+	}
 }
 
 

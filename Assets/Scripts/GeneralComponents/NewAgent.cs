@@ -345,88 +345,15 @@ public static class ConditionsExt
 				return conditions [i];
 		return null;
 	}
-}
-public class ComplexBehaviour : Behaviour
-{
 
-	protected ComplexTask task;
-	protected override Task Task {
-		get { return task; }
-		set { task = value as ComplexTask; }
-	}
-	Behaviour curBehaviour;
-	IEnumerator<Task> decomposition;
-	protected override void Do ()
+	public static void Update<T>(this List<T> conditions) where T : NewCondition
 	{
-		task.State = TaskState.None;
-		task.Init ();
-		decomposition = task.Decomposition ();
-		if (decomposition.MoveNext ()) {
-			curBehaviour = Behaviour.FromTask (Agent, decomposition.Current);
-			task.State = TaskState.Waits;
-		}
-		else
-			task.State = TaskState.Failed;
-	}
-
-	public override void Update ()
-	{
-		switch (curBehaviour.State) {
-		case TaskState.None:
-			if (task.State != TaskState.Waits) {
-				
-				curBehaviour.Perform ();
-				task.State = TaskState.Waits;
-			}
-			break;
-		case TaskState.Active:
-			curBehaviour.Update ();
-			break;
-		case TaskState.Finished:
-			if (decomposition.MoveNext ())
-				curBehaviour = Behaviour.FromTask (Agent, decomposition.Current);
-			else
-				task.State = TaskState.Finished;
-			break;
-		case TaskState.Impossible:
-			task.State = TaskState.Failed;
-			if (task.OnImpossible != null)
-				task.OnImpossible ();
-			break;
-		case TaskState.Failed:
-			task.State = TaskState.Failed;
-			if (task.OnFail != null)
-				task.OnFail ();
-			break;
-		}
-
+		if (conditions == null)
+			return;
+		for (int i = 0; i < conditions.Count; i++)
+			conditions [i].Update ();
 	}
 }
-
-public class RecurrentBehaviour : ComplexBehaviour
-{
-	RecurrentTask rTask { get { return task as RecurrentTask; } }
-	protected override void Do ()
-	{
-		base.Do ();
-	}
-
-	public override void Update ()
-	{
-		var finished = rTask.Finished ();
-		if (finished)
-			Task.State = TaskState.Finished;
-		else {
-			base.Update ();
-			if (Task.State == TaskState.Finished) {
-				Task.State = TaskState.None;
-				Do ();
-
-			}
-		}
-	}
-}
-
 
 public abstract class NewCondition
 {
@@ -440,8 +367,8 @@ public abstract class NewCondition
 	protected abstract bool Satisfied ();
 	public bool Met { get { return met; } }
 	protected bool met;
-	public abstract void InitTask(EventAction action);
-	public Behaviour Behaviour { get; set; }
+	public abstract void InitTask(Task task);
+	public AgentBehaviour Behaviour { get; set; }
 }
 
 public abstract class Constraint : NewCondition

@@ -43,9 +43,10 @@ public abstract class Task
 }
 public abstract class ComplexTask : Task
 {
-	public abstract IEnumerator<Task> Decomposition();
+
+	public abstract List<NewCondition> Decomposition ();
 	public virtual void Start () {}
-	public override void Init ()
+	public override InterruptionType Interruption ()
 	{
 		return InterruptionType.Restartable;
 	}
@@ -136,7 +137,7 @@ public partial class AITasksLoader : ScriptInterpreter
 					OnResume(entry, codeType);
 					Dependencies(entry, codeType);
 					Constraints(entry, codeType);
-					Animation(entry, codeType)
+					Animation(entry, codeType);
 					//OtherAnimation(entry, codeType);
 					//Wait(entry, codeType);
 
