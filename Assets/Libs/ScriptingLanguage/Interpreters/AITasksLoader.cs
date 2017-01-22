@@ -18,6 +18,11 @@ public abstract class Task
 	public TaskState State {get;set;}
 	public GameObject Root { get { return root; } set { root = value; } }
 	protected GameObject root;
+	public virtual SmartScope AtScope (){
+		return this;
+	}
+	protected GameObject at;
+	public GameObject At { get { return at; } set {  at = value; } }
 	public abstract bool Filter();
 	public virtual float Utility(){
 		return 0.5;
@@ -41,10 +46,28 @@ public abstract class Task
 		return false;
 	}
 }
+
+public class SmartScope
+{
+	public GameObject CurrentGO;
+	public virtual int MaxAttempts() {
+		return 1;
+	}
+	public int CurAttempts() {
+		return AlreadyChosenGameObjects.Count;
+	}
+	public virtual List<GameObject> From(GameObject root) {
+		return null;
+	}
+	HashSet<GameObject> AlreadyChosenGameObjects = new HashSet<GameObject> ();
+	public virtual string FromMetricName() {
+		return null;
+	}
+}
 public abstract class ComplexTask : Task
 {
 
-	public abstract List<NewCondition> Decomposition ();
+	public abstract List<TaskCondition> Decomposition ();
 	public virtual void Start () {}
 	public override InterruptionType Interruption ()
 	{
@@ -61,12 +84,18 @@ public abstract class PrimitiveTask : Task
 	public abstract void OnInterrupt ();
 	public abstract void OnResume ();
 	public abstract void OnUpdate();
-	public virtual List<NewCondition> Dependencies() { return null; }
+	public virtual List<TaskCondition> Dependencies() { return null; }
 	public virtual List<Constraint> Constraints() { return null; }
 
+	public abstract string Animation { get; }
+
+	public virtual TaskWrapper EngageIn() {
+		return null;
+	}
 }
 public abstract class InteractionTask : PrimitiveTask
 {
+	public abstract string OtherAnimation { get; }
 	public GameObject Other { get { return other; } set { other = value; } }
 	protected GameObject other;
 	public abstract bool OtherFilter();
