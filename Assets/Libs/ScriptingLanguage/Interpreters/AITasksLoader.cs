@@ -59,10 +59,14 @@ public class SmartScope
 	public virtual List<GameObject> From(GameObject root) {
 		return null;
 	}
-	HashSet<GameObject> AlreadyChosenGameObjects = new HashSet<GameObject> ();
+	public HashSet<GameObject> AlreadyChosenGameObjects = new HashSet<GameObject> ();
 	public virtual string FromMetricName() {
 		return null;
 	}
+
+	public List<Metric> CachedMetrics;
+	public List<GameObject> CachedList;
+
 }
 public abstract class ComplexTask : Task
 {

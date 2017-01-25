@@ -357,7 +357,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 			if (!con.Met) {
 				con.Behaviour = Agent.GetSatisfactor (con);
 				if (con.Behaviour == null) {
-					//here should also go backtracking in terms of chosing alternative
+					//backtrack AtScope if has one, or to the top
 					State = BehaviourState.ImpossibleToStart;
 					return;
 				} else {
@@ -380,7 +380,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 				if (!dep.Met) {
 					dep.Behaviour = Agent.GetSatisfactor (dep);
 					if (dep.Behaviour == null) {
-						//here should also go backtracking in terms of chosing alternative
+						//backtrack AtScope if has one, or to the top
 						State = BehaviourState.ImpossibleToStart;
 						return;
 					} else {
@@ -408,13 +408,18 @@ public class ComplexAgentBehaviour : AgentBehaviour
 	List<TaskWrapper> tasks = new List<TaskWrapper>();
 	IEnumerator<TaskWrapper> tasksEnumeration;
 	TaskWrapper currentTaskWrapper;
+	SmartScope atScope;
+	Metrics metrics;
 	public override void Init (Agent agent, Task task)
 	{
 		base.Init (agent, task);
 		cTask = task as ComplexTask;
 		tasks = cTask.Decomposition ();
 		tasksEnumeration = TasksEnumerator ();
-	
+		atScope = task.AtScope ();
+		atScope.CachedList = atScope != null ? atScope.From (agent.gameObject) : null;
+		metrics = agent.GetComponent<Metrics> ();
+		atScope.CachedMetrics = metrics.Dictionary.ContainsKey (atScope.FromMetricName ()) ? metrics.Dictionary [atScope.FromMetricName ()] : null;
 	}
 	public override void Do ()
 	{
@@ -504,16 +509,19 @@ public class ComplexAgentBehaviour : AgentBehaviour
 			var task = tasks [i];
 			if (task.Met) {
 				task.Behaviour = Agent.GetSatisfactor (task);
-				if (task.Behaviour = null) {
-					//here - replan if possible
-					State = BehaviourState.ImpossibleToStart;
-					return;
+
+				if (task.Behaviour == null) {					
+					//backtrack AtScope if has one, or to the top
+					BacktrackOrFail(task);
+					if(task.Behaviour == null)
+						return;
 				} else {
 					task.Behaviour.PlanAhead ();
 					if (task.Behaviour.State = BehaviourState.ImpossibleToStart) {
-						//here - replan if possible
-						State = BehaviourState.ImpossibleToStart;
-						return;
+						//here - backtrack if possible
+						BacktrackOrFail(task);
+						if(task.Behaviour == null)
+							return;
 					}
 				}
 			} else if (task.Behaviour != null) {
@@ -521,6 +529,69 @@ public class ComplexAgentBehaviour : AgentBehaviour
 				task.Behaviour = null;
 			}
 		}
+	}
+
+	void BacktrackOrFail(TaskWrapper wrapper)
+	{
+		if (atScope != null) {
+			wrapper.Behaviour = null;
+			while (wrapper.Behaviour == null && SelectNext (atScope)) {
+				wrapper.Behaviour = Agent.GetSatisfactor (wrapper);
+				if (wrapper.Behaviour != null) {
+					wrapper.Behaviour.PlanAhead ();
+					if (wrapper.Behaviour.State == BehaviourState.ImpossibleToStart)
+						wrapper.Behaviour = null;
+				}
+			}
+			if (wrapper.Behaviour == null)
+				State = BehaviourState.ImpossibleToStart;
+			
+		} else {
+			if (wrapper.Behaviour == null)
+				State = BehaviourState.ImpossibleToStart;
+			else {
+				wrapper.AlreadyChosenBehaviours.Add (wrapper.Behaviour.GetType ());
+				while (wrapper.CurrentAttempts < wrapper.MaxAttempts) {
+
+					wrapper.CurrentAttempts++;
+					wrapper.Behaviour = Agent.GetSatisfactor (wrapper);
+					if (wrapper.Behaviour == null) {
+
+						State = BehaviourState.ImpossibleToStart;
+						return;
+					} else {
+						wrapper.AlreadyChosenBehaviours.Add (wrapper.Behaviour.GetType ());
+
+						wrapper.Behaviour.PlanAhead ();
+						if (wrapper.Behaviour.State == BehaviourState.ImpossibleToStart) {
+							wrapper.Behaviour = null;
+						}
+					}
+				}
+			}
+		}
+
+	}
+
+	bool SelectNext(SmartScope scope)
+	{
+		if (scope.CurAttempts >= scope.MaxAttempts)
+			return false;
+		var go =ExternalUtilities.Instance.SelectByWeight (scope.CachedList, Weight); 	
+		if (go != null) {
+			if(atScope.CurrentGO != null)
+				atScope.AlreadyChosenGameObjects.Add (atScope.CurrentGO);
+			atScope.CurrentGO = go;
+		}
+
+		return false;
+	}
+
+	float Weight(GameObject go)
+	{
+		if (atScope.AlreadyChosenGameObjects.Contains (go))
+			return -1f;
+		return metrics.Weight (atScope.CachedMetrics, go);
 	}
 }
 
@@ -557,8 +628,5 @@ public abstract class TaskWrapper : TaskCondition
 		return 1;
 	}
 
-	public int CurrentAttempts()
-	{
-		return AlreadyChosenBehaviours.Count;
-	}
+	public int CurrentAttempts;
 }
