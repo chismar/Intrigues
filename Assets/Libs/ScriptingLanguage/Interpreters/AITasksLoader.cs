@@ -45,9 +45,14 @@ public abstract class Task
 	{
 		return false;
 	}
+
+	public virtual string Category()
+	{
+		return "basic";
+	}
 }
 
-public class SmartScope
+public abstract class SmartScope
 {
 	public GameObject CurrentGO;
 	public virtual int MaxAttempts() {
@@ -56,13 +61,9 @@ public class SmartScope
 	public int CurAttempts() {
 		return AlreadyChosenGameObjects.Count;
 	}
-	public virtual List<GameObject> From(GameObject root) {
-		return null;
-	}
+	public abstract List<GameObject> From (GameObject root);
 	public HashSet<GameObject> AlreadyChosenGameObjects = new HashSet<GameObject> ();
-	public virtual string FromMetricName() {
-		return null;
-	}
+	public abstract string FromMetricName () ;
 
 	public List<Metric> CachedMetrics;
 	public List<GameObject> CachedList;
@@ -88,8 +89,8 @@ public abstract class PrimitiveTask : Task
 	public abstract void OnInterrupt ();
 	public abstract void OnResume ();
 	public abstract void OnUpdate();
-	public virtual List<TaskCondition> Dependencies() { return null; }
-	public virtual List<Constraint> Constraints() { return null; }
+	public virtual List<TaskWrapper> Dependencies() { return null; }
+	public virtual List<TaskWrapper> Constraints() { return null; }
 
 	public abstract string Animation { get; }
 
@@ -133,67 +134,9 @@ public partial class AITasksLoader : ScriptInterpreter
 	public override void Interpret (Script script)
 	{
 		MaxProgress = script.Entries.Count;
-		for (int i = 0; i < script.Entries.Count; i++)
-		{
-			if (!Engine.Working)
-				Thread.CurrentThread.Abort ();
-			CurProgress = i;
-			var entry = script.Entries [i];
-			CodeTypeDeclaration codeType = new CodeTypeDeclaration ();
-			//codeType.CustomAttributes.
-			codeType.BaseTypes.Add (new CodeTypeReference (typeof(EventAction)));
-			codeType.Name = entry.Identifier as string;
-			codeTypes.Add (codeType);
 
-			if (ScriptEngine.AnalyzeDebug)
-				Debug.LogWarning((entry.Identifier as string).ToUpper());
-
-			var ctx = entry.Context as Context;
-			if (ctx == null)
-				continue;
-			
-			try
-			{
-				Scope (entry, codeType);
-				Utility (entry, codeType);
-				InterruptionType(entry, codeType);
-				Terminated(entry, codeType);
-				Finished(entry, codeType);
-				if(entry.Has("update") || entry.Has("animation"))
-				{
-					//this is a primitive task, or an interaction task
-					OnUpdate(entry, codeType);
-					OnStart(entry, codeType);
-					OnFinish(entry, codeType);
-					OnTerminate(entry, codeType);
-					OnInterrupt(entry, codeType);
-					OnResume(entry, codeType);
-					Dependencies(entry, codeType);
-					Constraints(entry, codeType);
-					Animation(entry, codeType);
-					//OtherAnimation(entry, codeType);
-					//Wait(entry, codeType);
-
-				}
-				else
-				{
-					//Decomposition(entry, codeType);
-				}
-
-				Init(codeType);
-			}
-			catch(Exception e) {
-				Debug.Log (e.Message);
-			}
-
-
-
-		}
-		CurProgress = MaxProgress;
-		foreach (var type in codeTypes)
-		{
-			cNamespace.Types.Add (type);
-		}
+		GenerateAllConditions (script);
+		GenerateAllTasks (script);
 
 		CSharpCodeProvider provider = new CSharpCodeProvider ();
 		CodeGeneratorOptions options = new CodeGeneratorOptions ();
@@ -204,6 +147,77 @@ public partial class AITasksLoader : ScriptInterpreter
 	}
 
 
+	void GenerateAllConditions(Script script)
+	{
+		foreach (var entry in script.Entries) {
+			if (entry.Identifier is FunctionCall) {
+				var call = (entry.Identifier as FunctionCall);
+				var type = call.Name;
+
+				var category = call.Args [0].ToString ().ClearFromBraces ().Trim ();
+				CodeTypeDeclaration conditionType;
+				if (type == "dependency") {
+					conditionType = CreateDependency (category, entry.Context as Context);
+				} else if (type == "constraint") {
+					conditionType = CreateConstraint (category, entry.Context as Context);
+				} else if (type == "task_wrapper") {
+					conditionType = CreateWrapper (category, entry.Context as Context);
+				} else {
+					//no idea
+				}
+				cNamespace.Types.Add (conditionType);
+			}
+		}
+	}
+
+	CodeTypeDeclaration CreateDependency(string category, Context table)
+	{
+		var type = new CodeTypeDeclaration ();
+		type.Name = category;
+		type.Attributes = MemberAttributes.Public;
+
+		Parameters (type, table);
+		Other (type, table);
+		InternalProperties (type, table);
+		SatisfactionTask (type, table);
+		SatisfactionCondition (type, table);
+		Serialization (type, table);
+	}
+
+	CodeTypeDeclaration CreateConstraint(string category, Context table)
+	{
+		var type = CreateDependency (category, table);
+		IsInterruptive (type, table);
+	}
+
+	CodeTypeDeclaration CreateWrapper(string category, Context table)
+	{
+		var type = CreateConstraint (category, table);
+		When (type, table);
+		Attempts (type, table);
+	}
+
+
+	void GenerateAllTasks(Script script)
+	{
+
+		foreach (var entry in script.Entries) {
+			if (!(entry.Identifier is FunctionCall)) {
+				var type = entry.Identifier as string;
+				var table = entry.Context as Context;
+				if (IsPrimitive (table)) {
+					GeneratePrimitiveTask (type, table);
+				} else if (IsComplex(table)) {
+					GenerateComplexTask (type, table);
+				}
+			}
+		}
+	}
+
+
+
+
+	#region CreateEventFunction
 	void CreateEventFunction (string name, object context, CodeTypeDeclaration codeType, MethodInfo baseMethod, params object[] initStatements)
 	{
 		CodeMemberMethod method = new CodeMemberMethod ();
@@ -299,6 +313,6 @@ public partial class AITasksLoader : ScriptInterpreter
 
 
 	}
-
+	#endregion
 }
 
