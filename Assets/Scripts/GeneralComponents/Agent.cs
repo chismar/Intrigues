@@ -64,8 +64,8 @@ public class Agent : MonoBehaviour
 		for (int i = 0; i < catList.Count; i++)
 			tasksList.Add (catList [i].Get () as Task);
 		float maxUt = 0;
-		Task maxTask;
-		int maxTaskIndex;
+		Task maxTask = null;
+		int maxTaskIndex = -1;
 		for (int i = 0; i < tasksList.Count; i++) {
 			var task = tasksList [i];
 			c.InitTask (task);
@@ -103,7 +103,7 @@ public class Agent : MonoBehaviour
 
 		}
 
-		return AgentBehaviour.FromTask (maxTask);
+		return AgentBehaviour.FromTask (this, maxTask);
 		
 	}
 }
@@ -310,7 +310,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 				break;
 			default:
 				satisfactionBehaviour.Do ();
-				
+				break;
 			}
 
 		}
@@ -341,6 +341,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 		
 	bool AreAllTaskConditionsSatisfied(out TaskCondition nextUnsatisfiedTaskCondition)
 	{
+		nextUnsatisfiedTaskCondition = null;
 		cons.Update ();
 		deps.Update ();
 		var unsatisfiedCond = cons.Unsatisfied ();
@@ -494,7 +495,7 @@ public class ComplexAgentBehaviour : AgentBehaviour
 	}
 	public override void Do ()
 	{
-		switch (Task.State) {
+		switch (State) {
 		case BehaviourState.None:
 			tasksEnumeration.Reset ();
 			Task.State = TaskState.Active;
@@ -562,7 +563,7 @@ public class ComplexAgentBehaviour : AgentBehaviour
 
 		return false;
 	}
-	IEnumerator<TaskCondition> TasksEnumerator()
+	IEnumerator<TaskWrapper> TasksEnumerator()
 	{
 		for (int i = 0; i < tasks.Count; i++)
 			if (!tasks [i].Update ())
@@ -588,7 +589,7 @@ public class ComplexAgentBehaviour : AgentBehaviour
 						return;
 				} else {
 					task.Behaviour.PlanAhead ();
-					if (task.Behaviour.State = BehaviourState.ImpossibleToStart) {
+					if (task.Behaviour.State == BehaviourState.ImpossibleToStart) {
 						//here - backtrack if possible
 						BacktrackOrFail(task);
 						if(task.Behaviour == null)
@@ -618,25 +619,22 @@ public abstract class TaskCondition
 	protected bool met;
 	public bool Met { get { return met; } }
 	protected abstract bool Satisfied ();
-	public abstract Type TaskCategory();
+	public abstract Type TaskCategory { get; }
 	public abstract void InitTask(Task task);
-	public AgentBehaviour Behaviour { get;set;}
-	public abstract LocalizedString Serialize ();
+	public AgentBehaviour Behaviour { get;set; }
+	public abstract LocalizedString Serialized { get; }
 }
 
 public abstract class Constraint : TaskCondition
 {
-	public bool Interruptive { get; internal set; }
+	public virtual bool Interruptive { get { return true; } }
 }
 	
 public abstract class TaskWrapper : Constraint
 {
 	
 	public HashSet<Type> AlreadyChosenBehaviours = new HashSet<Type>();
-	public virtual int MaxAttempts()
-	{
-		return 1;
-	}
+	public virtual int MaxAttempts { get { return 1; } }
 	public Agent TargetAgent;
 	public int CurrentAttempts;
 }

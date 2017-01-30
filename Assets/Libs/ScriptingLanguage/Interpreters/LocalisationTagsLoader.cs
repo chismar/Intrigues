@@ -67,7 +67,7 @@ public class LocalisationTagsLoader : ScriptInterpreter
             if (ScriptEngine.AnalyzeDebug)
                 Debug.LogWarning((entry.Identifier as string).ToUpper());
 
-            var ctx = entry.Context as Context;
+            var ctx = entry.Context as Table;
             bool hasValue = false;
             var utMethod = typeof(LocalisationTag).GetMethod("Utility");
             var scopeMethod = typeof(LocalisationTag).GetMethod("Filter");
@@ -245,7 +245,7 @@ public class LocalisationTagsLoader : ScriptInterpreter
 		//}
 
 		codeType.Members.Add (method);
-		var table = context as Context;
+		var table = context as Table;
 		if (table != null)
 		{
 			foreach (var entry in table.Entries)

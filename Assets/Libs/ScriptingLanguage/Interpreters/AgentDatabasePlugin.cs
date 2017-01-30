@@ -109,10 +109,10 @@ public class AgentDatabaseLoader : ScriptInterpreter
                 }
                 dbElement.Members.Add(prop);
             }
-            if (entry.Context is Context)
+            if (entry.Context is Table)
             {
 
-                foreach (var fieldOp in (entry.Context as Context).Entries)
+                foreach (var fieldOp in (entry.Context as Table).Entries)
                 {
                     var op = fieldOp as Operator;
                     var typeName = (((op.Context as Expression).Operands[0] as ExprAtom).Content as Scope).Parts[0] as string;

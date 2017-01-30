@@ -395,18 +395,18 @@ namespace InternalDSL
 		}
 	}
 
-	public class Context
+	public class Table
 	{
 		public List<object> Entries = new List<object> ();
 
 		public List<Expression> Args = new List<Expression> ();
 
-		public Context ()
+		public Table ()
 		{
 			
 		}
 
-		public Context (Node argsNode, Node n)
+		public Table (Node argsNode, Node n)
 		{
 			
 			var firstChild = n.GetChildAt (0);
@@ -422,7 +422,7 @@ namespace InternalDSL
 						Debug.Log ("Input context is a value, while others - args");
 					Operator op = new Operator ();
 					op.Identifier = "value";
-					op.Context = new Context (null, n);
+					op.Context = new Table (null, n);
 					Entries.Add (op);
 					op.Init ();
 				} else
@@ -513,6 +513,7 @@ namespace InternalDSL
 
 	public class Operator
 	{
+		public bool HasBeenInterpreted = false;
 		public object Identifier;
 		public object Context;
 		public List<Expression> Args = new List<Expression> ();
@@ -587,7 +588,7 @@ namespace InternalDSL
 			}
 			if (ScriptEngine.ParseDebug)
 				Debug.Log ("Now creating context");
-			Context = new Context (null, n);
+			Context = new Table (null, n);
 			Init ();
 		}
 
@@ -639,7 +640,7 @@ namespace InternalDSL
 
 			if (ScriptEngine.ParseDebug)
 				Debug.Log ("Now creating context");
-			Context = new Context (null, n.GetChildAt (2));
+			Context = new Table (null, n.GetChildAt (2));
 			Init ();
 			//ctx.Entries = (valueOp.Context as Context).
 		}
@@ -655,7 +656,7 @@ namespace InternalDSL
 			if (init)
 				return;
 			init = true;
-			var ctx = (Context as Context);
+			var ctx = (Context as Table);
 			if (ctx != null)
 			{
 				//Args = ctx.Args;

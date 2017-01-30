@@ -76,7 +76,7 @@ public class MetricsLoader : ScriptInterpreter
             if (ScriptEngine.AnalyzeDebug)
                 Debug.LogWarning((entry.Identifier as string).ToUpper());
 
-            var ctx = entry.Context as Context;
+            var ctx = entry.Context as Table;
             if (ctx == null)
                 continue;
             var scopeMethod = typeof(Metric).GetMethod("RootFilter");
@@ -323,7 +323,7 @@ public class MetricsLoader : ScriptInterpreter
         //}
 
         codeType.Members.Add(method);
-        var table = context as Context;
+        var table = context as Table;
         if (table != null)
         {
             foreach (var entry in table.Entries)

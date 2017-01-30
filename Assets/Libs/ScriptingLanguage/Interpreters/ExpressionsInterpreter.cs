@@ -48,7 +48,7 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 	{
 		Operator op = new Operator ();
 		op.Identifier = scope;
-		op.Context = new Context ();
+		op.Context = new Table ();
 
 		return op;
 	}
@@ -99,7 +99,7 @@ public class ExpressionInterpreter : ScriptEnginePlugin
 				curOp = op;
 			} else
 			{
-				var ctx = new Context ();
+				var ctx = new Table ();
 				curOp.Context = ctx;
 				ctx.Entries.Add (subOp);
 				curOp = subOp;

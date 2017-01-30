@@ -19,13 +19,13 @@ public abstract class Task
 	public GameObject Root { get { return root; } set { root = value; } }
 	protected GameObject root;
 	public virtual SmartScope AtScope (){
-		return this;
+		return null;
 	}
 	protected GameObject at;
 	public GameObject At { get { return at; } set {  at = value; } }
 	public abstract bool Filter();
 	public virtual float Utility(){
-		return 0.5;
+		return 0.5f;
 	}
 
 	public virtual void Init () {
@@ -46,21 +46,19 @@ public abstract class Task
 		return false;
 	}
 
-	public virtual string Category()
+	public virtual string Category
 	{
-		return "basic";
+		get {
+			return "basic";
+		}
 	}
 }
 
 public abstract class SmartScope
 {
 	public GameObject CurrentGO;
-	public virtual int MaxAttempts() {
-		return 1;
-	}
-	public int CurAttempts() {
-		return AlreadyChosenGameObjects.Count;
-	}
+	public virtual int MaxAttempts { get { return 1; } }
+	public int CurAttempts { get { return AlreadyChosenGameObjects.Count; }	}
 	public abstract List<GameObject> From (GameObject root);
 	public HashSet<GameObject> AlreadyChosenGameObjects = new HashSet<GameObject> ();
 	public abstract string FromMetricName () ;
@@ -72,7 +70,7 @@ public abstract class SmartScope
 public abstract class ComplexTask : Task
 {
 
-	public abstract List<TaskCondition> Decomposition ();
+	public abstract List<TaskWrapper> Decomposition ();
 	public virtual void Start () {}
 	public override InterruptionType Interruption ()
 	{
@@ -155,13 +153,13 @@ public partial class AITasksLoader : ScriptInterpreter
 				var type = call.Name;
 
 				var category = call.Args [0].ToString ().ClearFromBraces ().Trim ();
-				CodeTypeDeclaration conditionType;
+				CodeTypeDeclaration conditionType = null;
 				if (type == "dependency") {
-					conditionType = CreateDependency (category, entry.Context as Context);
+					conditionType = CreateDependency (category, entry.Context as Table);
 				} else if (type == "constraint") {
-					conditionType = CreateConstraint (category, entry.Context as Context);
+					conditionType = CreateConstraint (category, entry.Context as Table);
 				} else if (type == "task_wrapper") {
-					conditionType = CreateWrapper (category, entry.Context as Context);
+					conditionType = CreateWrapper (category, entry.Context as Table);
 				} else {
 					//no idea
 				}
@@ -170,7 +168,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		}
 	}
 
-	CodeTypeDeclaration CreateDependency(string category, Context table)
+	CodeTypeDeclaration CreateDependency(string category, Table table)
 	{
 		var type = new CodeTypeDeclaration ();
 		type.Name = category;
@@ -182,19 +180,22 @@ public partial class AITasksLoader : ScriptInterpreter
 		SatisfactionTask (type, table);
 		SatisfactionCondition (type, table);
 		Serialization (type, table);
+		return type;
 	}
 
-	CodeTypeDeclaration CreateConstraint(string category, Context table)
+	CodeTypeDeclaration CreateConstraint(string category, Table table)
 	{
 		var type = CreateDependency (category, table);
 		IsInterruptive (type, table);
+		return type;
 	}
 
-	CodeTypeDeclaration CreateWrapper(string category, Context table)
+	CodeTypeDeclaration CreateWrapper(string category, Table table)
 	{
 		var type = CreateConstraint (category, table);
 		When (type, table);
 		Attempts (type, table);
+		return type;
 	}
 
 
@@ -204,7 +205,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		foreach (var entry in script.Entries) {
 			if (!(entry.Identifier is FunctionCall)) {
 				var type = entry.Identifier as string;
-				var table = entry.Context as Context;
+				var table = entry.Context as Table;
 				if (IsPrimitive (table)) {
 					GeneratePrimitiveTask (type, table);
 				} else if (IsComplex(table)) {
@@ -224,8 +225,9 @@ public partial class AITasksLoader : ScriptInterpreter
 		method.Name = NameTranslator.CSharpNameFromScript (name);
 		method.Attributes = MemberAttributes.Override | MemberAttributes.Public;
 		method.ReturnType = new CodeTypeReference (baseMethod.ReturnType);
+
 		var args = baseMethod.GetParameters ();
-		FunctionBlock block = new FunctionBlock (null, method, codeType);
+		FunctionBlock block = new FunctionBlock (null, null, codeType);
 		block.Statements.Add ("var root = this.root;");
 
 		//block.Statements.Add ("UnityEngine.Debug.Log(root.ToString() + IfStatement.AntiMergeValue++);");
@@ -284,7 +286,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		//}
 
 		codeType.Members.Add (method);
-		var table = context as Context;
+		var table = context as Table;
 		if (table != null)
 		{
 			foreach (var entry in table.Entries)
@@ -309,10 +311,12 @@ public partial class AITasksLoader : ScriptInterpreter
 			//retVal.IsArg = true;
 			block.Statements.Add (String.Format ("return ({1}){0};", exprInter.InterpretExpression (expr, block).ExprString, TypeName.NameOf (retVal.Type)));
 		}
-		method.Statements.Add (new CodeSnippetStatement (block.ToString ()));
 
 
+
+		method.Statements.Add (new CodeSnippetStatement (block.ToString()));
 	}
+
 	#endregion
 }
 

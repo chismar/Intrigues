@@ -121,7 +121,7 @@ public class RelationsMetricsLoader : ScriptInterpreter
         //}
 
         codeType.Members.Add(method);
-        var table = context as Context;
+        var table = context as Table;
         if (table != null)
         {
             foreach (var entry in table.Entries)

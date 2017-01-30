@@ -75,7 +75,7 @@ public class ObjectsLoader<T> where T : ScriptableObject
 			foreach (var entry in dataScript.Entries)
 			{
 				var dataObject = (T)ScriptableObject.CreateInstance (dataType);
-				var table = entry.Context as InternalDSL.Context;
+				var table = entry.Context as InternalDSL.Table;
 				foreach (var fieldEntry in table.Entries)
 				{
 					var field = fieldEntry as InternalDSL.Operator;

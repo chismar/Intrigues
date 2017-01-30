@@ -30,7 +30,7 @@ public class RepeatOperator : FunctionOperatorInterpreter
 			stmt.InsideExpr = String.Format ("int i{1} = 0; i{1} < {0}; i{1}++", exprInterpreter.InterpretExpression (op.Args [0], block).ExprString, DeclareVariableStatement.VariableId++);
 
 			block.Statements.Add (stmt);
-			foreach (var entry in (op.Context as Context).Entries)
+			foreach (var entry in (op.Context as Table).Entries)
 			{
 				var subOp = entry as Operator;
 			

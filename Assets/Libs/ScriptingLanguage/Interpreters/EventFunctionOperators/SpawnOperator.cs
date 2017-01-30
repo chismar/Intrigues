@@ -29,7 +29,7 @@ public class SpawnOperator : FunctionOperatorInterpreter
 			IsContext = false
 		});
 
-		var ctx = op.Context as Context;
+		var ctx = op.Context as Table;
 		FunctionBlock subBlock = new FunctionBlock (block, block.Method, block.Type);
 		block.Statements.Add (subBlock);
 		subBlock.Statements.Add (new DeclareVariableStatement () {
@@ -41,7 +41,7 @@ public class SpawnOperator : FunctionOperatorInterpreter
 		foreach (var entry in ctx.Entries)
 		{
 			var subOp = entry as Operator;
-			var subContext = subOp.Context as Context;
+			var subContext = subOp.Context as Table;
 			Debug.Log (subOp.Identifier.GetType ());
 			if (subOp.Identifier is string)
 			{

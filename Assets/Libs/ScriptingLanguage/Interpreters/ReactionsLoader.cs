@@ -78,7 +78,7 @@ public class ReactionsLoader : ScriptInterpreter
             if (ScriptEngine.AnalyzeDebug)
                 Debug.LogWarning((entry.Identifier as string).ToUpper());
 
-            var ctx = entry.Context as Context;
+            var ctx = entry.Context as Table;
             if (ctx == null)
                 continue;
             var actionMethod = typeof(Reaction).GetMethod("Action");
@@ -332,7 +332,7 @@ public class ReactionsLoader : ScriptInterpreter
         //}
 
         codeType.Members.Add(method);
-        var table = context as Context;
+        var table = context as Table;
         if (table != null)
         {
             foreach (var entry in table.Entries)

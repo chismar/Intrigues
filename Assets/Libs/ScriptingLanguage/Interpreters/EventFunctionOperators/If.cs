@@ -30,7 +30,7 @@ public class IfOperator : FunctionOperatorInterpreter
 			ifStatement.TrueBlock = new FunctionBlock (block, block.Method, block.Type);
 
 			block.Statements.Add (ifStatement);
-			foreach (var entry in (op.Context as Context).Entries)
+			foreach (var entry in (op.Context as Table).Entries)
 			{
 				var subOp = entry as Operator;
 				if (subOp == null)

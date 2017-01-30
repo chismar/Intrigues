@@ -12,12 +12,12 @@ public partial class AITasksLoader : ScriptInterpreter
 
 
 
-	public bool IsPrimitive(Context table)
+	public bool IsPrimitive(Table table)
 	{
 		return table.Has ("update") || table.Has ("wait");
 	}
 
-	public bool IsComplex(Context table)
+	public bool IsComplex(Table table)
 	{
 		return !IsPrimitive (table);
 
@@ -25,7 +25,7 @@ public partial class AITasksLoader : ScriptInterpreter
 
 
 
-	void GenerateTask(CodeTypeDeclaration type, Context table)
+	void GenerateTask(CodeTypeDeclaration type, Table table)
 	{
 		Category (type, table);
 		Scope (type, table);
@@ -37,8 +37,9 @@ public partial class AITasksLoader : ScriptInterpreter
 		Init (type, table);
 
 	}
-	void GeneratePrimitiveTask (CodeTypeDeclaration type,Context table)
+	void GeneratePrimitiveTask (string typeName,Table table)
 	{
+		CodeTypeDeclaration type = null;
 		Interaction (type, table);
 		GenerateTask (type, table);
 
@@ -57,14 +58,15 @@ public partial class AITasksLoader : ScriptInterpreter
 
 	}
 
-	void GenerateComplexTask (CodeTypeDeclaration type, Context table)
+	void GenerateComplexTask (string typeName, Table table)
 	{
+		CodeTypeDeclaration type = null;
 		GenerateTask (type, table);
-		Tasks ();
+		Tasks (type, table);
 	}
 
 
-	void Category(CodeTypeDeclaration type, Context table)
+	void Category(CodeTypeDeclaration type, Table table)
 	{
 		var catOp = table.Get ("category");
 		if (catOp == null)
@@ -76,7 +78,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		catMet.Statements.Add (new CodeSnippetStatement ("return {0};".Fmt(cat)));
 		type.Members.Add (catMet);
 	}
-	void Interaction(CodeTypeDeclaration type, Context table)
+	void Interaction(CodeTypeDeclaration type, Table table)
 	{
 		var interOp = table.Get ("interaction");
 
@@ -88,7 +90,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		retVal.InitExpression = "false";
 		CreateEventFunction ("OtherFilter", interOp.Context, type, typeof(InteractionTask).GetMethod ("OtherFilter"), retVal);
 	}
-	void AtScope(CodeTypeDeclaration type, Context table)
+	void AtScope(CodeTypeDeclaration type, Table table)
 	{
 		var atOp = table.Get ("at");
 		if (atOp == null)
@@ -106,7 +108,7 @@ public partial class AITasksLoader : ScriptInterpreter
 
 
 
-	void Init (CodeTypeDeclaration type, Context table)
+	void Init (CodeTypeDeclaration type, Table table)
 	{
 
 		CodeMemberMethod initOverrideMethod = new CodeMemberMethod();
@@ -127,13 +129,13 @@ public partial class AITasksLoader : ScriptInterpreter
 		initOverrideMethod.Statements.Add(new CodeSnippetStatement(builder.ToString()));
 	}
 
-	void InterruptionType (CodeTypeDeclaration type, Context table)
+	void InterruptionType (CodeTypeDeclaration type, Table table)
 	{
 		var iOp = table.Get ("interruption");
 		if (iOp == null) {
 		}
 	}
-	void Scope (CodeTypeDeclaration type, Context table)
+	void Scope (CodeTypeDeclaration type, Table table)
 	{
 		var scopeOp = table.Get ("scope");
 		if (scopeOp == null) {
@@ -154,7 +156,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		}
 	}
 
-	void Utility (CodeTypeDeclaration type, Context table)
+	void Utility (CodeTypeDeclaration type, Table table)
 	{
 		var utOp = table.Get ("utility");
 		if (utOp == null) {
@@ -174,7 +176,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		}
 	}
 
-	void OnUpdate (CodeTypeDeclaration type, Context table)
+	void OnUpdate (CodeTypeDeclaration type, Table table)
 	{
 		var upOp = table.Get ("update");
 		if (upOp == null) {
@@ -184,7 +186,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		CreateEventFunction("OnUpdate", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnUpdate"), true);
 	}
 
-	void Terminated (CodeTypeDeclaration type, Context table)
+	void Terminated (CodeTypeDeclaration type, Table table)
 	{
 		var upOp = table.Get ("terminated");
 		if (upOp == null) {
@@ -194,7 +196,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		CreateEventFunction("Terminated", upOp.Context, type, typeof(Task).GetMethod("Terminated"), true);
 	}
 
-	void Finished (CodeTypeDeclaration type, Context table)
+	void Finished (CodeTypeDeclaration type, Table table)
 	{
 		var upOp = table.Get ("finished");
 		if (upOp == null) {
@@ -204,7 +206,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		CreateEventFunction("Finished", upOp.Context, type, typeof(Task).GetMethod("Finished"), true);
 	}
 
-	void OnStart (CodeTypeDeclaration type, Context table)
+	void OnStart (CodeTypeDeclaration type, Table table)
 	{
 		var upOp = table.Get ("start");
 		if (upOp == null) {
@@ -214,7 +216,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		CreateEventFunction("OnStart", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnStart"), "base.OnStart();");	
 	}
 
-	void OnFinish(Operator table, CodeTypeDeclaration type)
+	void OnFinish(CodeTypeDeclaration type, Table table)
 	{
 		var upOp = table.Get ("finish");
 		if (upOp == null) {
@@ -224,7 +226,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		CreateEventFunction("OnFinish", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnFinish"), "base.OnFinish();");
 	}
 
-	void OnTerminate(Operator table, CodeTypeDeclaration type)
+	void OnTerminate(CodeTypeDeclaration type, Table table)
 	{
 		var upOp = table.Get ("terminate");
 		if (upOp == null) {
@@ -234,7 +236,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		CreateEventFunction("OnTerminate", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnTerminate"), "base.OnTerminate();");
 	}
 
-	void OnInterrupt (CodeTypeDeclaration type, Context table)
+	void OnInterrupt (CodeTypeDeclaration type, Table table)
 	{
 		var upOp = table.Get ("interrupt");
 		if (upOp == null) {
@@ -252,7 +254,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		CreateEventFunction("OnInterrupt", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnInterrupt"), "base.OnInterrupt();");
 	}
 
-	void OnResume (CodeTypeDeclaration type, Context table)
+	void OnResume (CodeTypeDeclaration type, Table table)
 	{
 		var upOp = table.Get ("resume");
 		if (upOp == null) {
@@ -277,7 +279,7 @@ public partial class AITasksLoader : ScriptInterpreter
 
 
 
-	void Animation (CodeTypeDeclaration type, Context table)
+	void Animation (CodeTypeDeclaration type, Table table)
 	{
 		var catOp = table.Get ("animation");
 		if (catOp == null)
@@ -290,7 +292,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		type.Members.Add (anMet);
 	}
 
-	void OtherAnimation (CodeTypeDeclaration type, Context table)
+	void OtherAnimation (CodeTypeDeclaration type, Table table)
 	{
 		var catOp = table.Get ("other_animation");
 		if (catOp == null)
@@ -303,20 +305,20 @@ public partial class AITasksLoader : ScriptInterpreter
 		type.Members.Add (anMet);
 	}
 
-	void Constraints (CodeTypeDeclaration type, Context table)
+	void Constraints (CodeTypeDeclaration type, Table table)
 	{
 
 	}
 
-	void Dependencies (CodeTypeDeclaration type, Context table)
+	void Dependencies (CodeTypeDeclaration type, Table table)
 	{
 
 	}
-	void Engagement(CodeTypeDeclaration type, Context table)
+	void Engagement(CodeTypeDeclaration type, Table table)
 	{
 
 	}
-	void Tasks(CodeTypeDeclaration type, Context table)
+	void Tasks(CodeTypeDeclaration type, Table table)
 	{
 
 	}

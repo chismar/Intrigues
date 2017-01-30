@@ -100,6 +100,5 @@ public class Penalties
 			p = new Penalties ();
 			penaltiesByType.Add (type, p);
 		}
-		b.Penalties = p;
 	}
 }

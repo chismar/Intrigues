@@ -130,7 +130,7 @@ public class ContextSwitchInterpreter : FunctionOperatorInterpreter
         contextBlock.Statements.Add(isNotNull);
 		contextBlock = isNotNull.TrueBlock;
         contextBlock.Statements.Add(new DeclareVariableStatement() { Name = declareVar.Name, IsArg = true, IsContext = true, Type = declareVar.Type});
-		foreach (var entry in (op.Context as Context).Entries)
+		foreach (var entry in (op.Context as Table).Entries)
 		{
 			var subOp = entry as Operator;
 			if (subOp == null)
@@ -342,7 +342,7 @@ public class ContextFunctionCallInterpreter : FunctionOperatorInterpreter
 		{
 			if (op.Args.Count > 0)
 				argsBuilder.Length -= 1;
-			var ctx = op.Context as Context;
+			var ctx = op.Context as Table;
 			FunctionBlock contextBlock = new FunctionBlock (block);
 			block.Statements.Add (contextBlock);
 			block = contextBlock;
@@ -420,7 +420,7 @@ public class ContextFunctionCallInterpreter : FunctionOperatorInterpreter
 					});
 				}
 
-				foreach (var entry in (op.Context as Context).Entries)
+				foreach (var entry in (op.Context as Table).Entries)
 				{
 					var subOp = entry as Operator;
 					ops.GetInterpreter (subOp, lambda.Block).Interpret (subOp, lambda.Block);
@@ -561,7 +561,7 @@ public class ContextPropertyInterpreter : FunctionOperatorInterpreter
                     });
                 }
 
-                foreach (var entry in (op.Context as Context).Entries)
+                foreach (var entry in (op.Context as Table).Entries)
                 {
                     var subOp = entry as Operator;
                     ops.GetInterpreter(subOp, lambda.Block).Interpret(subOp, lambda.Block);
@@ -774,7 +774,7 @@ public class ContextPropertySwitchInterpreter : ContextPropertyInterpreter
                 Debug.LogFormat("Property {0} was interpreted by ContextPropertyInterpreter {1} already", op, propName);
             return;
         }
-		if (!(op.Context is Context))
+		if (!(op.Context is Table))
         {
 
             if (ScriptEngine.AnalyzeDebug)
@@ -814,7 +814,7 @@ public class ContextPropertySwitchInterpreter : ContextPropertyInterpreter
 		isNotNull.TrueBlock = new FunctionBlock (contextBlock);
 		contextBlock.Statements.Add (isNotNull);
 		contextBlock = isNotNull.TrueBlock;
-		foreach (var entry in (op.Context as Context).Entries)
+		foreach (var entry in (op.Context as Table).Entries)
 		{
             //Debug.LogFormat("Interpreting {0} as part of {1} context", (entry as Operator).Identifier, op.Identifier);
 			var subOp = entry as Operator;

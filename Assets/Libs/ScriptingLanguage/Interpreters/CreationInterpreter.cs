@@ -44,7 +44,7 @@ public class CreationInterpreter : FunctionOperatorInterpreter
             }
             else if (op.Args.Count == 1)
             {
-                var ctx = op.Context as Context;
+                var ctx = op.Context as Table;
                 var expr = op.Context as Expression;
                 if (expr != null)
                 {
@@ -78,7 +78,7 @@ public class CreationInterpreter : FunctionOperatorInterpreter
             else if (op.Args.Count == 2)
             {
 
-                var ctx = op.Context as Context;
+                var ctx = op.Context as Table;
                 if (ctx != null)
                 {
                     cmpTypeName = ((op.Args[1].Operands[0] as ExprAtom).Content as Scope).Parts[0] as string;

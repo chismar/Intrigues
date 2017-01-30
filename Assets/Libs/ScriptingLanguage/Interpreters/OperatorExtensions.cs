@@ -4,7 +4,7 @@ public static class OperatorExtensions
 {
 	public static Operator Get(this Operator op, string id)
 	{
-		var ctx = op.Context as Context;
+		var ctx = op.Context as Table;
 		if (ctx == null)
 			return null;
 		for (int j = 0; j < ctx.Entries.Count; j++)
@@ -23,7 +23,7 @@ public static class OperatorExtensions
 
 	public static List<Operator> GetAll(this Operator op, string id)
 	{
-		var ctx = op.Context as Context;
+		var ctx = op.Context as Table;
 		if (ctx == null)
 			return null;
 		List<Operator> ops = new List<Operator> ();
@@ -44,6 +44,13 @@ public static class OperatorExtensions
 		return expr.ToString ().ClearFromBraces ().Trim ();
 	}
 
+
+	public static string ArgValue(this Operator op, int index)
+	{
+		if (op.Args == null || op.Args.Count <= index)
+			return;
+		return op.Args [index].ToString ().ClearFromBraces ().Trim ();
+	}
 	public static string GetValue(this Operator op, string id)
 	{
 		var subOp = op.Get (id);

@@ -70,7 +70,7 @@ public class DoOperator: FunctionOperatorInterpreter
                 propsDict.Clear();
                 foreach (var prop in props)
                     propsDict.Add(NameTranslator.ScriptNameFromCSharp(prop.Name), prop);
-                foreach ( var subOpObject in (op.Context as Context).Entries)
+                foreach ( var subOpObject in (op.Context as Table).Entries)
                 {
                     PropertyInfo prop;
                     var subOp = subOpObject as Operator;
