@@ -18,9 +18,9 @@ public abstract class Task
 	public TaskState State {get;set;}
 	public GameObject Root { get { return root; } set { root = value; } }
 	protected GameObject root;
-	public virtual SmartScope AtScope (){
+	public virtual SmartScope AtScope { get {
 		return null;
-	}
+	} }
 	protected GameObject at;
 	public GameObject At { get { return at; } set {  at = value; } }
 	public abstract bool Filter();
@@ -87,14 +87,11 @@ public abstract class PrimitiveTask : Task
 	public abstract void OnInterrupt ();
 	public abstract void OnResume ();
 	public abstract void OnUpdate();
-	public virtual List<TaskWrapper> Dependencies() { return null; }
-	public virtual List<TaskWrapper> Constraints() { return null; }
-
+	public virtual List<TaskWrapper> Dependencies{ get { return null; } }
+	public virtual List<TaskWrapper> Constraints { get { return null; } }
 	public abstract string Animation { get; }
 
-	public virtual TaskWrapper EngageIn() {
-		return null;
-	}
+	public virtual TaskWrapper EngageIn { get { return null; } }
 }
 public abstract class InteractionTask : PrimitiveTask
 {

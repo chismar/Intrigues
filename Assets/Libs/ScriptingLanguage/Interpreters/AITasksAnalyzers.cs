@@ -75,8 +75,11 @@ public partial class AITasksLoader : ScriptInterpreter
 		CodeMemberMethod catMet = new CodeMemberMethod ();
 		catMet.Name = "Category";
 		catMet.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-		catMet.Statements.Add (new CodeSnippetStatement ("return {0};".Fmt(cat)));
+		catMet.Statements.Add (new CodeSnippetStatement ("return \"{0}\";".Fmt(cat)));
 		type.Members.Add (catMet);
+		//TODO - interface
+		type.AddCategoryInterface(cat, Engine);
+		type.UserData.Add ("category", cat);
 	}
 	void Interaction(CodeTypeDeclaration type, Table table)
 	{
@@ -304,23 +307,162 @@ public partial class AITasksLoader : ScriptInterpreter
 		anMet.Statements.Add (new CodeSnippetStatement ("return {0};".Fmt(cat)));
 		type.Members.Add (anMet);
 	}
-
+	/*
+	 * during(condition_name) = {
+	 * param1 = value   
+	 * param2 = value
+	 * other\root are filled automatically
+	 * }
+	 */
 	void Constraints (CodeTypeDeclaration type, Table table)
 	{
+		var cons = table.AllThat ("during");
+		foreach (var con in cons) {
+			var call = con.Call ();
 
+		}
 	}
-
+	/*
+	 * before(condition_name) = {
+	 * param1 = value   
+	 * param2 = value
+	 * other\root are filled automatically
+	 * }
+	 */
+	int depCounter = 0;
 	void Dependencies (CodeTypeDeclaration type, Table table)
 	{
-
+		var deps = table.AllThat ("before");
+		if (deps.Count > 0) {
+			type.CreateProp (typeof(List<TaskWrapper>), "deps");
+			type.OverridePropConst (typeof(PrimitiveTask), "Dependencies", "deps");
+			var ctor = type.GetShared<CodeTypeConstructor> ("ctor");
+			ctor.Statements.Add ("deps = new System.Collections.Generic.List<TaskWrapper>();".St());
+			FunctionBlock initMethodBlock = null;
+			if (type.UserData.Contains ("init_method")) {
+				initMethodBlock = type.UserData ["init_method"] as FunctionBlock;
+			} else {
+				var initMethod = new CodeMemberMethod ();
+				initMethod.Name = "Init";
+				initMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+				type.Members.Add (initMethod);
+				initMethodBlock = initMethod.InitialBlock (type, Engine);
+				type.UserData.Add ("init_method", initMethodBlock);
+				initMethod.Statements.Add ("base.Init();".St());
+			}
+			foreach (var dep in deps) {
+				var call = dep.Call ();
+				if (call != null) {
+					var conditionTypeName = dep.ArgValue (0);
+					ctor.Statements.Add ("deps.Add(new ScriptedTypes.{0}())".Fmt (type.Name).St ());
+					InitForCondition (initMethodBlock, conditionTypeName, dep.Context as Table, depCounter++, "deps", type);
+				} 
+			}
+		}
 	}
+	/*
+	 * engage_in(task_category) = {
+	 *   param1 = value
+	 *   other\root are filled automatically
+	 * }
+	 */
 	void Engagement(CodeTypeDeclaration type, Table table)
 	{
+		var eng = table.Get ("engage_in");
+		if (eng == null)
+			return;
+		var engangementCat = eng.ArgValue (0);
 
 	}
+	/*
+	 * [target(root, other, at, whatever that is gameobject)].task_category\name = {
+	 *  param1 = value
+	 *  param2 = value
+	 *  other = other (no manual substitution)
+	 * 
+	 * }
+	 */
 	void Tasks(CodeTypeDeclaration type, Table table)
 	{
+		//foreach table
+		//create condition type
+		//init it
+		var engageOp = table.Get("engage");
+		if (engageOp == null)
+			return;
 
+		type.CreateProp (typeof(TaskWrapper), "engagement");
+		type.OverridePropConst (typeof(PrimitiveTask), "EnagegeIn", "engagement");
+		var ctor = type.GetShared<CodeTypeConstructor> ("ctor");
+		var wrapperType = GenerateTaskWrapper (type.Name, engageOp.ArgValue(0), null, engageOp.Context as Table, type, type.UserData.Contains("category")?type.UserData["category"] as string: null);
+		ctor.Statements.Add ("engagement = new {0}();".Fmt(wrapperType).St());
+		FunctionBlock initMethodBlock = null;
+		if (type.UserData.Contains ("init_method")) {
+			initMethodBlock = type.UserData ["init_method"] as FunctionBlock;
+		} else {
+			var initMethod = new CodeMemberMethod ();
+			initMethod.Name = "Init";
+			initMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+			type.Members.Add (initMethod);
+			initMethodBlock = initMethod.InitialBlock (type, Engine);
+			type.UserData.Add ("init_method", initMethodBlock);
+		}
+
+	}
+
+
+	string GenerateTaskWrapper(string fromTask, string engagement, string forAgent, Table table, CodeTypeDeclaration fromType, string category)
+	{
+		CodeTypeDeclaration decl = new CodeTypeDeclaration ();
+		decl.Name = fromTask + "Engagement";
+		decl.BaseTypes.Add (typeof(TaskWrapper));
+
+		decl.OverridePropConst (typeof(TaskWrapper), "TaskCategory", "typeof(ScriptedTypes.{0})".Fmt(engagement));
+
+		decl.OverrideMethodConst (typeof(TaskWrapper), "Satisfied", "true"); //для engagementa, иначе там when должен быть
+		var initTaskMethod = fromType.OverrideMethod(typeof(TaskWrapper), "InitTask", Engine);
+		var exprInter = Engine.GetPlugin<ExpressionInterpreter> ();
+		initTaskMethod.Statements.Add ("var properTask = task as ScriptedTypes.{0}".Fmt(engagement));
+		if (category != null) {
+			var rootVar = new DeclareVariableStatement ();
+			rootVar.Name = "fromTask";
+			rootVar.InitExpression = "FromTask as ScriptedTypes.{0}".Fmt (category);
+			rootVar.IsArg = false;
+			rootVar.IsContext = true;
+			rootVar.Type = Engine.GetType (category);
+			initTaskMethod.Statements.Add (rootVar);
+		}
+		foreach (var entry in table.Entries) {
+			var op = entry as Operator;
+			var paramName = (op.Identifier as string).CSharp();
+
+			var expr = exprInter.InterpretExpression (op.Context as Expression, initTaskMethod);
+
+			var assignStatement = "properTask.{0} = ({2}){1};".Fmt(paramName, expr.ExprString, expr.Type);
+			initTaskMethod.Statements.Add (assignStatement);
+		}
+		return decl.Name;
+	}
+
+	void InitForCondition(FunctionBlock block, string typeName, Table table, int listIndex, string listName, CodeTypeDeclaration type)
+	{
+		block.Statements.Add ("var indexedWrapper{0} = {1}[{0}] as ScriptedTypes.{2};".Fmt (listIndex, listName, typeName));
+		var exprInter = Engine.GetPlugin<ExpressionInterpreter> ();
+		bool hadOther = false;
+		foreach (var entry in table.Entries) {
+			var op = entry as Operator;
+			if (op.Identifier as string == "other")
+				hadOther = true;
+			var expr = exprInter.InterpretExpression (op.Context as Expression, block);
+			block.Statements.Add ("indexedWrapper{0}.{1} = ({3})({2})".Fmt(listIndex, (op.Identifier as string).CSharp (), expr.ExprString, expr.Type));
+		}
+		block.Statements.Add ("indexedWrapper{0}.Root = this.Root".Fmt (listIndex));
+		if (!hadOther && type.UserData.Contains ("other"))
+			block.Statements.Add ("indexedWrapper{0}.Other = this.Other".Fmt (listIndex));
+	}
+
+	void CreateTaskCondition(string name, Table table)
+	{
 	}
 }
 

@@ -48,7 +48,7 @@ public static class OperatorExtensions
 	public static string ArgValue(this Operator op, int index)
 	{
 		if (op.Args == null || op.Args.Count <= index)
-			return;
+			return null;
 		return op.Args [index].ToString ().ClearFromBraces ().Trim ();
 	}
 	public static string GetValue(this Operator op, string id)

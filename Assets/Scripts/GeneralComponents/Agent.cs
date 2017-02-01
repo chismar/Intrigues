@@ -16,7 +16,7 @@ public class Agent : MonoBehaviour
 
 	public bool IsExternal(TaskCondition c)
 	{
-		return tasksSet.ContainsKey (c.TaskCategory ());
+		return tasksSet.ContainsKey (c.TaskCategory);
 	}
 	void UpdateAI()
 	{
@@ -58,7 +58,7 @@ public class Agent : MonoBehaviour
 	List<Task> tasksList = new List<Task>();
 	public AgentBehaviour GetSatisfactor(TaskCondition c)
 	{
-		var satTaskCat = c.TaskCategory ();
+		var satTaskCat = c.TaskCategory;
 		var catList = tasksSet.Get (satTaskCat);
 		tasksList.Clear ();
 		for (int i = 0; i < catList.Count; i++)
@@ -73,16 +73,16 @@ public class Agent : MonoBehaviour
 			bool doableInTheory = true;
 			var pTask = task as PrimitiveTask;
 			if (pTask != null) {
-				var deps = pTask.Dependencies ();
-				var cons = pTask.Constraints ();
+				var deps = pTask.Dependencies;
+				var cons = pTask.Constraints;
 				for (int j = 0; j < deps.Count; j++)
-					if (!tasksSet.ContainsKey (deps [i].TaskCategory ())) {
+					if (!tasksSet.ContainsKey (deps [i].TaskCategory)) {
 						doableInTheory = false;
 						break;
 					}
 				if(doableInTheory)
 				for (int j = 0; j < cons.Count; j++)
-					if (!tasksSet.ContainsKey (cons [i].TaskCategory ())) {
+					if (!tasksSet.ContainsKey (cons [i].TaskCategory)) {
 						doableInTheory = false;
 						break;
 					}
@@ -153,7 +153,7 @@ public abstract class AgentBehaviour
 		Agent = agent;
 		state = BehaviourState.None;
 		Task.Init ();
-		atScope = task.AtScope ();
+		atScope = task.AtScope;
 		atScope.CachedList = atScope != null ? atScope.From (agent.gameObject) : null;
 		metrics = agent.GetComponent<Metrics> ();
 		atScope.CachedMetrics = metrics.Dictionary.ContainsKey (atScope.FromMetricName ()) ? metrics.Dictionary [atScope.FromMetricName ()] : null;
@@ -416,8 +416,8 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 	public override void PlanAhead ()
 	{
 
-		cons = selfTask.Constraints ();
-		deps = selfTask.Dependencies ();
+		cons = selfTask.Constraints;
+		deps = selfTask.Dependencies;
 		Replan ();
 
 
@@ -619,10 +619,13 @@ public abstract class TaskCondition
 	protected bool met;
 	public bool Met { get { return met; } }
 	protected abstract bool Satisfied ();
-	public abstract Type TaskCategory { get; }
-	public abstract void InitTask(Task task);
+	public virtual Type TaskCategory { get { return null; } }
+	public virtual void InitTask(Task task) {}
 	public AgentBehaviour Behaviour { get;set; }
-	public abstract LocalizedString Serialized { get; }
+	public virtual LocalizedString Serialized { get { return null; } }
+	public virtual void Init()
+	{
+	}
 }
 
 public abstract class Constraint : TaskCondition
@@ -635,6 +638,10 @@ public abstract class TaskWrapper : Constraint
 	
 	public HashSet<Type> AlreadyChosenBehaviours = new HashSet<Type>();
 	public virtual int MaxAttempts { get { return 1; } }
-	public Agent TargetAgent;
+	public virtual Agent TargetAgent(Task fromTask)
+	{
+		return fromTask.Root.GetComponent<Agent>();
+	}
 	public int CurrentAttempts;
+	public Task FromTask;
 }

@@ -574,7 +574,7 @@ public class Actions : Root<Actions>
 
     }
 
-    public List<Condition> GetDeps(Type eventActionType)
+    public List<Dependency> GetDeps(Type eventActionType)
     {
         return eventActionsByType[eventActionType].GetDependencies();
     }

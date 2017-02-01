@@ -1,8 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
 using InternalDSL;
+using System.Collections.Generic;
+
+
 public static class ContextExtensions
-{
+{ 
 
 	public static bool Has(this Table c, string value)
 	{
@@ -15,6 +18,16 @@ public static class ContextExtensions
 				return c.Entries[i] as Operator;
 		return null;
 	}
+	public static List<Operator> AllThat(this Table c, string value)
+	{
+		var list = new List<Operator> ();
 
+		for (int i = 0; i < c.Entries.Count; i++)
+			if ((c.Entries [i] as Operator).Identifier as string == value ||
+			    (c.Entries [i] as Operator).Call ().Name == value)
+				list.Add (c.Entries [i] as Operator);
+				
+		return list;
+	}
 }
 

@@ -371,4 +371,9 @@ public static class StringFormatExt
     {
         return string.Format(str, args);
     }
+
+	public static CodeSnippetStatement St(this string str)
+	{
+		return new CodeSnippetStatement (str);
+	}
 }

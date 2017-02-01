@@ -10,7 +10,7 @@ public class InteractableButton : MonoBehaviour
     public Button Button;
     public EventAction Interaction;
     public InteractionsView View;
-    List<Condition> deps;
+    List<Dependency> deps;
     HoverTooltip tooltip;
     private void Start()
     {
@@ -35,9 +35,9 @@ public class InteractableButton : MonoBehaviour
         }
         View.UpdateView();
     }
-    static ObjectPool<List<Condition>> lists = new ObjectPool<List<Condition>>();
-    List<Condition> satisfiedDeps = new List<Condition>();
-    List<Condition> unsatisfiedDeps = new List<Condition>();
+    static ObjectPool<List<Dependency>> lists = new ObjectPool<List<Dependency>>();
+    List<Dependency> satisfiedDeps = new List<Dependency>();
+    List<Dependency> unsatisfiedDeps = new List<Dependency>();
     StringBuilder depsTooltipBuilder = new StringBuilder();
     string depsData;
     bool wasAvailable = false;
