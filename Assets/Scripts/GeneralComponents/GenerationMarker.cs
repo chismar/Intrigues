@@ -18,7 +18,10 @@ public class GenerationMarker : MonoBehaviour
         yield return Actions.Instance.GenerateCoroutine(gameObject, 0.1f);
         MetricsManager.Instance.InitMetrics(gameObject);
         EventsManager.Instance.InitReactions(gameObject);
+		TasksStore.Instance.InitAI (gameObject);
+
         Actor actor = gameObject.GetComponent<Actor>();
+
         builder.Length = 0;
         if (actor != null)
         {

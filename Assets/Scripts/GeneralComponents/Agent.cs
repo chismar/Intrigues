@@ -8,8 +8,8 @@ public class Agent : MonoBehaviour
 {
 	public List<AgentBehaviour> behaviours = new List<AgentBehaviour>();
 
-	Dictionary<Type, List<ObjectPool>> tasksSet;
-	Dictionary<Type, ObjectPool> tasksByType;
+	public Dictionary<Type, List<ObjectPool>> tasksSet;
+	public Dictionary<Type, ObjectPool> tasksByType;
 	PrimitiveAgentBehaviour currentTaskBehaviour;
 
 	AgentBehaviour currentBehaviour;
@@ -24,7 +24,7 @@ public class Agent : MonoBehaviour
 		AgentBehaviour maxBeh = null;
 		for (int i = 0; i < behaviours.Count; i++) {
 			var beh = behaviours [i];
-			var ut = beh.Utility ();
+			var ut = beh.Utility (beh == currentBehaviour);
 			if (ut > maxUt) {
 				maxBeh = beh;
 				maxUt = ut;
@@ -33,7 +33,7 @@ public class Agent : MonoBehaviour
 		if (maxBeh != null)
 		if (maxBeh != currentBehaviour) {
 			if (currentBehaviour != null) {
-				//currentBehaviour.Interrupt();
+				currentBehaviour.Interrupt();
 			}
 			currentBehaviour = maxBeh;
 		}
@@ -154,10 +154,17 @@ public abstract class AgentBehaviour
 		state = BehaviourState.None;
 		Task.Init ();
 		atScope = task.AtScope;
-		atScope.CachedList = atScope != null ? atScope.From (agent.gameObject) : null;
-		metrics = agent.GetComponent<Metrics> ();
-		atScope.CachedMetrics = metrics.Dictionary.ContainsKey (atScope.FromMetricName ()) ? metrics.Dictionary [atScope.FromMetricName ()] : null;
+		if (atScope != null) {
+
+			atScope.CachedList = atScope != null ? atScope.From (agent.gameObject) : null;
+			metrics = agent.GetComponent<Metrics> ();
+			atScope.CachedMetrics = metrics.Dictionary.ContainsKey (atScope.FromMetricName ()) ? metrics.Dictionary [atScope.FromMetricName ()] : null;
+		}
 	}
+
+	public abstract void Interrupt ();
+
+
 
 	BehaviourState state;
 	public BehaviourState State { 
@@ -165,9 +172,9 @@ public abstract class AgentBehaviour
 		set { state = value; } 
 	}
 	public abstract void Do ();
-	public float Utility()
+	public float Utility(bool isCurrent)
 	{
-		return Task.Utility ();
+		return Task.Utility () + (State == BehaviourState.Paused? 0.3f : 0f) + (isCurrent? 0.2f : 0f);
 	}
 
 
@@ -268,6 +275,18 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 		deps = null;
 		satisfactionBehaviour = null;
 	}
+	public override void Interrupt ()
+	{
+		switch (State) {
+		case BehaviourState.Active:
+			OnInterrupt ();
+			break;
+		case BehaviourState.Waiting:
+			satisfactionBehaviour.Interrupt ();
+			break;
+		}
+	}
+
 
 	public override void Do ()
 	{
@@ -318,7 +337,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 	}
 	public void Update()
 	{
-		//here the state of the behaviour and task is Active
+		//here the state of the behaviour is Active
 		switch (Task.State) {
 		case TaskState.Active:
 			UpdateActiveTask ();
@@ -393,26 +412,29 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 				selfTask.OnUpdate ();
 		}
 		else {
-			switch (Task.Interruption ()) {
-			case InterruptionType.Terminal:
-				Agent.SetExecutingTask (null);
-				State = BehaviourState.Failed;
-				break;
-			case InterruptionType.Resumable:
-				State = BehaviourState.None;
-				Task.State = TaskState.Paused;
-				selfTask.OnInterrupt ();
-				break;
-			case InterruptionType.Restartable:
-				State = BehaviourState.Waiting;
-				Task.State = TaskState.Paused;
-				selfTask.OnInterrupt ();
-				break;
-			}
+			OnInterrupt ();
 		}
 	}
 
-
+	void OnInterrupt()
+	{
+		switch (Task.Interruption ()) {
+		case InterruptionType.Terminal:
+			Agent.SetExecutingTask (null);
+			State = BehaviourState.Failed;
+			break;
+		case InterruptionType.Resumable:
+			State = BehaviourState.None;
+			Task.State = TaskState.Paused;
+			selfTask.OnInterrupt ();
+			break;
+		case InterruptionType.Restartable:
+			State = BehaviourState.Waiting;
+			Task.State = TaskState.Paused;
+			selfTask.OnInterrupt ();
+			break;
+		}
+	}
 	public override void PlanAhead ()
 	{
 
@@ -492,6 +514,23 @@ public class ComplexAgentBehaviour : AgentBehaviour
 		cTask = task as ComplexTask;
 		tasks = cTask.Decomposition ();
 		tasksEnumeration = TasksEnumerator ();
+	}
+
+	public override void Interrupt ()
+	{
+		switch (cTask.Interruption ()) {
+		case InterruptionType.Restartable:
+			State = BehaviourState.None;
+			break;
+		case InterruptionType.Resumable:
+			State = BehaviourState.Paused;
+			break;
+		case InterruptionType.Terminal:
+			State = BehaviourState.Failed;
+			break;
+		}
+		if (currentTaskWrapper != null && currentTaskWrapper.Behaviour != null)
+			currentTaskWrapper.Behaviour.Interrupt ();
 	}
 	public override void Do ()
 	{
