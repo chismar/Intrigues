@@ -9,6 +9,7 @@ public class TasksStore : Root<TasksStore>
 
 	void Awake()
 	{
+		base.Awake ();
 		FindObjectOfType<BasicLoader> ().Loaded += OnLoad;
 	}
 

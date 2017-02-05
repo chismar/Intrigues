@@ -37,10 +37,13 @@ public partial class AITasksLoader : ScriptInterpreter
 		Init (type, table);
 
 	}
-	void GeneratePrimitiveTask (string typeName,Table table)
+	CodeTypeDeclaration GeneratePrimitiveTask (string typeName,Table table)
 	{
-		CodeTypeDeclaration type = null;
-		Interaction (type, table);
+		CodeTypeDeclaration type = new CodeTypeDeclaration ();
+		type.Name = typeName;
+		var baseType = new CodeTypeReference (typeof(PrimitiveTask));
+		type.BaseTypes.Add (baseType);
+		Interaction (type, table, baseType);
 		GenerateTask (type, table);
 
 		OnStart (type, table);
@@ -55,14 +58,18 @@ public partial class AITasksLoader : ScriptInterpreter
 		Animation (type, table);
 
 		Engagement (type, table);
+		return type;
 
 	}
 
-	void GenerateComplexTask (string typeName, Table table)
+	CodeTypeDeclaration GenerateComplexTask (string typeName, Table table)
 	{
-		CodeTypeDeclaration type = null;
+		CodeTypeDeclaration type = new CodeTypeDeclaration ();
+		type.Name = typeName;
+		type.BaseTypes.Add (new CodeTypeReference (typeof(ComplexTask)));
 		GenerateTask (type, table);
 		Tasks (type, table);
+		return type;
 	}
 
 
@@ -72,20 +79,19 @@ public partial class AITasksLoader : ScriptInterpreter
 		if (catOp == null)
 			return;
 		var cat = catOp.Context.ToString ().ClearFromBraces ().Trim ();
-		CodeMemberMethod catMet = new CodeMemberMethod ();
-		catMet.Name = "Category";
-		catMet.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-		catMet.Statements.Add (new CodeSnippetStatement ("return \"{0}\";".Fmt(cat)));
-		type.Members.Add (catMet);
+		type.OverridePropConst (typeof(Task), "Category", "\"{0}\"".Fmt(cat));
 		//TODO - interface
 		type.AddCategoryInterface(cat, Engine);
 		type.UserData.Add ("category", cat);
 	}
-	void Interaction(CodeTypeDeclaration type, Table table)
+	void Interaction(CodeTypeDeclaration type, Table table, CodeTypeReference baseType)
 	{
 		var interOp = table.Get ("interaction");
-
+		if (interOp == null)
+			return;
 		interOp.Scope().Parts.Add("true");
+		type.BaseTypes.Remove (baseType);
+		type.BaseTypes.Add (new CodeTypeReference (typeof(InteractionTask)));
 		DeclareVariableStatement retVal = new DeclareVariableStatement();
 		retVal.IsReturn = true;
 		retVal.Name = "applicable";
@@ -137,6 +143,12 @@ public partial class AITasksLoader : ScriptInterpreter
 		var iOp = table.Get ("interruption");
 		if (iOp == null) {
 		}
+		var val = iOp.Value ();
+		if (val == "restart")
+			type.OverridePropConst (typeof(Task), "Interruption", "InterruptionType.Restartable");
+		else if (val == "terminate")
+			type.OverridePropConst (typeof(Task), "Interruption", "InterruptionType.Terminal");
+			
 	}
 	void Scope (CodeTypeDeclaration type, Table table)
 	{
@@ -151,7 +163,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			retVal.Name = "applicable";
 			retVal.Type = typeof(bool);
 			retVal.InitExpression = "false";
-			CreateEventFunction("Filter", scopeOp.Context, type, typeof(Task).GetMethod("Filter"), false, retVal);
+			CreateEventFunction("Filter", scopeOp.Context, type, typeof(Task).GetMethod("Filter"), retVal);
 		}
 		catch(Exception e) {
 			Debug.LogError ("Scope exception in task {0}: {1}".Fmt (type.Name, e));
@@ -171,7 +183,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			retVal.Name = "ut";
 			retVal.Type = typeof(float);
 			retVal.InitExpression = "0";
-			CreateEventFunction("Utility", utOp.Context, type, typeof(Task).GetMethod("Utility"), false, retVal);
+			CreateEventFunction("Utility", utOp.Context, type, typeof(Task).GetMethod("Utility"), retVal);
 		}
 		catch(Exception e) {
 			Debug.LogError ("Utility exception in task {0}: {1}".Fmt (type.Name, e));
@@ -186,7 +198,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		}
 
-		CreateEventFunction("OnUpdate", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnUpdate"), true);
+		CreateEventFunction("OnUpdate", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnUpdate"));
 	}
 
 	void Terminated (CodeTypeDeclaration type, Table table)
@@ -196,7 +208,12 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		}
 
-		CreateEventFunction("Terminated", upOp.Context, type, typeof(Task).GetMethod("Terminated"), true);
+		DeclareVariableStatement retVal = new DeclareVariableStatement();
+		retVal.IsReturn = true;
+		retVal.Name = "should";
+		retVal.Type = typeof(bool);
+		retVal.InitExpression = "false";
+		CreateEventFunction("Terminated", upOp.Context, type, typeof(Task).GetMethod("Terminated"), retVal);
 	}
 
 	void Finished (CodeTypeDeclaration type, Table table)
@@ -206,7 +223,12 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		}
 
-		CreateEventFunction("Finished", upOp.Context, type, typeof(Task).GetMethod("Finished"), true);
+		DeclareVariableStatement retVal = new DeclareVariableStatement();
+		retVal.IsReturn = true;
+		retVal.Name = "should";
+		retVal.Type = typeof(bool);
+		retVal.InitExpression = "false";
+		CreateEventFunction("Finished", upOp.Context, type, typeof(Task).GetMethod("Finished"), retVal);
 	}
 
 	void OnStart (CodeTypeDeclaration type, Table table)
@@ -288,11 +310,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		if (catOp == null)
 			return;
 		var cat = catOp.Context.ToString ().ClearFromBraces ().Trim ();
-		CodeMemberMethod anMet = new CodeMemberMethod ();
-		anMet.Name = "Animation";
-		anMet.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-		anMet.Statements.Add (new CodeSnippetStatement ("return {0};".Fmt(cat)));
-		type.Members.Add (anMet);
+		type.OverridePropConst(typeof(PrimitiveTask), "Animation","\"{0}\"".Fmt(cat));
 	}
 
 	void OtherAnimation (CodeTypeDeclaration type, Table table)
@@ -301,11 +319,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		if (catOp == null)
 			return;
 		var cat = catOp.Context.ToString ().ClearFromBraces ().Trim ();
-		CodeMemberMethod anMet = new CodeMemberMethod ();
-		anMet.Name = "OtherAnimation";
-		anMet.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-		anMet.Statements.Add (new CodeSnippetStatement ("return {0};".Fmt(cat)));
-		type.Members.Add (anMet);
+		type.OverridePropConst(typeof(InteractionTask), "OtherAnimation","\"{0}\"".Fmt(cat));
 	}
 	/*
 	 * during(condition_name) = {
@@ -461,8 +475,5 @@ public partial class AITasksLoader : ScriptInterpreter
 			block.Statements.Add ("indexedWrapper{0}.Other = this.Other".Fmt (listIndex));
 	}
 
-	void CreateTaskCondition(string name, Table table)
-	{
-	}
 }
 

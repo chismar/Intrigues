@@ -101,6 +101,7 @@ public class BasicLoader : MonoBehaviour
             loadedAsms.Add("AgentsDatabases_" + typeof(Fact).Name);
             loadedAsms.Add("AgentsDatabases_" + typeof(BackstoryElement).Name);
             bbloader = new BlackboardsLoader (Engine);
+			aiLoader = new AITasksLoader ("ScriptedTypes", Engine);
             reactionsLoader = new ReactionsLoader("reactions", engine);
             factsLoader = new AgentDatabaseLoader(engine, "facts", typeof(Fact));
             backstoryFactsLoader = new AgentDatabaseLoader(engine, "backstory", typeof(BackstoryElement));
@@ -156,6 +157,7 @@ public class BasicLoader : MonoBehaviour
     AgentDatabaseLoader factsLoader;
     AgentDatabaseLoader backstoryFactsLoader;
     LocalisationTagsLoader localisationLoader;
+	AITasksLoader aiLoader;
     //ProgressBar eaBar;
     //ProgressBar genBar;
 
@@ -187,7 +189,14 @@ public class BasicLoader : MonoBehaviour
                // filesLoaded++;
         }
 
+		Script aiScript = new Script ("tasks", aiLoader, Engine);
+		 scriptFiles = Directory.GetFiles((BasicLoader.IsInEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/Mods/AIScripts", "*.def");
 
+		foreach (var file in scriptFiles)
+		{
+			aiScript.LoadFile(file);
+			// filesLoaded++;
+		}
         
         bbloader.AddType (typeof(GameObject), "gameobject");
 		bbloader.AddType (typeof(int), "int");
@@ -230,6 +239,8 @@ public class BasicLoader : MonoBehaviour
 
         Engine.InitPlugins ();
 		genScript.Interpret ();
+		aiScript.Interpret ();
+
 
         Script metricsScript = new Script("metrics", metricsLoader);
         scriptFiles = Directory.GetFiles((BasicLoader.IsInEditor ? "Assets/" : BasicLoader.ProjectPrefix + "_Data/") + "StreamingAssets/Mods/Metrics", "*.def");

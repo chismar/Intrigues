@@ -366,7 +366,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 		var unsatisfiedCond = cons.Unsatisfied ();
 		var isResuming = Task.State == TaskState.Paused;
 		if (unsatisfiedCond == null)
-		if (Task.State != TaskState.Active && (!isResuming || (isResuming && Task.Interruption() == InterruptionType.Restartable)))
+		if (Task.State != TaskState.Active && (!isResuming || (isResuming && Task.Interruption == InterruptionType.Restartable)))
 			unsatisfiedCond = deps.Unsatisfied ();
 		if (unsatisfiedCond == null)
 			return true;
@@ -418,7 +418,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	void OnInterrupt()
 	{
-		switch (Task.Interruption ()) {
+		switch (Task.Interruption ) {
 		case InterruptionType.Terminal:
 			Agent.SetExecutingTask (null);
 			State = BehaviourState.Failed;
@@ -474,7 +474,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 			}
 		}
 		var isResuming = Task.State == TaskState.Paused;
-		if (Task.State != TaskState.Active && (!isResuming || (isResuming && Task.Interruption () == InterruptionType.Restartable))) {
+		if (Task.State != TaskState.Active && (!isResuming || (isResuming && Task.Interruption  == InterruptionType.Restartable))) {
 			for (int i = 0; i < deps.Count; i++) {
 				var dep = deps [i];
 				if (!dep.Met) {
@@ -518,7 +518,7 @@ public class ComplexAgentBehaviour : AgentBehaviour
 
 	public override void Interrupt ()
 	{
-		switch (cTask.Interruption ()) {
+		switch (cTask.Interruption ) {
 		case InterruptionType.Restartable:
 			State = BehaviourState.None;
 			break;
@@ -576,7 +576,7 @@ public class ComplexAgentBehaviour : AgentBehaviour
 			}
 			break;
 		case BehaviourState.Paused:
-			switch (Task.Interruption ()) {
+			switch (Task.Interruption ) {
 			case InterruptionType.Restartable:
 				Task.State = TaskState.None;
 				break;

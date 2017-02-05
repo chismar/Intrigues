@@ -1,0 +1,18 @@
+wander = {
+	scope = entity.movable
+	category = nothing_else_to_do
+	utility = 0.1
+	animation = walk
+	start = {
+		cache(point) = random_point(entity.position, 5)
+		movable = {
+			goto_point = point
+			speed = 1
+			cache(mov) = this
+		}
+	}
+	finished = mov.near_target
+	wait = 5
+	interruption = restart
+
+}

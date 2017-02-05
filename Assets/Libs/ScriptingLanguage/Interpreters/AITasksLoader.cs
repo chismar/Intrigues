@@ -31,10 +31,7 @@ public abstract class Task
 	public virtual void Init () {
 		State = TaskState.None;
 	}
-	public virtual InterruptionType Interruption()
-	{
-		return InterruptionType.Resumable;
-	}
+	public virtual InterruptionType Interruption{ get { return InterruptionType.Resumable; } }
 
 	public virtual bool Finished ()
 	{
@@ -72,10 +69,7 @@ public abstract class ComplexTask : Task
 
 	public abstract List<TaskWrapper> Decomposition ();
 	public virtual void Start () {}
-	public override InterruptionType Interruption ()
-	{
-		return InterruptionType.Restartable;
-	}
+	public override InterruptionType Interruption { get { return InterruptionType.Restartable; } } 
 }
 public enum InterruptionType { Terminal, Resumable, Restartable }
 
@@ -139,6 +133,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		provider.GenerateCodeFromNamespace (cNamespace, writer, options);
 		Engine.GetPlugin<ScriptCompiler> ().AddSource (writer.ToString ());
 
+		Debug.Log (writer.ToString ());
 	}
 
 
@@ -203,11 +198,14 @@ public partial class AITasksLoader : ScriptInterpreter
 			if (!(entry.Identifier is FunctionCall)) {
 				var type = entry.Identifier as string;
 				var table = entry.Context as Table;
+				CodeTypeDeclaration taskType = null;
 				if (IsPrimitive (table)) {
-					GeneratePrimitiveTask (type, table);
+					taskType= GeneratePrimitiveTask (type, table);
 				} else if (IsComplex(table)) {
-					GenerateComplexTask (type, table);
+					taskType = GenerateComplexTask (type, table);
 				}
+				if (taskType != null)
+					cNamespace.Types.Add (taskType);
 			}
 		}
 	}

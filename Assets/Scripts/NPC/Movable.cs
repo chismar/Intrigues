@@ -13,7 +13,7 @@ public class Movable : MonoBehaviour {
 	Vector3 target;
 	[SerializeField]
     Transform targetGo;
-    float OKDistance;
+	float OKDistance;
     public void GotoPoint(float OKDistance, Vector2 point)
     {
         targetGo = null;
@@ -63,4 +63,5 @@ public class Movable : MonoBehaviour {
             NearTarget = true;
         }
     }
+
 }

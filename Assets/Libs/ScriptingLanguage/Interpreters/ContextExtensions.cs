@@ -21,10 +21,10 @@ public static class ContextExtensions
 	public static List<Operator> AllThat(this Table c, string value)
 	{
 		var list = new List<Operator> ();
-
+		FunctionCall call;
 		for (int i = 0; i < c.Entries.Count; i++)
-			if ((c.Entries [i] as Operator).Identifier as string == value ||
-			    (c.Entries [i] as Operator).Call ().Name == value)
+			if ((c.Entries [i] as Operator).Identifier as string == value ||(
+				(call = (c.Entries [i] as Operator).Call ()) != null && call.Name == value))
 				list.Add (c.Entries [i] as Operator);
 				
 		return list;

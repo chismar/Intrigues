@@ -2437,6 +2437,7 @@ GameObject:
   - component: {fileID: 2038756757}
   - component: {fileID: 2038756756}
   - component: {fileID: 2038756759}
+  - component: {fileID: 2038756760}
   m_Layer: 0
   m_Name: Roots
   m_TagString: Untagged
@@ -2494,6 +2495,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: da55141acc4c3b447bbbdb306f25f079, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2038756760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 2038756755}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d0f415550cf3a44ba78e00abcf35835, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &2118131736

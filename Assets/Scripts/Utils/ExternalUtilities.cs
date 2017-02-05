@@ -9,7 +9,7 @@ public class ExternalUtilities : Root<ExternalUtilities>
     private void Awake()
     {
         base.Awake();
-        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "SelectByWeight", "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne"));
+        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "SelectByWeight", "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne", "RandomPoint"));
     }
     //ayn
     System.Random rand = new System.Random();
@@ -86,4 +86,10 @@ public class ExternalUtilities : Root<ExternalUtilities>
         else
             return found[Random.Range(0, found.Count)];
     }
+
+
+	public Vector2 RandomPoint(Vector2 pos, float distance)
+	{
+		return Random.insideUnitCircle * distance + pos;
+	}
 }
