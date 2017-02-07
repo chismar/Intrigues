@@ -75,12 +75,12 @@ public enum InterruptionType { Terminal, Resumable, Restartable }
 
 public abstract class PrimitiveTask : Task
 {
-	public abstract void OnStart ();
-	public abstract void OnTerminate ();
-	public abstract void OnFinish ();
-	public abstract void OnInterrupt ();
-	public abstract void OnResume ();
-	public abstract void OnUpdate();
+	public virtual void OnStart () {}
+	public virtual void OnTerminate () {}
+	public virtual void OnFinish () {}
+	public virtual void OnInterrupt () {}
+	public virtual void OnResume () {}
+	public virtual void OnUpdate() {}
 	public virtual List<TaskWrapper> Dependencies{ get { return null; } }
 	public virtual List<TaskWrapper> Constraints { get { return null; } }
 	public abstract string Animation { get; }

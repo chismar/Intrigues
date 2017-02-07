@@ -47,7 +47,8 @@ public class Agent : MonoBehaviour
 	{
 		if (currentTaskBehaviour != null && currentTaskBehaviour.State == BehaviourState.Active) {
 			currentTaskBehaviour.Update ();
-		}
+		} else
+			UpdateAI ();
 	}
 
 	public void SetExecutingTask(PrimitiveAgentBehaviour beh)

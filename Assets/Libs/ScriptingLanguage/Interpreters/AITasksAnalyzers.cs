@@ -81,7 +81,8 @@ public partial class AITasksLoader : ScriptInterpreter
 		var cat = catOp.Context.ToString ().ClearFromBraces ().Trim ();
 		type.OverridePropConst (typeof(Task), "Category", "\"{0}\"".Fmt(cat));
 		//TODO - interface
-		type.AddCategoryInterface(cat, Engine);
+
+		type.AddCategoryInterface(cat, Engine, cNamespace);
 		type.UserData.Add ("category", cat);
 	}
 	void Interaction(CodeTypeDeclaration type, Table table, CodeTypeReference baseType)
@@ -238,7 +239,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		}
 
-		CreateEventFunction("OnStart", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnStart"), "base.OnStart();");	
+		CreateEventFunction("OnStart", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnStart"));	
 	}
 
 	void OnFinish(CodeTypeDeclaration type, Table table)
@@ -248,7 +249,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		}
 
-		CreateEventFunction("OnFinish", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnFinish"), "base.OnFinish();");
+		CreateEventFunction("OnFinish", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnFinish"));
 	}
 
 	void OnTerminate(CodeTypeDeclaration type, Table table)
@@ -258,7 +259,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		}
 
-		CreateEventFunction("OnTerminate", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnTerminate"), "base.OnTerminate();");
+		CreateEventFunction("OnTerminate", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnTerminate"));
 	}
 
 	void OnInterrupt (CodeTypeDeclaration type, Table table)
@@ -276,7 +277,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		}
 
-		CreateEventFunction("OnInterrupt", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnInterrupt"), "base.OnInterrupt();");
+		CreateEventFunction("OnInterrupt", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnInterrupt"));
 	}
 
 	void OnResume (CodeTypeDeclaration type, Table table)
@@ -299,7 +300,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			type.Members.Add (afterInterruptFunction);
 			return;
 		}
-		CreateEventFunction("OnResume", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnResume"), "base.OnResume();");
+		CreateEventFunction("OnResume", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnResume"));
 	}
 
 

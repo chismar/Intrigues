@@ -2013,7 +2013,10 @@ base.Init();
 namespace ScriptedTypes {
     
     
-    public class wander : PrimitiveTask {
+    public interface nothing_else_to_do {
+    }
+    
+    public class wander : PrimitiveTask, nothing_else_to_do {
         
         private UnityEngine.Vector2 point;
         
@@ -2028,6 +2031,12 @@ return "nothing_else_to_do";
         public override InterruptionType Interruption {
             get {
 return InterruptionType.Restartable;
+            }
+        }
+        
+        public override string Animation {
+            get {
+return "walk";
             }
         }
         
@@ -2092,7 +2101,6 @@ base.Init();
 			var root = this.root;
 			//External External; //IsContext = False IsNew = False
 			//ContextStatement External External ContextSwitchInterpreter
-			base.OnStart();
 			//UnityEngine.GameObject root; //IsContext = True IsNew = False
 			UnityEngine.Vector2 OperandVar312 = default(UnityEngine.Vector2); //IsContext = False IsNew = False
 			UnityEngine.Vector3 OperandVar310 = default(UnityEngine.Vector3); //IsContext = False IsNew = False
@@ -2114,9 +2122,10 @@ base.Init();
 				if(subContext313 != null)
 				{
 					//Movable subContext313; //IsContext = True IsNew = False
+					
 					UnityEngine.Vector2 OperandVar314 = default(UnityEngine.Vector2); //IsContext = False IsNew = False
 					OperandVar314 = point;
-					subContext313.GotoPoint((UnityEngine.Vector2)( (OperandVar314)));
+					subContext313.GotoPoint((System.Single)( (0.1f)),(UnityEngine.Vector2)( (OperandVar314)));
 					
 					subContext313.Speed = (System.Single)( (1f));
 					Movable OperandVar315 = default(Movable); //IsContext = False IsNew = False
@@ -2126,10 +2135,6 @@ base.Init();
 				}
 			}
 		}
-        }
-        
-        public override void Animation() {
-return walk;
         }
     }
 }

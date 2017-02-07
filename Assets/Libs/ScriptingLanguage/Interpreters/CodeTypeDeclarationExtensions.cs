@@ -156,9 +156,51 @@ public static class CodeTypeDeclarationExtensions
 
 	}
 
-	public static void AddCategoryInterface(this CodeTypeDeclaration type, string cat, ScriptEngine engine)
+	public static void AddCategoryInterface(this CodeTypeDeclaration codeType, string cat, ScriptEngine engine, CodeNamespace cNamespace)
 	{
-		
+		var type = engine.FindType("ScriptedTypes." + cat);
+		if (type == null)
+			type = engine.FindType(NameTranslator.CSharpNameFromScript(cat));
+		if (type != null)
+		{
+			var props = type.GetProperties();
+			codeType.BaseTypes.Add(type);
+
+			foreach (var propInfo in props)
+			{
+				var prop = new CodeMemberProperty();
+				prop.HasGet = true;
+				prop.HasSet = true;
+				prop.Name = propInfo.Name;
+				prop.Type = new CodeTypeReference(propInfo.PropertyType);
+				var fieldName = NameTranslator.ScriptNameFromCSharp(prop.Name);
+				prop.GetStatements.Add(new CodeSnippetStatement(String.Format("return {0}; ", fieldName)));
+				prop.SetStatements.Add(new CodeSnippetStatement(String.Format("{0} = value; ", fieldName)));
+				prop.PrivateImplementationType = new CodeTypeReference(type);
+				if (!codeType.UserData.Contains(fieldName))
+				{
+					var field = new CodeMemberField();
+					field.Name = fieldName;
+					field.Type = new CodeTypeReference(propInfo.PropertyType);
+					codeType.Members.Add(field);
+					codeType.UserData.Add(fieldName, field);
+					field.UserData.Add("type", propInfo.PropertyType);
+				}
+				codeType.Members.Add(prop);
+			}
+		}
+		else
+		{
+
+			if (!cNamespace.UserData.Contains(cat))
+			{
+				CodeTypeDeclaration catInterface = new CodeTypeDeclaration(cat);
+				catInterface.IsInterface = true;
+				cNamespace.Types.Add(catInterface);
+				cNamespace.UserData.Add(cat, catInterface);
+			}
+			codeType.BaseTypes.Add(cat);
+		}
 	}
 }
 

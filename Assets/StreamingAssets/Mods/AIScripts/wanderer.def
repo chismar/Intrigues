@@ -6,7 +6,7 @@ wander = {
 	start = {
 		cache(point) = random_point(entity.position, 5)
 		movable = {
-			goto_point = point
+			goto_point(0.1) = point
 			speed = 1
 			cache(mov) = this
 		}
