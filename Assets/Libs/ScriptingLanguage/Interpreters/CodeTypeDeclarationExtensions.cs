@@ -112,6 +112,19 @@ public static class CodeTypeDeclarationExtensions
 			}
 		}
 
+		foreach (var member in type.Members)
+		{
+			var field = member as CodeMemberField;
+			if (field != null)
+			{
+				var cachedVar = new DeclareVariableStatement ();
+				cachedVar.Name = field.Name;
+				cachedVar.Type = field.UserData ["type"] as Type;
+				cachedVar.IsArg = true;
+
+				list.Add (cachedVar);
+			}
+		}
 		return list;
 	}
 
@@ -188,6 +201,7 @@ public static class CodeTypeDeclarationExtensions
 				}
 				codeType.Members.Add(prop);
 			}
+			codeType.OverridePropConst (typeof(Task), "IsBehaviour", "false");
 		}
 		else
 		{

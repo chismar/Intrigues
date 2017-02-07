@@ -54,6 +54,17 @@ public class TasksStore : Root<TasksStore>
 
 		agent.tasksByType = allTasks;
 		agent.tasksSet = poolsByCat;
+		foreach (var taskPool in allTasks.Values) {
+			
+			var task = taskPool.Get () as Task;
+			if (!task.IsBehaviour) {
+				taskPool.Return (task);
+				continue;
+			}
+
+			var beh = AgentBehaviour.FromTask (agent, task);
+			agent.Behaviours.Add (beh);
+		}
 	}
 
 

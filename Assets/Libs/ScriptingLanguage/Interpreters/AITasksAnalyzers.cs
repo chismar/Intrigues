@@ -30,8 +30,6 @@ public partial class AITasksLoader : ScriptInterpreter
 		Category (type, table);
 		Scope (type, table);
 		Utility (type, table);
-		Finished (type, table);
-		Terminated (type, table);
 		InterruptionType (type, table);
 		AtScope (type, table);
 		Init (type, table);
@@ -58,6 +56,8 @@ public partial class AITasksLoader : ScriptInterpreter
 		Animation (type, table);
 
 		Engagement (type, table);
+		Finished (type, table);
+		Terminated (type, table);
 		return type;
 
 	}
@@ -69,6 +69,8 @@ public partial class AITasksLoader : ScriptInterpreter
 		type.BaseTypes.Add (new CodeTypeReference (typeof(ComplexTask)));
 		GenerateTask (type, table);
 		Tasks (type, table);
+		Finished (type, table);
+		Terminated (type, table);
 		return type;
 	}
 

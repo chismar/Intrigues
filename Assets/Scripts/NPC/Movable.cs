@@ -17,7 +17,7 @@ public class Movable : MonoBehaviour {
     public void GotoPoint(float OKDistance, Vector2 point)
     {
         targetGo = null;
-        target = point;
+		target = new Vector3(point.x, 0, point.y);
         this.OKDistance = OKDistance;
         IsMoving = true;
         NearTarget = false;
@@ -63,5 +63,12 @@ public class Movable : MonoBehaviour {
             NearTarget = true;
         }
     }
+
+	public void Clear(bool yes)
+	{
+		target = transform.position;
+		OKDistance = 1;
+	}
+
 
 }

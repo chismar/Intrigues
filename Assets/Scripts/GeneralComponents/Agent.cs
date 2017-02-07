@@ -6,7 +6,7 @@ using System.Text;
 
 public class Agent : MonoBehaviour
 {
-	public List<AgentBehaviour> behaviours = new List<AgentBehaviour>();
+	public List<AgentBehaviour> Behaviours = new List<AgentBehaviour>();
 
 	public Dictionary<Type, List<ObjectPool>> tasksSet;
 	public Dictionary<Type, ObjectPool> tasksByType;
@@ -20,10 +20,13 @@ public class Agent : MonoBehaviour
 	}
 	void UpdateAI()
 	{
+		Debug.Log ("UpdateAI");
 		float maxUt = 0;
 		AgentBehaviour maxBeh = null;
-		for (int i = 0; i < behaviours.Count; i++) {
-			var beh = behaviours [i];
+		for (int i = 0; i < Behaviours.Count; i++) {
+			var beh = Behaviours [i];
+			if (beh.State != BehaviourState.Paused && beh != currentBehaviour && beh.State != BehaviourState.Waiting)
+				beh.Init (this, beh.Task);
 			var ut = beh.Utility (beh == currentBehaviour);
 			if (ut > maxUt) {
 				maxBeh = beh;
@@ -39,16 +42,33 @@ public class Agent : MonoBehaviour
 		}
 		if (currentBehaviour != null && currentTaskBehaviour == null) {
 			currentBehaviour.Do ();
+
+			Debug.LogWarning ("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
 		}
 
 	}
 
+	void OnGUI()
+	{
+		var rect = Rect.MinMaxRect (0, 0, 700, 30);
+		if (currentBehaviour != null) {
+			
+			GUI.Label (rect, "{0} : {2} - {1}, {3}".Fmt (gameObject.name, currentBehaviour.Task, Behaviours.Count, currentBehaviour.State));
+		} else {
+
+			GUI.Label (rect, "{0} : {1} - no current behaviour".Fmt (gameObject.name, Behaviours.Count));
+		}
+	}
 	void Update()
 	{
 		if (currentTaskBehaviour != null && currentTaskBehaviour.State == BehaviourState.Active) {
 			currentTaskBehaviour.Update ();
-		} else
+		} else {
+			if(currentBehaviour != null)
+			if (currentBehaviour.State != BehaviourState.Active && currentBehaviour.State != BehaviourState.Paused && currentBehaviour.State != BehaviourState.Waiting)
+				currentBehaviour = null;
 			UpdateAI ();
+		}
 	}
 
 	public void SetExecutingTask(PrimitiveAgentBehaviour beh)
@@ -144,13 +164,14 @@ No behaviour -> UpdateAI -> has current task -> update cycle -> no task -> Updat
 public enum BehaviourState { None, Finished, Failed, ImpossibleToStart, Active, Paused, Waiting }
 public abstract class AgentBehaviour
 {
-	protected Task Task { get; private set; }
+	public Task Task { get; private set; }
 	protected Agent Agent { get; private set; }
 	SmartScope atScope;
 	Metrics metrics;
 	public virtual void Init(Agent agent, Task task)
 	{
 		Task = task;
+		Task.Root = agent.gameObject;
 		Agent = agent;
 		state = BehaviourState.None;
 		Task.Init ();

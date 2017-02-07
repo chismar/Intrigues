@@ -6,7 +6,7 @@ wander = {
 	start = {
 		cache(point) = random_point(entity.position, 5)
 		movable = {
-			goto_point(0.1) = point
+			goto_point(0.2) = point
 			speed = 1
 			cache(mov) = this
 		}
@@ -14,5 +14,12 @@ wander = {
 	finished = mov.near_target
 	wait = 5
 	interruption = restart
+
+	finish = {
+		mov.clear = yes
+	}
+	terminate = {
+		mov.clear = yes
+	}
 
 }

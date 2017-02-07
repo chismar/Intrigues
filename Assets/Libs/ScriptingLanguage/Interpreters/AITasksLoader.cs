@@ -49,6 +49,12 @@ public abstract class Task
 			return "basic";
 		}
 	}
+	public virtual bool IsBehaviour
+	{
+		get {
+			return true;
+		}
+	}
 }
 
 public abstract class SmartScope
