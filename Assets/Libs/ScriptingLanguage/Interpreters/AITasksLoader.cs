@@ -73,7 +73,7 @@ public abstract class SmartScope
 public abstract class ComplexTask : Task
 {
 
-	public abstract List<TaskWrapper> Decomposition ();
+	public abstract List<TaskWrapper> Decomposition { get; }
 	public virtual void Start () {}
 	public override InterruptionType Interruption { get { return InterruptionType.Restartable; } } 
 }
@@ -209,6 +209,10 @@ public partial class AITasksLoader : ScriptInterpreter
 					taskType= GeneratePrimitiveTask (type, table);
 				} else if (IsComplex(table)) {
 					taskType = GenerateComplexTask (type, table);
+				}
+				if (taskType.UserData.Contains ("init_method")) {
+					var initMethod = taskType.GetShared<CodeMemberMethod> ("init");
+					initMethod.Statements.Add (taskType.UserData ["init_method"].ToString ().St());
 				}
 				if (taskType != null)
 					cNamespace.Types.Add (taskType);

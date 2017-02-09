@@ -32,7 +32,6 @@ public partial class AITasksLoader : ScriptInterpreter
 		Utility (type, table);
 		InterruptionType (type, table);
 		AtScope (type, table);
-		Init (type, table);
 
 	}
 	CodeTypeDeclaration GeneratePrimitiveTask (string typeName,Table table)
@@ -94,6 +93,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		interOp.Scope().Parts.Add("true");
 		type.BaseTypes.Remove (baseType);
+		type.UserData.Add ("is_interaction", true);
 		type.BaseTypes.Add (new CodeTypeReference (typeof(InteractionTask)));
 		DeclareVariableStatement retVal = new DeclareVariableStatement();
 		retVal.IsReturn = true;
@@ -120,31 +120,13 @@ public partial class AITasksLoader : ScriptInterpreter
 
 
 
-	void Init (CodeTypeDeclaration type, Table table)
-	{
 
-		CodeMemberMethod initOverrideMethod = new CodeMemberMethod();
-		initOverrideMethod.Name = "Init";
-		initOverrideMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-		type.Members.Add(initOverrideMethod);
-		builder.Length = 0;
-		builder.Append("base.Init();").AppendLine();
-		foreach (var member in type.Members)
-		{
-			var field = member as CodeMemberField;
-			if (field != null)
-			{
-				builder.Append("this.").Append(field.Name).Append(" = ").Append("default(").Append((field.UserData["type"] as Type).FullName).Append(");").AppendLine();
-
-			}
-		}
-		initOverrideMethod.Statements.Add(new CodeSnippetStatement(builder.ToString()));
-	}
 
 	void InterruptionType (CodeTypeDeclaration type, Table table)
 	{
 		var iOp = table.Get ("interruption");
 		if (iOp == null) {
+			return;
 		}
 		var val = iOp.Value ();
 		if (val == "restart")
@@ -353,16 +335,15 @@ public partial class AITasksLoader : ScriptInterpreter
 		if (deps.Count > 0) {
 			type.CreateProp (typeof(List<TaskWrapper>), "deps");
 			type.OverridePropConst (typeof(PrimitiveTask), "Dependencies", "deps");
-			var ctor = type.GetShared<CodeTypeConstructor> ("ctor");
+			var ctor = type.GetShared<CodeConstructor> ("ctor");
 			ctor.Statements.Add ("deps = new System.Collections.Generic.List<TaskWrapper>();".St());
 			FunctionBlock initMethodBlock = null;
 			if (type.UserData.Contains ("init_method")) {
 				initMethodBlock = type.UserData ["init_method"] as FunctionBlock;
 			} else {
-				var initMethod = new CodeMemberMethod ();
+				var initMethod = type.GetShared<CodeMemberMethod> ("init");
 				initMethod.Name = "Init";
 				initMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-				type.Members.Add (initMethod);
 				initMethodBlock = initMethod.InitialBlock (type, Engine);
 				type.UserData.Add ("init_method", initMethodBlock);
 				initMethod.Statements.Add ("base.Init();".St());
@@ -385,10 +366,26 @@ public partial class AITasksLoader : ScriptInterpreter
 	 */
 	void Engagement(CodeTypeDeclaration type, Table table)
 	{
-		var eng = table.Get ("engage_in");
-		if (eng == null)
+		var engageOp = table.Get("engage");
+		if (engageOp == null)
 			return;
-		var engangementCat = eng.ArgValue (0);
+
+		type.CreateProp (typeof(TaskWrapper), "engagement");
+		type.OverridePropConst (typeof(PrimitiveTask), "EnagegeIn", "engagement");
+		var ctor = type.GetShared<CodeConstructor> ("ctor");
+		var wrapperType = GenerateTaskWrapper (type.Name, engageOp.ArgValue(0), null, engageOp.Context as Table, type, type.UserData.Contains("category")?type.UserData["category"] as string: null);
+		ctor.Statements.Add ("engagement = new {0}();".Fmt(wrapperType).St());
+		FunctionBlock initMethodBlock = null;
+		if (type.UserData.Contains ("init_method")) {
+			initMethodBlock = type.UserData ["init_method"] as FunctionBlock;
+		} else {
+			var initMethod = type.GetShared<CodeMemberMethod> ("init");
+			initMethod.Name = "Init";
+			initMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+			initMethodBlock = initMethod.InitialBlock (type, Engine);
+			type.UserData.Add ("init_method", initMethodBlock);
+		}
+
 
 	}
 	/*
@@ -399,47 +396,77 @@ public partial class AITasksLoader : ScriptInterpreter
 	 * 
 	 * }
 	 */
+
 	void Tasks(CodeTypeDeclaration type, Table table)
 	{
 		//foreach table
 		//create condition type
 		//init it
-		var engageOp = table.Get("engage");
-		if (engageOp == null)
-			return;
+		int taskCounter = 0;
+		var hostTaskName = type.Name;
+		int id = 0;
 
-		type.CreateProp (typeof(TaskWrapper), "engagement");
-		type.OverridePropConst (typeof(PrimitiveTask), "EnagegeIn", "engagement");
-		var ctor = type.GetShared<CodeTypeConstructor> ("ctor");
-		var wrapperType = GenerateTaskWrapper (type.Name, engageOp.ArgValue(0), null, engageOp.Context as Table, type, type.UserData.Contains("category")?type.UserData["category"] as string: null);
-		ctor.Statements.Add ("engagement = new {0}();".Fmt(wrapperType).St());
-		FunctionBlock initMethodBlock = null;
-		if (type.UserData.Contains ("init_method")) {
-			initMethodBlock = type.UserData ["init_method"] as FunctionBlock;
-		} else {
-			var initMethod = new CodeMemberMethod ();
-			initMethod.Name = "Init";
-			initMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-			type.Members.Add (initMethod);
-			initMethodBlock = initMethod.InitialBlock (type, Engine);
-			type.UserData.Add ("init_method", initMethodBlock);
+		foreach (var e in table.Entries) {
+			var op = e as Operator;
+			if(!op.HasBeenInterpreted && (op.Context is Table || (op.Value() == "yes") ))
+			{
+				var taskType = op.Identifier as string;
+				string forAgent = "root";
+				if (taskType == null) {
+					//this is probably a scope with a specific target agent
+					var scope = op.Identifier as Scope;
+					forAgent = scope.Parts [0].ToString ().ClearFromBraces ().Trim ();
+					taskType = scope.Parts [1].ToString ().ClearFromBraces ().Trim ();
+
+				}
+				var hostCategory = type.UserData.Contains ("category") ? type.UserData ["category"] as string : null;
+				var wrapperType = GenerateTaskWrapper (hostTaskName, taskType, forAgent, op.Context as Table, type, hostCategory, id++.ToString());
+
+				var ctor = type.GetShared<CodeConstructor> ("ctor");
+				if (!ctor.UserData.Contains ("decompositionList")) {
+					ctor.UserData.Add ("decompositionList", true);
+					ctor.Statements.Add ("decomposition = new System.Collections.Generic.List<TaskWrapper>();".St ());
+					var prop = type.CreateProp (typeof(List<TaskWrapper>), "decomposition");
+					prop.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+					prop.SetStatements.Clear ();
+					prop.HasSet = false;
+				}
+				FunctionBlock initMethodBlock = null;
+				if (type.UserData.Contains ("init_method")) {
+					initMethodBlock = type.UserData ["init_method"] as FunctionBlock;
+				} else {
+					var initMethod = type.GetShared<CodeMemberMethod> ("init");
+					initMethod.Name = "Init";
+					initMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+					initMethodBlock = initMethod.InitialBlock (type, Engine);
+					type.UserData.Add ("init_method", initMethodBlock);
+				}
+
+
+				ctor.Statements.Add ("decomposition.Add(new ScriptedTypes.{0}());".Fmt(wrapperType).St());
+				initMethodBlock.Statements.Add ("decomposition[{0}].FromTask = this;".Fmt (taskCounter++));
+			}
 		}
 
 	}
 
 
-	string GenerateTaskWrapper(string fromTask, string engagement, string forAgent, Table table, CodeTypeDeclaration fromType, string category)
+	string GenerateTaskWrapper(string fromTask, string engagement, string forAgent, Table table, CodeTypeDeclaration fromType, string category, string wrapperName = null)
 	{
 		CodeTypeDeclaration decl = new CodeTypeDeclaration ();
-		decl.Name = fromTask + "Engagement";
+		if (wrapperName == null)
+			decl.Name = fromTask + "Engagement";
+		else
+			decl.Name = fromTask + wrapperName;
 		decl.BaseTypes.Add (typeof(TaskWrapper));
-
+		cNamespace.Types.Add (decl);
 		decl.OverridePropConst (typeof(TaskWrapper), "TaskCategory", "typeof(ScriptedTypes.{0})".Fmt(engagement));
 
-		decl.OverrideMethodConst (typeof(TaskWrapper), "Satisfied", "true"); //для engagementa, иначе там when должен быть
-		var initTaskMethod = fromType.OverrideMethod(typeof(TaskWrapper), "InitTask", Engine);
+		decl.OverrideMethodConst (typeof(TaskCondition), "Satisfied", "true"); //для engagementa, иначе там when должен быть
+		CodeMemberMethod initTask = null;
+		var initTaskMethod = decl.OverrideMethod(typeof(TaskWrapper), "InitTask", Engine, out initTask);
 		var exprInter = Engine.GetPlugin<ExpressionInterpreter> ();
-		initTaskMethod.Statements.Add ("var properTask = task as ScriptedTypes.{0}".Fmt(engagement));
+		initTaskMethod.Statements.Add ("var properTask = task as ScriptedTypes.{0};".Fmt(engagement));
 		if (category != null) {
 			var rootVar = new DeclareVariableStatement ();
 			rootVar.Name = "fromTask";
@@ -447,7 +474,35 @@ public partial class AITasksLoader : ScriptInterpreter
 			rootVar.IsArg = false;
 			rootVar.IsContext = true;
 			rootVar.Type = Engine.GetType (category);
-			initTaskMethod.Statements.Add (rootVar);
+			if (rootVar.Type != null)
+				initTaskMethod.Statements.Add (rootVar);
+
+			if (fromType.UserData.Contains ("is_interaction")) {
+				rootVar = new DeclareVariableStatement ();
+				rootVar.Name = "Other";
+				rootVar.InitExpression = "(FromTask as InteractionTask).Other";
+				rootVar.IsArg = false;
+				rootVar.IsContext = false;
+				rootVar.Type = typeof(GameObject);
+				initTaskMethod.Statements.Add (rootVar);
+
+				rootVar = new DeclareVariableStatement ();
+				rootVar.Name = "Root";
+				rootVar.InitExpression = "FromTask.Root";
+				rootVar.IsArg = false;
+				rootVar.IsContext = true;
+				rootVar.Type = typeof(GameObject);
+				initTaskMethod.Statements.Add (rootVar);
+
+				rootVar = new DeclareVariableStatement ();
+				rootVar.Name = "At";
+				rootVar.InitExpression = "FromTask.At";
+				rootVar.IsArg = false;
+				rootVar.IsContext = false;
+				rootVar.Type = typeof(GameObject);
+				initTaskMethod.Statements.Add (rootVar);
+			}
+			
 		}
 		foreach (var entry in table.Entries) {
 			var op = entry as Operator;
@@ -458,6 +513,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			var assignStatement = "properTask.{0} = ({2}){1};".Fmt(paramName, expr.ExprString, expr.Type);
 			initTaskMethod.Statements.Add (assignStatement);
 		}
+		initTask.Statements.Add (initTaskMethod.ToString ().St ());
 		return decl.Name;
 	}
 

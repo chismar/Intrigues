@@ -24,6 +24,8 @@ public class TasksStore : Root<TasksStore>
 			var cat = task.Category;
 			taskPool.Return (task);
 			var catType = engine.GetType (cat);
+			if (catType == null)
+				catType = typeof(object);
 			PoolListsByCategory.Get (catType).Add (taskPool);
 			TaskPoolsByType.Add (taskType, taskPool);
 

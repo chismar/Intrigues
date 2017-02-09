@@ -30,4 +30,6 @@ aged =
 	age = int
 }
 
-
+wander(interface = yes) = {
+	distance = float
+}

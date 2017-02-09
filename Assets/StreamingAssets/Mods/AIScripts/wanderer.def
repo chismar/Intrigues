@@ -1,6 +1,6 @@
-wander = {
+simple_wander = {
 	scope = entity.movable
-	category = nothing_else_to_do
+	category = wander
 	utility = 0.1
 	animation = walk
 	start = {
@@ -22,4 +22,18 @@ wander = {
 		mov.clear = yes
 	}
 
+}
+
+wander_complex_beh = {
+	scope = entity
+	utility = 0.1
+	wander = {
+		distance = 5
+	}
+	wander = {
+		distance = 10
+	}
+	wander = {
+		distance = 15
+	}
 }

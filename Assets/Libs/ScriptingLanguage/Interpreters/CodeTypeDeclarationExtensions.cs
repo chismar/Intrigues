@@ -9,7 +9,7 @@ using System.Collections.Generic;
 public static class CodeTypeDeclarationExtensions
 {
 
-	public static void CreateProp(this CodeTypeDeclaration type, Type propType, string identifier)
+	public static CodeMemberProperty CreateProp(this CodeTypeDeclaration type, Type propType, string identifier)
 	{
 		CodeMemberProperty prop = new CodeMemberProperty ();
 		prop.Name = identifier.CSharp ();
@@ -27,6 +27,7 @@ public static class CodeTypeDeclarationExtensions
 
 		type.Members.Add (field);
 		type.Members.Add (prop);
+		return prop;
 	}
 
 	public static T GetShared<T>(this CodeTypeDeclaration type, string name) where T : CodeTypeMember, new()
@@ -37,6 +38,7 @@ public static class CodeTypeDeclarationExtensions
 			var member = new T ();
 			type.UserData.Add (name, member);
 			type.Members.Add (member);
+			member.Attributes = MemberAttributes.Public;
 			return member;
 		}
 	}
@@ -60,15 +62,14 @@ public static class CodeTypeDeclarationExtensions
 	public static void OverrideMethodConst(this CodeTypeDeclaration type, Type baseType, string propName, string value)
 	{
 		MethodInfo baseMethod = baseType.GetMethod (propName);
-		CodeMemberProperty prop = new CodeMemberProperty ();
+
+		CodeMemberMethod prop = new CodeMemberMethod ();
 		prop.Name = propName.CSharp ();
-		prop.Type = new CodeTypeReference (baseMethod.ReturnType);
+		prop.ReturnType = new CodeTypeReference (baseMethod.ReturnType);
 		prop.Attributes = MemberAttributes.Public | MemberAttributes.Override;
 		prop.UserData.Add ("type", baseMethod.ReturnType);
 
-		prop.GetStatements.Add (new CodeSnippetStatement ("return {0};".Fmt(value)));
-		prop.HasGet = true;
-		prop.HasSet = false;
+		prop.Statements.Add (new CodeSnippetStatement ("return {0};".Fmt(value)));
 
 		type.Members.Add (prop);
 	}
@@ -142,10 +143,10 @@ public static class CodeTypeDeclarationExtensions
 		return block;
 	}
 
-	public static FunctionBlock OverrideMethod(this CodeTypeDeclaration type, Type baseType, string methodName, ScriptEngine engine)
+	public static FunctionBlock OverrideMethod(this CodeTypeDeclaration type, Type baseType, string methodName, ScriptEngine engine, out CodeMemberMethod method)
 	{
 		
-		CodeMemberMethod method = new CodeMemberMethod ();
+		method = new CodeMemberMethod ();
 		method.Name = methodName;
 		method.Attributes = MemberAttributes.Public | MemberAttributes.Override;
 		type.Members.Add (method);

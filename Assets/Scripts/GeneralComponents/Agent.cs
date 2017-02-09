@@ -528,14 +528,13 @@ public class ComplexAgentBehaviour : AgentBehaviour
 {
 	ComplexTask cTask = null;
 	List<TaskWrapper> tasks = new List<TaskWrapper>();
-	IEnumerator<TaskWrapper> tasksEnumeration;
 	TaskWrapper currentTaskWrapper;
+	int curTaskIndex;
 	public override void Init (Agent agent, Task task)
 	{
 		base.Init (agent, task);
 		cTask = task as ComplexTask;
-		tasks = cTask.Decomposition ();
-		tasksEnumeration = TasksEnumerator ();
+		tasks = cTask.Decomposition;
 	}
 
 	public override void Interrupt ()
@@ -558,13 +557,14 @@ public class ComplexAgentBehaviour : AgentBehaviour
 	{
 		switch (State) {
 		case BehaviourState.None:
-			tasksEnumeration.Reset ();
+			curTaskIndex = 0;
 			Task.State = TaskState.Active;
 			break;
 		case BehaviourState.Active:
 			if (currentTaskWrapper == null) {
-				if (tasksEnumeration.MoveNext ()) {
-					currentTaskWrapper = tasksEnumeration.Current;
+				if (curTaskIndex < tasks.Count) {
+					currentTaskWrapper = tasks[curTaskIndex];
+					curTaskIndex++;
 					//currentTaskWrapper.Behaviour = Agent.GetSatisfactor (currentTaskWrapper);
 					if (currentTaskWrapper.Behaviour == null) {
 						PlanAhead ();
@@ -624,18 +624,11 @@ public class ComplexAgentBehaviour : AgentBehaviour
 
 		return false;
 	}
-	IEnumerator<TaskWrapper> TasksEnumerator()
-	{
-		for (int i = 0; i < tasks.Count; i++)
-			if (!tasks [i].Update ())
-				yield return tasks [i];
-	}
-
 	public override void PlanAhead ()
 	{
 		if (Task.Finished ())
 			return;
-		tasks = cTask.Decomposition ();
+		tasks = cTask.Decomposition;
 		tasks.Update ();
 		for (int i = 0; i < tasks.Count; i++) {
 
@@ -679,7 +672,7 @@ public abstract class TaskCondition
 
 	protected bool met;
 	public bool Met { get { return met; } }
-	protected abstract bool Satisfied ();
+	public abstract bool Satisfied ();
 	public virtual Type TaskCategory { get { return null; } }
 	public virtual void InitTask(Task task) {}
 	public AgentBehaviour Behaviour { get;set; }
