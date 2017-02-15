@@ -41,7 +41,11 @@ public class Agent : MonoBehaviour
 			currentBehaviour = maxBeh;
 		}
 		if (currentBehaviour != null && currentTaskBehaviour == null) {
-			currentBehaviour.Do ();
+			currentBehaviour.PlanAhead ();
+			if (currentBehaviour.State == BehaviourState.ImpossibleToStart)
+				currentBehaviour = null;
+			else
+				currentBehaviour.Do ();
 
 			Debug.LogWarning ("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
 		}
@@ -527,7 +531,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 public class ComplexAgentBehaviour : AgentBehaviour
 {
 	ComplexTask cTask = null;
-	List<TaskWrapper> tasks = new List<TaskWrapper>();
+	List<TaskWrapper> tasks;
 	TaskWrapper currentTaskWrapper;
 	int curTaskIndex;
 	public override void Init (Agent agent, Task task)
@@ -558,6 +562,7 @@ public class ComplexAgentBehaviour : AgentBehaviour
 		switch (State) {
 		case BehaviourState.None:
 			curTaskIndex = 0;
+			currentTaskWrapper = null;
 			Task.State = TaskState.Active;
 			break;
 		case BehaviourState.Active:
