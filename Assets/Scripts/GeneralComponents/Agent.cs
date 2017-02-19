@@ -39,15 +39,28 @@ public class Agent : MonoBehaviour
 				currentBehaviour.Interrupt();
 			}
 			currentBehaviour = maxBeh;
-		}
-		if (currentBehaviour != null && currentTaskBehaviour == null) {
-			currentBehaviour.PlanAhead ();
-			if (currentBehaviour.State == BehaviourState.ImpossibleToStart)
-				currentBehaviour = null;
-			else
-				currentBehaviour.Do ();
+            Debug.LogWarning("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
+            if(currentBehaviour.State == BehaviourState.None)
+                {
 
-			Debug.LogWarning ("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
+                    currentBehaviour.PlanAhead();
+                    Debug.Log(currentBehaviour.State);
+                }
+        }
+		if (currentBehaviour != null && currentTaskBehaviour == null) {
+			if (currentBehaviour.State == BehaviourState.ImpossibleToStart)
+            {
+
+                Debug.LogWarning("{0} can't do {1}".Fmt(gameObject, currentBehaviour), gameObject);
+                currentBehaviour = null;
+            }
+			else
+            {
+
+                currentBehaviour.Do();
+                Debug.LogWarning("{0} updates {1}".Fmt(gameObject, currentBehaviour), gameObject);
+            }
+
 		}
 
 	}
@@ -63,14 +76,18 @@ public class Agent : MonoBehaviour
 			GUI.Label (rect, "{0} : {1} - no current behaviour".Fmt (gameObject.name, Behaviours.Count));
 		}
 	}
-	void Update()
-	{
-		if (currentTaskBehaviour != null && currentTaskBehaviour.State == BehaviourState.Active) {
-			currentTaskBehaviour.Update ();
-		} else {
-			if(currentBehaviour != null)
-			if (currentBehaviour.State != BehaviourState.Active && currentBehaviour.State != BehaviourState.Paused && currentBehaviour.State != BehaviourState.Waiting)
-				currentBehaviour = null;
+    void Update()
+    {
+        if (currentTaskBehaviour != null && currentTaskBehaviour.State == BehaviourState.Active) {
+            currentTaskBehaviour.Update();
+        } else {
+            if (currentBehaviour != null)
+                if (currentBehaviour.State == BehaviourState.ImpossibleToStart || currentBehaviour.State == BehaviourState.Failed || currentBehaviour.State == BehaviourState.Finished)
+                {
+
+                    Debug.LogWarning("{0} state of {1} is {2}, clearing current behaviour".Fmt(gameObject, currentBehaviour, currentBehaviour.State), gameObject);
+                    currentBehaviour = null;
+                }
 			UpdateAI ();
 		}
 	}
@@ -100,12 +117,13 @@ public class Agent : MonoBehaviour
 			if (pTask != null) {
 				var deps = pTask.Dependencies;
 				var cons = pTask.Constraints;
+                if(deps != null)
 				for (int j = 0; j < deps.Count; j++)
 					if (!tasksSet.ContainsKey (deps [i].TaskCategory)) {
 						doableInTheory = false;
 						break;
 					}
-				if(doableInTheory)
+				if(doableInTheory && cons != null)
 				for (int j = 0; j < cons.Count; j++)
 					if (!tasksSet.ContainsKey (cons [i].TaskCategory)) {
 						doableInTheory = false;
@@ -475,7 +493,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 	{
 		cons.Update ();
 		deps.Update ();
-
+        if(cons != null)
 		for (int i = 0; i < cons.Count; i++) {
 			var con = cons [i];
 			if (!con.Met) {
@@ -501,6 +519,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 		}
 		var isResuming = Task.State == TaskState.Paused;
 		if (Task.State != TaskState.Active && (!isResuming || (isResuming && Task.Interruption  == InterruptionType.Restartable))) {
+            if(deps != null)
 			for (int i = 0; i < deps.Count; i++) {
 				var dep = deps [i];
 				if (!dep.Met) {
@@ -534,11 +553,13 @@ public class ComplexAgentBehaviour : AgentBehaviour
 	List<TaskWrapper> tasks;
 	TaskWrapper currentTaskWrapper;
 	int curTaskIndex;
+    bool firstTime = true;
 	public override void Init (Agent agent, Task task)
 	{
 		base.Init (agent, task);
 		cTask = task as ComplexTask;
 		tasks = cTask.Decomposition;
+        firstTime = true;
 	}
 
 	public override void Interrupt ()
@@ -563,22 +584,22 @@ public class ComplexAgentBehaviour : AgentBehaviour
 		case BehaviourState.None:
 			curTaskIndex = 0;
 			currentTaskWrapper = null;
-			Task.State = TaskState.Active;
+            State = BehaviourState.Active;
 			break;
 		case BehaviourState.Active:
 			if (currentTaskWrapper == null) {
 				if (curTaskIndex < tasks.Count) {
 					currentTaskWrapper = tasks[curTaskIndex];
 					curTaskIndex++;
-					//currentTaskWrapper.Behaviour = Agent.GetSatisfactor (currentTaskWrapper);
-					if (currentTaskWrapper.Behaviour == null) {
-						PlanAhead ();
-					}
-					else
-						State = BehaviourState.Waiting;
+                        Debug.Log("{0} changes task to {1} in {2}".Fmt(Agent.gameObject.name, currentTaskWrapper.Behaviour.Task.GetType().Name, Task.GetType().Name));
+                    State = BehaviourState.Waiting;
 				} else {
 					if (!IsFinishedOrTerminated ())
-						Task.State = TaskState.None;
+                        {
+
+                            Task.State = TaskState.None;
+                            firstTime = false;
+                        }
 				}
 			} else
 				State = BehaviourState.Waiting;
@@ -595,7 +616,7 @@ public class ComplexAgentBehaviour : AgentBehaviour
 				break;
 			case BehaviourState.ImpossibleToStart:
 				currentTaskWrapper = null;
-				State = BehaviourState.Failed;
+                State = BehaviourState.Failed;
 				break;
 			default:
 				currentTaskWrapper.Behaviour.Do ();
@@ -620,6 +641,7 @@ public class ComplexAgentBehaviour : AgentBehaviour
 	{
 		if (cTask.Finished ()) {
 			State = BehaviourState.Finished;
+            Debug.Log("{0} finished {1}".Fmt(Agent.gameObject.name, Task.GetType().Name));
 			return true;
 		}
 		if (cTask.Terminated ()) {
@@ -631,36 +653,47 @@ public class ComplexAgentBehaviour : AgentBehaviour
 	}
 	public override void PlanAhead ()
 	{
-		if (Task.Finished ())
+		if (Task.Finished () &&!firstTime)
 			return;
 		tasks = cTask.Decomposition;
 		tasks.Update ();
 		for (int i = 0; i < tasks.Count; i++) {
 
 			var task = tasks [i];
-			if (task.Met) {
+			if (task.Met) { //It's a WHEN TO DO, not WHETHER TO SATISFY
 				task.Behaviour = Agent.GetSatisfactor (task);
 
 				if (task.Behaviour == null) {					
 					//backtrack AtScope if has one, or to the top
 					BacktrackOrFail(task);
 					if(task.Behaviour == null)
-						return;
+						break;
 				} else {
 					task.Behaviour.PlanAhead ();
 					if (task.Behaviour.State == BehaviourState.ImpossibleToStart) {
 						//here - backtrack if possible
 						BacktrackOrFail(task);
 						if(task.Behaviour == null)
-							return;
+                            break;
 					}
 				}
 			} else if (task.Behaviour != null) {
 				//task.Behaviour.Terminate();
 				task.Behaviour = null;
 			}
+
+            
 		}
-	}
+        Debug.Log(State);
+        foreach (var dtask in tasks)
+        {
+
+            if (dtask.Behaviour == null && State != BehaviourState.ImpossibleToStart)
+            {
+                Debug.Log("Invalid state " + State);
+            }
+        }
+    }
 
 
 }
