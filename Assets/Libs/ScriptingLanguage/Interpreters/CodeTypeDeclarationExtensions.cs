@@ -180,12 +180,14 @@ public static class CodeTypeDeclarationExtensions
 			var props = type.GetProperties();
 			codeType.BaseTypes.Add(type);
 
-			foreach (var propInfo in props)
+            cNamespace.UserData.Add(cat, type);
+            foreach (var propInfo in props)
 			{
 				var prop = new CodeMemberProperty();
 				prop.HasGet = true;
 				prop.HasSet = true;
 				prop.Name = propInfo.Name;
+                prop.Attributes = MemberAttributes.Public;
 				prop.Type = new CodeTypeReference(propInfo.PropertyType);
 				var fieldName = NameTranslator.ScriptNameFromCSharp(prop.Name);
 				prop.GetStatements.Add(new CodeSnippetStatement(String.Format("return {0}; ", fieldName)));

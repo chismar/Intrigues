@@ -16,6 +16,7 @@ public class Entity : MonoBehaviour {
         var e = EventsManager.Instance.GetEvent<EntityCreated>();
         e.Root = gameObject;
         EventsManager.Instance.FireEvent(e);
+        FindObjectOfType<ExternalUtilities>().NotifyOfNewGO(gameObject);
     }
     public string PrefabName { get; set; }
 

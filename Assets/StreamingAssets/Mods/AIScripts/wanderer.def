@@ -1,12 +1,43 @@
 simple_wander = {
+	at(wander_to_metric,3) = all_entities
+	scope = entity.movable
+	category = wander_to
+	utility = 0.1
+	animation = walk
+	start = {
+		movable = {
+			goto(0.3) = at
+			speed = 1
+			cache(mov) = this
+		}
+	}
+	finished = mov.near_target
+	wait = 5
+	interruption = restart
+
+	finish = {
+		mov.clear = yes
+	}
+	terminate = {
+		mov.clear = yes
+	}
+	engage(with) = {
+		who = at
+		root = root
+	}	
+
+}
+
+wander_around = {
 	scope = entity.movable
 	category = wander
 	utility = 0.1
 	animation = walk
 	start = {
-		cache(point) = random_point(entity.position, 5)
+		point = random_point(around.entity.position, 1)
+		log = "wandering around " + around
 		movable = {
-			goto_point(0.2) = point
+			goto_point(0.3) = point
 			speed = 1
 			cache(mov) = this
 		}
@@ -27,13 +58,25 @@ simple_wander = {
 wander_complex_beh = {
 	scope = entity
 	utility = 0.1
-	wander = {
-		distance = 5
+	wander_to = {
+		distance = 1
 	}
-	wander = {
-		distance = 10
+	wander_to = {
+		distance = 1
 	}
+	wander_to = {
+		distance = 1
+	}
+}
+
+simple_interaction = {
+	scope = entity
+	utility = 0.1
+	category = with
 	wander = {
-		distance = 15
+		around = who
+	}
+	wander(who) = {
+		around = root
 	}
 }

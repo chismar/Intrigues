@@ -9,7 +9,7 @@ public class ExternalUtilities : Root<ExternalUtilities>
     private void Awake()
     {
         base.Awake();
-        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "SelectByWeight", "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne", "RandomPoint"));
+        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "AllEntities", "SelectByWeight", "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne", "RandomPoint"));
     }
     //ayn
     System.Random rand = new System.Random();
@@ -92,4 +92,14 @@ public class ExternalUtilities : Root<ExternalUtilities>
 	{
 		return Random.insideUnitCircle * distance + pos;
 	}
+    List<GameObject> allActors = new List<GameObject>();
+    public List<GameObject> AllEntities()
+    {
+        return allActors;
+    }
+
+    public void NotifyOfNewGO(GameObject go)
+    {
+        allActors.Add(go);
+    }
 }

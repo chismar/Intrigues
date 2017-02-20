@@ -59,15 +59,14 @@ public abstract class Task
 
 public abstract class SmartScope
 {
-	public GameObject CurrentGO;
-	public virtual int MaxAttempts { get { return 1; } }
-	public int CurAttempts { get { return AlreadyChosenGameObjects.Count; }	}
-	public abstract List<GameObject> From (GameObject root);
+    public GameObject CurrentGO;
+    public virtual int MaxAttempts { get { return 1; } }
+    public int CurAttempts { get { return AlreadyChosenGameObjects.Count; } }
+    public List<GameObject> Scope = null;
 	public HashSet<GameObject> AlreadyChosenGameObjects = new HashSet<GameObject> ();
-	public abstract string FromMetricName () ;
+	public abstract string FromMetricName { get;  }
 
 	public List<Metric> CachedMetrics;
-	public List<GameObject> CachedList;
 
 }
 public abstract class ComplexTask : Task
@@ -235,8 +234,9 @@ public partial class AITasksLoader : ScriptInterpreter
 		FunctionBlock block = new FunctionBlock (null, null, codeType);
 		block.Statements.Add ("var root = this.root;");
 
-		//block.Statements.Add ("UnityEngine.Debug.Log(root.ToString() + IfStatement.AntiMergeValue++);");
-		var externVar = new DeclareVariableStatement()
+        block.Statements.Add("var at = this.at;");
+        //block.Statements.Add ("UnityEngine.Debug.Log(root.ToString() + IfStatement.AntiMergeValue++);");
+        var externVar = new DeclareVariableStatement()
 		{
 			Name = "External",
 			IsArg = true,
@@ -270,8 +270,15 @@ public partial class AITasksLoader : ScriptInterpreter
 
 		block.Statements.Add (rootVar);
 
+        var atVar = new DeclareVariableStatement();
+        atVar.Name = "at";
+        atVar.Type = typeof(GameObject);
+        atVar.IsArg = true;
+        atVar.IsContext = false;
 
-		foreach (var member in codeType.Members)
+        block.Statements.Add(atVar);
+
+        foreach (var member in codeType.Members)
 		{
 			var field = member as CodeMemberField;
 			if (field != null)

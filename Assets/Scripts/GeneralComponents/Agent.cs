@@ -199,10 +199,9 @@ public abstract class AgentBehaviour
 		Task.Init ();
 		atScope = task.AtScope;
 		if (atScope != null) {
-
-			atScope.CachedList = atScope != null ? atScope.From (agent.gameObject) : null;
+            
 			metrics = agent.GetComponent<Metrics> ();
-			atScope.CachedMetrics = metrics.Dictionary.ContainsKey (atScope.FromMetricName ()) ? metrics.Dictionary [atScope.FromMetricName ()] : null;
+			atScope.CachedMetrics = metrics.Dictionary.ContainsKey (atScope.FromMetricName ) ? metrics.Dictionary [atScope.FromMetricName ] : null;
 		}
 	}
 
@@ -287,7 +286,7 @@ public abstract class AgentBehaviour
 	{
 		if (scope.CurAttempts >= scope.MaxAttempts)
 			return false;
-		var go =ExternalUtilities.Instance.SelectByWeight (scope.CachedList, Weight); 	
+		var go =ExternalUtilities.Instance.SelectByWeight (scope.Scope, Weight); 	
 		if (go != null) {
 			if(atScope.CurrentGO != null)
 				atScope.AlreadyChosenGameObjects.Add (atScope.CurrentGO);
