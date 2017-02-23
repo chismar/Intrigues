@@ -45,6 +45,8 @@ public class Metrics : MonoBehaviour
 	public float Weight(List<Metric> catMetrics, GameObject other)
 	{
 		float result = 0f;
+        if (catMetrics == null)
+            return 0f;
 		foreach (var metric in catMetrics)
 		{
 			var cachedOther = metric.Other;

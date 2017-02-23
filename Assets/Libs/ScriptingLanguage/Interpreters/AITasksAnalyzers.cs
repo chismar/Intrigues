@@ -112,6 +112,7 @@ public partial class AITasksLoader : ScriptInterpreter
         //TODO: actually generate at scope init in a function
         type.CreateProp(typeof(SmartScope), "smart_scope");
 
+        type.OverridePropConst(typeof(Task), "AtScope", "smart_scope");
         var ctor = type.GetShared<CodeConstructor>("ctor");
         //var wrapperType = GenerateTaskWrapper(type.Name, engageOp.ArgValue(0), null, engageOp.Context as Table, type, type.UserData.Contains("category") ? type.UserData["category"] as string : null);
         CodeTypeDeclaration decl = new CodeTypeDeclaration();

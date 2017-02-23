@@ -2110,6 +2110,12 @@ smart_scope = value;
             }
         }
         
+        public override SmartScope AtScope {
+            get {
+return smart_scope;
+            }
+        }
+        
         public override string Animation {
             get {
 return "walk";
@@ -2181,6 +2187,7 @@ return engagement;
 			//System.Boolean IsBehaviour; //IsContext = False IsNew = False
 			//InterruptionType Interruption; //IsContext = False IsNew = False
 			//SmartScope SmartScope; //IsContext = False IsNew = False
+			//SmartScope AtScope; //IsContext = False IsNew = False
 			//System.Single distance; //IsContext = False IsNew = False
 			//SmartScope smart_scope; //IsContext = False IsNew = False
 			//External External; //IsContext = False IsNew = False
@@ -2216,7 +2223,7 @@ return engagement;
 					
 					UnityEngine.GameObject OperandVar310 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
 					OperandVar310 = at;
-					subContext309.Goto((System.Single)( (0.3f)),(UnityEngine.GameObject)( (OperandVar310)));
+					subContext309.Goto((System.Single)( (1f)),(UnityEngine.GameObject)( (OperandVar310)));
 					
 					subContext309.Speed = (System.Single)( (1f));
 					Movable OperandVar311 = default(Movable); //IsContext = False IsNew = False

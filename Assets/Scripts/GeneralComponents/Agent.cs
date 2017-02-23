@@ -110,9 +110,9 @@ public class Agent : MonoBehaviour
 		int maxTaskIndex = -1;
 		for (int i = 0; i < tasksList.Count; i++) {
 			var task = tasksList [i];
-			c.InitTask (task);
-
-			bool doableInTheory = true;
+            c.InitTask (task);
+            task.Init();
+            bool doableInTheory = true;
 			var pTask = task as PrimitiveTask;
 			if (pTask != null) {
 				var deps = pTask.Dependencies;
@@ -197,10 +197,13 @@ public abstract class AgentBehaviour
 		Agent = agent;
 		state = BehaviourState.None;
 		Task.Init ();
+        
 		atScope = task.AtScope;
 		if (atScope != null) {
-            
-			metrics = agent.GetComponent<Metrics> ();
+
+            atScope.AlreadyChosenGameObjects.Clear();
+            atScope.CurrentGO = null;
+            metrics = agent.GetComponent<Metrics> ();
 			atScope.CachedMetrics = metrics.Dictionary.ContainsKey (atScope.FromMetricName ) ? metrics.Dictionary [atScope.FromMetricName ] : null;
 		}
 	}
@@ -282,7 +285,7 @@ public abstract class AgentBehaviour
 	}
 
 
-	bool SelectNext(SmartScope scope)
+	protected bool SelectNext(SmartScope scope)
 	{
 		if (scope.CurAttempts >= scope.MaxAttempts)
 			return false;
@@ -291,16 +294,22 @@ public abstract class AgentBehaviour
 			if(atScope.CurrentGO != null)
 				atScope.AlreadyChosenGameObjects.Add (atScope.CurrentGO);
 			atScope.CurrentGO = go;
-		}
+            Task.At = go;
+            Debug.LogWarningFormat("{0} : {1} at {2}", Agent, Task, Task.At);
+            return true;
+        }
 
-		return false;
+        Task.At = null;
+        return false;
 	}
 
 	float Weight(GameObject go)
 	{
 		if (atScope.AlreadyChosenGameObjects.Contains (go))
 			return -1f;
-		return metrics.Weight (atScope.CachedMetrics, go);
+        if (atScope.CachedMetrics == null)
+            return 1f;
+		return metrics.Weight (atScope.CachedMetrics, go) ;
 	}
 }
 public class PrimitiveAgentBehaviour : AgentBehaviour
@@ -333,7 +342,18 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	public override void Do ()
 	{
-		switch (State) {
+        Debug.Log(Task.AtScope);
+        Debug.Log(Task.GetType());
+        if (Task.AtScope != null)
+        {
+            if (!SelectNext(Task.AtScope))
+            {
+                State = BehaviourState.ImpossibleToStart;
+                return;
+
+            }
+        }
+        switch (State) {
 		case BehaviourState.None:
 			ProcessPreTaskConditions ();
 			break;
@@ -492,6 +512,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 	{
 		cons.Update ();
 		deps.Update ();
+
         if(cons != null)
 		for (int i = 0; i < cons.Count; i++) {
 			var con = cons [i];
@@ -583,7 +604,16 @@ public class ComplexAgentBehaviour : AgentBehaviour
 		case BehaviourState.None:
 			curTaskIndex = 0;
 			currentTaskWrapper = null;
-            State = BehaviourState.Active;
+                if (Task.AtScope != null)
+                {
+                    if (!SelectNext(Task.AtScope))
+                    {
+                        State = BehaviourState.ImpossibleToStart;
+                        return;
+
+                    }
+                }
+                State = BehaviourState.Active;
 			break;
 		case BehaviourState.Active:
 			if (currentTaskWrapper == null) {
@@ -659,6 +689,9 @@ public class ComplexAgentBehaviour : AgentBehaviour
 		for (int i = 0; i < tasks.Count; i++) {
 
 			var task = tasks [i];
+            task.FromTask = cTask;
+            task.Init();
+            
 			if (task.Met) { //It's a WHEN TO DO, not WHETHER TO SATISFY
 				task.Behaviour = Agent.GetSatisfactor (task);
 

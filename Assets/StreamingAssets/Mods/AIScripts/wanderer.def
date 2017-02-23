@@ -6,7 +6,7 @@ simple_wander = {
 	animation = walk
 	start = {
 		movable = {
-			goto(0.3) = at
+			goto(1) = at
 			speed = 1
 			cache(mov) = this
 		}
