@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 
 public class ExternalUtilities : Root<ExternalUtilities>
 {
@@ -29,14 +30,16 @@ public class ExternalUtilities : Root<ExternalUtilities>
     }
 
     public delegate float GOFloatDelegate(GameObject go);
+    System.Random fuzziness = new System.Random();
     public GameObject SelectByWeight(List<GameObject> list, GOFloatDelegate weight)
     {
         GameObject mostWeight = null;
         float maxWeight = 0.05f;
         foreach(var go in list)
         {
-            var w = weight(go);
-            if(w > maxWeight)
+            var w = weight(go) + (float)(fuzziness.NextDouble() * 0.01 - 0.05);
+            
+            if (w > maxWeight)
             {
                 maxWeight = w;
                 mostWeight = go;
@@ -92,7 +95,7 @@ public class ExternalUtilities : Root<ExternalUtilities>
 	{
 		return Random.insideUnitCircle * distance + pos;
 	}
-    List<GameObject> allActors = new List<GameObject>();
+    public List<GameObject> allActors = new List<GameObject>();
     public List<GameObject> AllEntities()
     {
         return allActors;

@@ -573,6 +573,19 @@ public partial class AITasksLoader : ScriptInterpreter
 			initTaskMethod.Statements.Add (assignStatement);
 		}
 		initTask.Statements.Add (initTaskMethod.ToString ().St ());
+
+        if(forAgent != null)
+        if(forAgent != "root")
+        {
+            if(forAgent == "at")
+            {
+
+                decl.OverridePropConst(typeof(TaskWrapper), "TargetAgent", "FromTask.At");
+            } else
+            {
+                decl.OverridePropConst(typeof(TaskWrapper), "TargetAgent", "(FromTask as {0}).{1}".Fmt(category, forAgent.CSharp()));
+            }
+        }
 		return decl.Name;
 	}
 

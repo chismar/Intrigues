@@ -34,7 +34,7 @@ wander_around = {
 	utility = 0.1
 	animation = walk
 	start = {
-		point = random_point(around.entity.position, 1)
+		point = random_point(around.entity.position, 4)
 		log = "wandering around " + around
 		movable = {
 			goto_point(0.3) = point
@@ -76,7 +76,7 @@ simple_interaction = {
 	wander = {
 		around = who
 	}
-	wander(who) = {
+	who.wander = {
 		around = root
 	}
 }

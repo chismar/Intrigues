@@ -149,6 +149,7 @@ public class Agent : MonoBehaviour
 		return AgentBehaviour.FromTask (this, maxTask);
 		
 	}
+    
 }
 
 /*
@@ -190,8 +191,14 @@ public abstract class AgentBehaviour
 	protected Agent Agent { get; private set; }
 	SmartScope atScope;
 	Metrics metrics;
-	public virtual void Init(Agent agent, Task task)
+
+    public override string ToString()
+    {
+        return Task.GetType().Name;
+    }
+    public virtual void Init(Agent agent, Task task)
 	{
+        
 		Task = task;
 		Task.Root = agent.gameObject;
 		Agent = agent;
@@ -289,6 +296,7 @@ public abstract class AgentBehaviour
 	{
 		if (scope.CurAttempts >= scope.MaxAttempts)
 			return false;
+
 		var go =ExternalUtilities.Instance.SelectByWeight (scope.Scope, Weight); 	
 		if (go != null) {
 			if(atScope.CurrentGO != null)
@@ -320,12 +328,15 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 	List<TaskWrapper> deps;
 
 	TaskWrapper engageIn;
+    
 	public override void Init (Agent agent, Task task)
 	{
 		base.Init (agent, task);
 		cons = null;
 		deps = null;
 		satisfactionBehaviour = null;
+        engageIn = selfTask.EngageIn;
+        
 	}
 	public override void Interrupt ()
 	{
@@ -342,23 +353,12 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	public override void Do ()
 	{
-        Debug.Log(Task.AtScope);
-        Debug.Log(Task.GetType());
-        if (Task.AtScope != null)
-        {
-            if (!SelectNext(Task.AtScope))
-            {
-                State = BehaviourState.ImpossibleToStart;
-                return;
-
-            }
-        }
         switch (State) {
 		case BehaviourState.None:
 			ProcessPreTaskConditions ();
 			break;
 		case BehaviourState.Waiting:
-			ProcessPreTaskConditions ();
+                ProcessPreTaskConditions();
 			break;		
 		}
 	}
@@ -388,6 +388,9 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 					satisfactionBehaviour = null;
 				break;
 			case BehaviourState.Finished:
+                if (satisfactionBehaviour == engageIn.Behaviour)
+                    State = BehaviourState.Finished;
+                    
 				satisfactionBehaviour = null;
 				break;
 			default:
@@ -408,10 +411,14 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 		case TaskState.Finished:
 			selfTask.OnFinish ();
 			Agent.SetExecutingTask (null);
-			
-			//if( != null)
-				
-			State = BehaviourState.Finished;
+                if(engageIn == null)
+			        State = BehaviourState.Finished;
+                else
+                {
+                    State = BehaviourState.Waiting;
+                    satisfactionBehaviour = engageIn.Behaviour;
+                    
+                }
 			break;
 		case TaskState.Failed:
 			selfTask.OnTerminate ();
@@ -512,8 +519,16 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 	{
 		cons.Update ();
 		deps.Update ();
+        if (Task.AtScope != null)
+        {
+            if (!SelectNext(Task.AtScope))
+            {
+                State = BehaviourState.ImpossibleToStart;
+                return;
 
-        if(cons != null)
+            }
+        }
+        if (cons != null)
 		for (int i = 0; i < cons.Count; i++) {
 			var con = cons [i];
 			if (!con.Met) {
@@ -563,7 +578,30 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 					dep.Behaviour = null;
 				}
 			}
-		}
+            if(engageIn != null)
+            {
+                engageIn.Behaviour = Agent.GetSatisfactor(engageIn);
+                if (engageIn.Behaviour == null)
+                {
+                    BacktrackOrFail(engageIn);
+                    if (engageIn.Behaviour == null)
+                        return;
+                }
+                else
+                {
+                    engageIn.Behaviour.PlanAhead();
+                    if (engageIn.Behaviour.State == BehaviourState.ImpossibleToStart)
+                    {
+                        //here should also go backtracking in terms of chosing alternative
+                        BacktrackOrFail(engageIn);
+                        if (engageIn.Behaviour == null)
+                            return; ;
+                    }
+                }
+            }
+            
+        }
+
 	}
 }
 
@@ -762,10 +800,7 @@ public abstract class TaskWrapper : Constraint
 	
 	public HashSet<Type> AlreadyChosenBehaviours = new HashSet<Type>();
 	public virtual int MaxAttempts { get { return 1; } }
-	public virtual Agent TargetAgent(Task fromTask)
-	{
-		return fromTask.Root.GetComponent<Agent>();
-	}
+	public virtual GameObject TargetAgent {  get { return FromTask.Root; } }
 	public int CurrentAttempts;
 	public Task FromTask;
 }

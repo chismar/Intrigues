@@ -2407,7 +2407,7 @@ return "walk";
 				OperandVar321 = prop320;
 			}
 			
-			UnityEngine.Vector2 prop322 = External.RandomPoint( (OperandVar321), (1f)); //IsContext = False IsNew = False
+			UnityEngine.Vector2 prop322 = External.RandomPoint( (OperandVar321), (4f)); //IsContext = False IsNew = False
 			OperandVar323 = prop322;
 			UnityEngine.Vector2 point =  (OperandVar323); //IsContext = False IsNew = False
 			
@@ -2684,6 +2684,12 @@ return true;
         public override System.Type TaskCategory {
             get {
 return typeof(ScriptedTypes.wander);
+            }
+        }
+        
+        public override UnityEngine.GameObject TargetAgent {
+            get {
+return (FromTask as with).Who;
             }
         }
         
