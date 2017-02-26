@@ -10,7 +10,7 @@ public class ExternalUtilities : Root<ExternalUtilities>
     private void Awake()
     {
         base.Awake();
-        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "AllEntities", "SelectByWeight", "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne", "RandomPoint"));
+        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "Mag", "AllEntities", "SelectByWeight", "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne", "RandomPoint"));
     }
     //ayn
     System.Random rand = new System.Random();
@@ -91,6 +91,10 @@ public class ExternalUtilities : Root<ExternalUtilities>
     }
 
 
+    public float Mag(Vector3 vec)
+    {
+        return vec.magnitude;
+    }
 	public Vector2 RandomPoint(Vector2 pos, float distance)
 	{
 		return Random.insideUnitCircle * distance + pos;
@@ -104,5 +108,54 @@ public class ExternalUtilities : Root<ExternalUtilities>
     public void NotifyOfNewGO(GameObject go)
     {
         allActors.Add(go);
+    }
+    bool enabled = true;
+    void Update()
+    {
+        if (Input.GetKeyUp(KeyCode.H))
+            enabled = !enabled;
+    }
+    Vector2 scroll;
+    private void OnGUI()
+    {
+        if(enabled)
+        {
+            scroll = GUI.BeginScrollView(Rect.MinMaxRect(0, 0, 700, 500), scroll, Rect.MinMaxRect(0, 0, 700, allActors.Count * 30));
+            int index = 0;
+            foreach (var go in allActors)
+            {
+                var agent = go.GetComponent<Agent>();
+                if (agent == null)
+                    continue;
+                var curBeh = agent.currentBehaviour;
+                var curPrimBeh = agent.currentTaskBehaviour;
+                if (curBeh != null)
+                {
+
+                    GUI.Label(Rect.MinMaxRect(0, index * 30, 200, (index + 1) * 30), curBeh.ToString());
+                    GUI.Label(Rect.MinMaxRect(200, index * 30, 300, (index + 1) * 30), curBeh.State.ToString());
+                }
+                else
+                {
+
+                    GUI.Label(Rect.MinMaxRect(0, index * 30, 200, (index + 1) * 30), "No behaviour");
+                }
+                if (curPrimBeh != null)
+                {
+
+                    GUI.Label(Rect.MinMaxRect(300, index * 30, 500, (index + 1) * 30), curPrimBeh.ToString());
+                    GUI.Label(Rect.MinMaxRect(500, index * 30, 600, (index + 1) * 30), curPrimBeh.State.ToString());
+                }
+                else
+                {
+
+                    GUI.Label(Rect.MinMaxRect(300, index * 30, 500, (index + 1) * 30), "No primitive behaviour");
+                }
+                GUI.Label(Rect.MinMaxRect(600, index * 30, 700, (index + 1) * 30), go.name);
+                index++;
+            }
+            GUI.EndScrollView();
+        }
+        
     }
 }

@@ -92,14 +92,31 @@ public static class CodeTypeDeclarationExtensions
 		externals.Name = "External";
 		externals.Type = engine.GetType ("External");
 		block.Statements.Add (externals);
-		prop.GetStatements.Add (new CodeSnippetStatement ("return {0};".Fmt(exprInter.InterpretExpression(context as InternalDSL.Expression, block).ExprString)));
+        block.Statements.Add("return {0};".Fmt(exprInter.InterpretExpression(context as InternalDSL.Expression, block).ExprString));
+		prop.GetStatements.Add (new CodeSnippetStatement (block.ToString()));
 		prop.HasGet = true;
 		prop.HasSet = false;
 
 		type.Members.Add (prop);
 	}
+    public static void CreatePropFunc(this CodeTypeDeclaration type, Type baseType, string propName, object context, ScriptEngine engine, FunctionBlock block)
+    {
+        MethodInfo baseMethod = baseType.GetProperty(propName).GetGetMethod();
+        CodeMemberProperty prop = new CodeMemberProperty();
+        prop.Name = propName.CSharp();
+        prop.Type = new CodeTypeReference(baseMethod.ReturnType);
+        prop.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+        prop.UserData.Add("type", baseMethod.ReturnType);
+        var exprInter = engine.GetPlugin<ExpressionInterpreter>();
+        
+        block.Statements.Add("return {0};".Fmt(exprInter.InterpretExpression(context as InternalDSL.Expression, block).ExprString));
+        prop.GetStatements.Add(new CodeSnippetStatement(block.ToString()));
+        prop.HasGet = true;
+        prop.HasSet = false;
 
-	public static List<DeclareVariableStatement> Props(this CodeTypeDeclaration type)
+        type.Members.Add(prop);
+    }
+    public static List<DeclareVariableStatement> Props(this CodeTypeDeclaration type)
 	{
 		List<DeclareVariableStatement> list = new List<DeclareVariableStatement> ();
 		foreach (var member in type.Members) {
@@ -129,7 +146,7 @@ public static class CodeTypeDeclarationExtensions
 		return list;
 	}
 
-	public static FunctionBlock InitialBlock(this CodeMemberMethod method, CodeTypeDeclaration type, ScriptEngine engine)
+    public static FunctionBlock InitialBlock(this CodeMemberMethod method, CodeTypeDeclaration type, ScriptEngine engine, bool hasRoot = false, bool hasOther = false)
 	{
 		FunctionBlock block = new FunctionBlock (null, method, type);
 		foreach(var pStatement in type.Props())
@@ -140,7 +157,31 @@ public static class CodeTypeDeclarationExtensions
 		externals.Name = "External";
 		externals.Type = engine.GetType ("External");
 		block.Statements.Add (externals);
-		return block;
+        if(hasRoot)
+        {
+            block.Statements.Add("var root = this.Root;");
+            var rootVar = new DeclareVariableStatement();
+            rootVar.Name = "root";
+            rootVar.Type = typeof(GameObject);
+            rootVar.IsArg = true;
+            rootVar.IsContext = true;
+
+            block.Statements.Add(rootVar);
+        }
+
+        if (hasOther)
+        {
+
+            block.Statements.Add("var other = this.Other;");
+            var otherVar = new DeclareVariableStatement();
+            otherVar.Name = "other";
+            otherVar.Type = typeof(GameObject);
+            otherVar.IsArg = true;
+            otherVar.IsContext = true;
+
+            block.Statements.Add(otherVar);
+        }
+        return block;
 	}
 
 	public static FunctionBlock OverrideMethod(this CodeTypeDeclaration type, Type baseType, string methodName, ScriptEngine engine, out CodeMemberMethod method)

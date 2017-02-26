@@ -12,7 +12,6 @@ simple_wander = {
 		}
 	}
 	finished = mov.near_target
-	wait = 5
 	interruption = restart
 
 	finish = {
@@ -37,13 +36,12 @@ wander_around = {
 		point = random_point(around.entity.position, 4)
 		log = "wandering around " + around
 		movable = {
-			goto_point(0.3) = point
+			goto_point(1) = point
 			speed = 1
 			cache(mov) = this
 		}
 	}
 	finished = mov.near_target
-	wait = 5
 	interruption = restart
 
 	finish = {
@@ -76,7 +74,31 @@ simple_interaction = {
 	wander = {
 		around = who
 	}
-	who.wander = {
+	wander = {
 		around = root
+	}
+}
+
+simple_move = 
+{
+	scope = entity.movable
+	category = follow
+	utility = 0.2
+	animation = walk
+	start = {
+		movable = {
+			goto(ok_distance) = who
+			speed = 1
+			cache(mov) = this
+		}
+	}
+	finished = mov.near_target
+	interruption = restart
+
+	finish = {
+		mov.clear = yes
+	}
+	terminate = {
+		mov.clear = yes
 	}
 }

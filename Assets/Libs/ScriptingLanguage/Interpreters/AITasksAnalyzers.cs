@@ -14,7 +14,7 @@ public partial class AITasksLoader : ScriptInterpreter
 
 	public bool IsPrimitive(Table table)
 	{
-		return table.Has ("update") || table.Has ("wait");
+		return table.Has ("update") || table.Has("start") || table.Has("finish") || table.Has ("wait");
 	}
 
 	public bool IsComplex(Table table)
@@ -36,6 +36,7 @@ public partial class AITasksLoader : ScriptInterpreter
 	}
 	CodeTypeDeclaration GeneratePrimitiveTask (string typeName,Table table)
 	{
+        Debug.Log("Generating primitive task " + typeName);
 		CodeTypeDeclaration type = new CodeTypeDeclaration ();
 		type.Name = typeName;
 		var baseType = new CodeTypeReference (typeof(PrimitiveTask));
@@ -53,17 +54,26 @@ public partial class AITasksLoader : ScriptInterpreter
 		Dependencies (type, table);
 		Constraints (type, table);
 		Animation (type, table);
-
+        OtherAnimation(type, table);
 		Engagement (type, table);
 		Finished (type, table);
 		Terminated (type, table);
+        Wait(type, table);
 		return type;
 
 	}
 
+    void Wait(CodeTypeDeclaration type, Table table)
+    {
+        var waitOp = table.Get("wait");
+        if (waitOp == null)
+            return;
+        type.OverridePropConst(typeof(PrimitiveTask), "Timed", waitOp.Value() + "f");
+    }
 	CodeTypeDeclaration GenerateComplexTask (string typeName, Table table)
-	{
-		CodeTypeDeclaration type = new CodeTypeDeclaration ();
+    {
+        Debug.Log("Generating complex task " + typeName);
+        CodeTypeDeclaration type = new CodeTypeDeclaration ();
 		type.Name = typeName;
 		type.BaseTypes.Add (new CodeTypeReference (typeof(ComplexTask)));
 		GenerateTask (type, table);
@@ -100,7 +110,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		retVal.Name = "applicable";
 		retVal.Type = typeof(bool);
 		retVal.InitExpression = "false";
-		CreateEventFunction ("OtherFilter", interOp.Context, type, typeof(InteractionTask).GetMethod ("OtherFilter"), retVal);
+        CreateOtherRootFunction("OtherFilter", interOp.Context, type, typeof(InteractionTask).GetMethod ("OtherFilter"), retVal);
 	}
 	void AtScope(CodeTypeDeclaration type, Table table)
 	{
@@ -109,7 +119,7 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		var metricName = atOp.Args [0].ToString ().ClearFromBraces ().Trim ();
 		var attempts = int.Parse (atOp.Args [1].ToString ().ClearFromBraces ().Trim ());
-        //TODO: actually generate at scope init in a function
+        
         type.CreateProp(typeof(SmartScope), "smart_scope");
 
         type.OverridePropConst(typeof(Task), "AtScope", "smart_scope");
@@ -125,7 +135,14 @@ public partial class AITasksLoader : ScriptInterpreter
         decl.OverridePropConst(typeof(SmartScope), "FromMetricName", "\"{0}\"".Fmt(metricName));
         string scopeType = decl.Name;
         ctor.Statements.Add("smart_scope = new {0}();".Fmt(scopeType).St());
+        if (atOp.Args.Count == 3)
+        {
+            if (atOp.ArgValue(2) == "for_interaction")
+            {
+                decl.OverridePropConst(typeof(SmartScope), "ForInteraction", "true");
+            }
 
+        }
 
         FunctionBlock initMethodBlock = null;
         if (type.UserData.Contains("init_method"))
@@ -142,6 +159,8 @@ public partial class AITasksLoader : ScriptInterpreter
         }
         var exprInter = Engine.GetPlugin<ExpressionInterpreter>();
         initMethodBlock.Statements.Add("smart_scope.Scope = {0};".Fmt(exprInter.InterpretExpression(atOp.Context as Expression, initMethodBlock, typeof(List<GameObject>)).ExprString));
+        initMethodBlock.Statements.Add("UnityEngine.Debug.Log(root);");
+        initMethodBlock.Statements.Add("if(!smart_scope.SelectNext(this, root.GetComponent<Agent>())) State = TaskState.Failed;");
         //CreateEventFunction ("OtherFilter", atOp.Context, type, typeof(Task).GetMethod ("AtScope"), retVal);
     }
 
@@ -342,12 +361,38 @@ public partial class AITasksLoader : ScriptInterpreter
 	 */
 	void Constraints (CodeTypeDeclaration type, Table table)
 	{
-		var cons = table.AllThat ("during");
-		foreach (var con in cons) {
-			var call = con.Call ();
-
-		}
-	}
+        depCounter = 0;
+        var deps = table.AllThat("during");
+        if (deps.Count > 0)
+        {
+            type.CreateProp(typeof(List<TaskWrapper>), "cons");
+            type.OverridePropConst(typeof(PrimitiveTask), "Constraints", "cons");
+            var ctor = type.GetShared<CodeConstructor>("ctor");
+            ctor.Statements.Add("cons = new System.Collections.Generic.List<TaskWrapper>();".St());
+            FunctionBlock initMethodBlock = null;
+            if (type.UserData.Contains("init_method"))
+            {
+                initMethodBlock = type.UserData["init_method"] as FunctionBlock;
+            }
+            else
+            {
+                var initMethod = type.GetShared<CodeMemberMethod>("init");
+                initMethod.Name = "Init";
+                initMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+                initMethodBlock = initMethod.InitialBlock(type, Engine);
+                type.UserData.Add("init_method", initMethodBlock);
+                initMethod.Statements.Add("base.Init();".St());
+            }
+            foreach (var dep in deps)
+            {
+                    var conditionTypeName = dep.ArgValue(0);
+                    ctor.Statements.Add("cons.Add(new ScriptedTypes.{0}());".Fmt(conditionTypeName).St());
+                    InitForCondition(initMethodBlock, conditionTypeName, dep.Context as Table, depCounter++, "cons", type);
+                }
+        
+        }
+        
+    }
 	/*
 	 * before(condition_name) = {
 	 * param1 = value   
@@ -357,8 +402,9 @@ public partial class AITasksLoader : ScriptInterpreter
 	 */
 	int depCounter = 0;
 	void Dependencies (CodeTypeDeclaration type, Table table)
-	{
-		var deps = table.AllThat ("before");
+    {
+        depCounter = 0;
+        var deps = table.AllThat ("before");
 		if (deps.Count > 0) {
 			type.CreateProp (typeof(List<TaskWrapper>), "deps");
 			type.OverridePropConst (typeof(PrimitiveTask), "Dependencies", "deps");
@@ -376,12 +422,10 @@ public partial class AITasksLoader : ScriptInterpreter
 				initMethod.Statements.Add ("base.Init();".St());
 			}
 			foreach (var dep in deps) {
-				var call = dep.Call ();
-				if (call != null) {
 					var conditionTypeName = dep.ArgValue (0);
-					ctor.Statements.Add ("deps.Add(new ScriptedTypes.{0}())".Fmt (type.Name).St ());
+					ctor.Statements.Add ("deps.Add(new ScriptedTypes.{0}());".Fmt (conditionTypeName).St ());
 					InitForCondition (initMethodBlock, conditionTypeName, dep.Context as Table, depCounter++, "deps", type);
-				} 
+				
 			}
 		}
 	}
@@ -599,11 +643,11 @@ public partial class AITasksLoader : ScriptInterpreter
 			if (op.Identifier as string == "other")
 				hadOther = true;
 			var expr = exprInter.InterpretExpression (op.Context as Expression, block);
-			block.Statements.Add ("indexedWrapper{0}.{1} = ({3})({2})".Fmt(listIndex, (op.Identifier as string).CSharp (), expr.ExprString, expr.Type));
+			block.Statements.Add ("indexedWrapper{0}.{1} = ({3})({2});".Fmt(listIndex, (op.Identifier as string).CSharp (), expr.ExprString, expr.Type));
 		}
-		block.Statements.Add ("indexedWrapper{0}.Root = this.Root".Fmt (listIndex));
-		if (!hadOther && type.UserData.Contains ("other"))
-			block.Statements.Add ("indexedWrapper{0}.Other = this.Other".Fmt (listIndex));
+		block.Statements.Add ("indexedWrapper{0}.Root = this.Root;".Fmt (listIndex));
+		if (!hadOther && typesByName[typeName].UserData.Contains ("has_other"))
+			block.Statements.Add ("indexedWrapper{0}.Other = this.Other;".Fmt (listIndex));
 	}
 
 }

@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityStandardAssets.Characters.ThirdPerson;
 
 public class Movable : MonoBehaviour {
 
-    Rigidbody rigidBody;
+    ThirdPersonCharacter body;
     [SerializeField]
     float speed;
     public float Speed { get { return speed; } set { speed = Mathf.Clamp(value, 0 , 1000); } }
@@ -11,6 +12,7 @@ public class Movable : MonoBehaviour {
 	public bool NearTarget { get; internal set; }
 	[SerializeField]
 	Vector3 target;
+    public Vector3 mod;
 	[SerializeField]
     Transform targetGo;
 	float OKDistance;
@@ -34,7 +36,7 @@ public class Movable : MonoBehaviour {
 
     private void Awake()
     {
-        rigidBody = GetComponent<Rigidbody>();
+        body = GetComponent<ThirdPersonCharacter>();
     }
 
     void Start()
@@ -51,15 +53,19 @@ public class Movable : MonoBehaviour {
         var distance = difVector.magnitude;
         if (IsMoving = distance > OKDistance)
         {
+
+            var finTarget = target + mod;
+            difVector = finTarget - transform.position;
+            distance = difVector.magnitude;
             var normalVector = difVector / distance;
 			Debug.DrawLine (transform.position, transform.position + normalVector);
-			rigidBody.velocity = normalVector * Mathf.Min(Speed, distance);
-			Debug.DrawLine (transform.position, transform.position + rigidBody.velocity, Color.red);
+			body.Move(normalVector * Mathf.Min(Speed, distance), false, false);
+			Debug.DrawLine (transform.position, transform.position + normalVector * Mathf.Min(Speed, distance), Color.red);
             NearTarget = false;
         }
         else
         {
-            rigidBody.velocity = Vector3.zero;
+            body.Move(Vector3.zero, false, false);
             NearTarget = true;
         }
     }

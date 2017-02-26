@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 
 public static class ConditionsExt
 {
@@ -45,4 +46,12 @@ public static class ConditionsExt
 		for (int i = 0; i < conditions.Count; i++)
 			conditions [i].Update ();
 	}
+
+    public static void Roots<T>(this List<T> conditions, GameObject root) where T : TaskCondition
+    {
+        if (conditions == null)
+            return;
+        for (int i = 0; i < conditions.Count; i++)
+            conditions[i].Root = root;
+    }
 }

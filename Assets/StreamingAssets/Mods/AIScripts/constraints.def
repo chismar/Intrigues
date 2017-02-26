@@ -1,0 +1,14 @@
+constraint(near) =
+{
+	distance = float
+	other = yes
+	s = root.entity
+	o = other.entity
+	task(follow) = {
+		ok_distance = distance
+		who = other
+	}
+
+	satisfaction = mag(s.position - o.position) <= 1
+	serialization = format("should_be_near", who = root, other = other, distance = distance)
+}

@@ -1,0 +1,4 @@
+follow(interface = yes) = {
+	who = gameobject
+	ok_distance = float
+}

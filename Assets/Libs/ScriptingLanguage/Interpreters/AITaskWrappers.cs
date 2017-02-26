@@ -47,8 +47,9 @@ public partial class AITasksLoader : ScriptInterpreter
 		var otherOp = table.Get ("other");
 		if (otherOp == null)
 			return;
-		if (otherOp.Value () != "yes")
-			return;
+        if (otherOp.Value() != "true")
+            return;
+        type.UserData.Add("has_other", true);
 		type.CreateProp (typeof(GameObject), "other");
 	}
 	void InternalProperties (CodeTypeDeclaration type, Table table)
@@ -57,7 +58,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		initMethod.Name = "Init";
 		initMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
 		bool hasInternalProps = false;
-		FunctionBlock block = initMethod.InitialBlock (type, Engine);
+		FunctionBlock block = initMethod.InitialBlock (type, Engine, true, type.UserData.Contains("has_other"));
 		var exprInter = Engine.GetPlugin<ExpressionInterpreter> ();
 		foreach (var entry in table.Entries) {
 			var propOp = entry as Operator;
@@ -68,14 +69,15 @@ public partial class AITasksLoader : ScriptInterpreter
 				continue;
 			if (propOp.Identifier as string == "serialization" || propOp.Identifier as string == "satisfaction" || 
 				propOp.Identifier as string == "is_interruptive" || propOp.Identifier as string == "when" || 
-				propOp.Identifier as string == "attempts")
+				propOp.Identifier as string == "attempts" || propOp.Identifier as string == "other")
 				continue;
 			propOp.HasBeenInterpreted = true;
 			hasInternalProps = true;
 			var propBlock = new FunctionBlock (block);
+            block.Statements.Add(propBlock);
 			var expr = exprInter.InterpretExpression (propOp.Context as Expression, propBlock);
 			type.CreateProp (expr.Type, propOp.Identifier as string);
-			block.Statements.Add ("{0} = {1};".Fmt(propOp.Identifier as string, expr.ExprString));
+            propBlock.Statements.Add ("{0} = {1};".Fmt(propOp.Identifier as string, expr.ExprString));
 		}
 		initMethod.Statements.Add (new CodeSnippetStatement (block.ToString()));
 		if (hasInternalProps)
@@ -93,20 +95,22 @@ public partial class AITasksLoader : ScriptInterpreter
 		CodeMemberMethod method = new CodeMemberMethod ();
 		method.Name = "InitTask";
 		method.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+        method.Parameters.Add(new CodeParameterDeclarationExpression(typeof(Task), "task"));
 		type.Members.Add (method);
 		var initTaskTable = satOp.Context as Table;
-		FunctionBlock block = method.InitialBlock (type, Engine);
-		block.Statements.Add ("var properTask = task as ScriptedTypes.{1};".Fmt(satOp.ArgValue(0)));
+		FunctionBlock block = method.InitialBlock (type, Engine, true, type.UserData.Contains("has_other"));
+		block.Statements.Add ("var properTask = task as ScriptedTypes.{0};".Fmt(satOp.ArgValue(0)));
 		foreach (var val in initTaskTable.Entries) {
 			var op = val as Operator;
 			FunctionBlock opBlock = new FunctionBlock (block);
+            block.Statements.Add(opBlock);
 			var expr = exprInter.InterpretExpression (op.Context as Expression, opBlock);
-			method.Statements.Add(new CodeSnippetStatement(opBlock.ToString()));
-			method.Statements.Add ("properTask.{0} = {1};".Fmt((op.Identifier as string), expr.ExprString).St());
-			
-		}
+            opBlock.Statements.Add("properTask.{0} = {1};".Fmt((op.Identifier as string).CSharp(), expr.ExprString));
 
-	}
+        }
+        method.Statements.Add(new CodeSnippetStatement(block.ToString()));
+
+    }
 	void SatisfactionCondition (CodeTypeDeclaration type, Table table)
 	{
 		var satOp = table.Get ("satisfaction");
@@ -114,13 +118,12 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 
 		satOp.HasBeenInterpreted = true;
-		satOp.Scope().Parts.Add("true");
 		DeclareVariableStatement retVal = new DeclareVariableStatement();
 		retVal.IsReturn = true;
 		retVal.Name = "satisfied";
 		retVal.Type = typeof(bool);
 		retVal.InitExpression = "false";
-		CreateEventFunction ("Satisfied", satOp.Context, type, typeof(TaskWrapper).GetMethod ("Satisfied"), retVal);
+		CreateSatisfactionFunction ("Satisfied", satOp.Context, type, typeof(TaskWrapper).GetMethod ("Satisfied"), type.UserData.Contains("has_other"), retVal);
 	}
 
 	void Serialization(CodeTypeDeclaration type, Table table)
@@ -129,7 +132,7 @@ public partial class AITasksLoader : ScriptInterpreter
 		if (serOp == null)
 			return;
 		serOp.HasBeenInterpreted = true;
-		type.CreatePropFunc (typeof(TaskWrapper), "Serialize", serOp.Context, Engine);
+		type.CreatePropFunc (typeof(TaskWrapper), "Serialized", serOp.Context, Engine, new CodeMemberMethod().InitialBlock(type, Engine, true, type.UserData.Contains("has_other")));
 	}
 
 	void IsInterruptive (CodeTypeDeclaration type, Table table)

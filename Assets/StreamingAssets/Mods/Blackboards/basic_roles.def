@@ -41,3 +41,6 @@ wander(interface = yes) = {
 with(interface = yes) = {
 	who = gameobject
 }
+
+
+
