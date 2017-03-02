@@ -89,7 +89,7 @@ public abstract class SmartScope
                 if (iTask != null && iTask.Other == null)
                     iTask.Other = task.At;
             }
-            Debug.LogWarningFormat("{0} : {1} at {2}", agent, task, task.At);
+            //Debug.LogWarningFormat("{0} : {1} at {2}", agent, task, task.At);
             return true;
         }
 

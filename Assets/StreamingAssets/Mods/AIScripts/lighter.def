@@ -17,5 +17,6 @@ lit_up_interaction = {
 
 	finish = {
 		at.light_source.lit_up = yes
+		log = "finished lighting " + at
 	}
 }

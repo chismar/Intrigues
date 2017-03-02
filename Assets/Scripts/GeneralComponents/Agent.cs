@@ -23,9 +23,10 @@ public class Agent : MonoBehaviour
     {
         metrics = gameObject.GetComponent<Metrics>();
     }
+    static System.Random rand = new System.Random();
     void UpdateAI()
 	{
-		Debug.Log ("UpdateAI");
+		//Debug.Log ("UpdateAI");
 		float maxUt = 0;
 		AgentBehaviour maxBeh = null;
 		for (int i = 0; i < Behaviours.Count; i++) {
@@ -39,7 +40,7 @@ public class Agent : MonoBehaviour
                 if (beh.Task.State == TaskState.Failed)
                     continue;
             }
-			var ut = beh.Utility (beh == currentBehaviour);
+			var ut = beh.Utility (beh == currentBehaviour) * (1f + 0.1f * (0.5f - (float)rand.NextDouble()) / 0.5f);
 			if (ut > maxUt) {
 				maxBeh = beh;
 				maxUt = ut;
@@ -51,33 +52,33 @@ public class Agent : MonoBehaviour
 				currentBehaviour.Interrupt();
 			}
 			currentBehaviour = maxBeh;
-            Debug.LogWarning("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
+            //Debug.LogWarning("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
             if(currentBehaviour.State == BehaviourState.None)
                 {
 
                     currentBehaviour.PlanAhead();
-                    Debug.Log(currentBehaviour.State);
+                    //Debug.Log(currentBehaviour.State);
                 }
         }
 		if (currentBehaviour != null && currentTaskBehaviour == null) {
 			if (currentBehaviour.State == BehaviourState.ImpossibleToStart)
             {
 
-                Debug.LogWarning("{0} can't do {1}".Fmt(gameObject, currentBehaviour), gameObject);
+                //Debug.LogWarning("{0} can't do {1}".Fmt(gameObject, currentBehaviour), gameObject);
                 currentBehaviour = null;
             }
 			else
             {
 
                 currentBehaviour.Do();
-                Debug.LogWarning("{0} updates {1}".Fmt(gameObject, currentBehaviour), gameObject);
+                //Debug.LogWarning("{0} updates {1}".Fmt(gameObject, currentBehaviour), gameObject);
             }
 
 		}
         else
         {
 
-            Debug.LogWarning("{0} can't update {1}".Fmt(gameObject, currentBehaviour), gameObject);
+            //Debug.LogWarning("{0} can't update {1}".Fmt(gameObject, currentBehaviour), gameObject);
         }
 
 	}
@@ -85,16 +86,17 @@ public class Agent : MonoBehaviour
     void Update()
     {
         if (currentTaskBehaviour != null && currentTaskBehaviour.State == BehaviourState.Active) {
-            Debug.Log("agent updates " + currentTaskBehaviour);
+            //Debug.Log("agent updates " + currentTaskBehaviour);
             currentTaskBehaviour.Update();
         } else {
-            if (currentTaskBehaviour != null)
-                Debug.Log(currentTaskBehaviour);
+            //if (currentTaskBehaviour != null)
+                //Debug.Log(currentTaskBehaviour);
             if (currentBehaviour != null)
                 if (currentBehaviour.State == BehaviourState.ImpossibleToStart || currentBehaviour.State == BehaviourState.Failed || currentBehaviour.State == BehaviourState.Finished)
                 {
 
                     Debug.LogWarning("{0} state of {1} is {2}, clearing current behaviour".Fmt(gameObject, currentBehaviour, currentBehaviour.State), gameObject);
+                    
                     currentBehaviour = null;
                 }
 			UpdateAI ();
@@ -211,12 +213,12 @@ public abstract class AgentBehaviour
     }
     public virtual void Init(Agent agent, Task task)
 	{
-        
 		Task = task;
 		Task.Root = agent.gameObject;
 		Agent = agent;
 		state = BehaviourState.None;
-
+        Task.State = TaskState.None;
+        Debug.Log("init " + this + " in " + agent.gameObject.name);
         atScope = task.AtScope;
 		if (atScope != null) {
 
@@ -409,7 +411,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
                 {
 
                     State = BehaviourState.Finished;
-                    Debug.Log("Finished " + this);
+                    //Debug.Log("Finished " + this);
                 }
                 else
                 {
@@ -444,7 +446,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	void StartTask()
 	{
-        Debug.LogWarningFormat("{0} is starting task {1}", Agent.gameObject.name, this);
+        //Debug.LogWarningFormat("{0} is starting task {1}", Agent.gameObject.name, this);
         State = BehaviourState.Active;
 		selfTask.State = TaskState.Active;
 		Agent.SetExecutingTask (this);
@@ -475,7 +477,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	void UpdateActiveTask()
 	{
-        Debug.Log("update active task " + this);
+        //Debug.Log("update active task " + this);
 		TaskCondition unsatCond = null;
         if (selfTask.Timed > 0)
         {
@@ -500,20 +502,24 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	void OnInterrupt()
 	{
+        Debug.Log("interrupted " + Agent.gameObject.name);
 		switch (Task.Interruption ) {
 		case InterruptionType.Terminal:
 			Agent.SetExecutingTask (null);
 			State = BehaviourState.Failed;
+                selfTask.OnTerminate();
 			break;
 		case InterruptionType.Resumable:
 			State = BehaviourState.None;
 			Task.State = TaskState.Paused;
-			selfTask.OnInterrupt ();
+            Agent.SetExecutingTask(null);
+            selfTask.OnInterrupt ();
 			break;
 		case InterruptionType.Restartable:
 			State = BehaviourState.Waiting;
 			Task.State = TaskState.Paused;
-			selfTask.OnInterrupt ();
+            Agent.SetExecutingTask(null);
+            selfTask.OnInterrupt ();
 			break;
 		}
 	}
@@ -522,9 +528,9 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 		cons = selfTask.Constraints;
 		deps = selfTask.Dependencies;
-        Debug.Log("PlanAhead  " + Agent.gameObject.name);
-        if (cons != null)
-            Debug.Log("Cons " + cons.Count);
+        //Debug.Log("PlanAhead  " + Agent.gameObject.name);
+        //if (cons != null)
+        //    Debug.Log("Cons " + cons.Count);
         Replan ();
 
 
@@ -680,7 +686,7 @@ public class ComplexAgentBehaviour : AgentBehaviour
 				if (curTaskIndex < tasks.Count) {
 					currentTaskWrapper = tasks[curTaskIndex];
 					curTaskIndex++;
-                        Debug.Log("{0} changes task to {1} in {2}".Fmt(Agent.gameObject.name, currentTaskWrapper.Behaviour.Task.GetType().Name, Task.GetType().Name));
+                        //Debug.Log("{0} changes task to {1} in {2}".Fmt(Agent.gameObject.name, currentTaskWrapper.Behaviour.Task.GetType().Name, Task.GetType().Name));
                     State = BehaviourState.Waiting;
 				} else {
 					if (!IsFinishedOrTerminated ())
@@ -775,13 +781,13 @@ public class ComplexAgentBehaviour : AgentBehaviour
 
             
 		}
-        Debug.Log(State);
+        //Debug.Log(State);
         foreach (var dtask in tasks)
         {
 
             if (dtask.Behaviour == null && State != BehaviourState.ImpossibleToStart)
             {
-                Debug.Log("Invalid state " + State);
+                //Debug.Log("Invalid state " + State);
             }
         }
     }

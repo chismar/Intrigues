@@ -438,13 +438,14 @@ GameObject:
   - component: {fileID: 266387156}
   - component: {fileID: 266387157}
   - component: {fileID: 266387151}
+  - component: {fileID: 266387158}
   m_Layer: 0
   m_Name: RemoteManualLight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &266387149
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -566,6 +567,17 @@ MeshFilter:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 266387148}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &266387158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 266387148}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06d30449094c3b249b2ac244e9e3aac0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &353732298
 GameObject:
   m_ObjectHideFlags: 0
@@ -581,13 +593,14 @@ GameObject:
   - component: {fileID: 353732305}
   - component: {fileID: 353732306}
   - component: {fileID: 353732302}
+  - component: {fileID: 353732307}
   m_Layer: 0
   m_Name: RemoteControllerForDoubleLight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &353732299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -697,6 +710,17 @@ MeshFilter:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 353732298}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &353732307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 353732298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06d30449094c3b249b2ac244e9e3aac0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &674735641 stripped
 GameObject:
   m_PrefabParentObject: {fileID: 1691847080816766, guid: ffa7d5d3a7f8e144696b293f858c7db1,
@@ -1300,13 +1324,14 @@ GameObject:
   - component: {fileID: 1397365181}
   - component: {fileID: 1397365182}
   - component: {fileID: 1397365178}
+  - component: {fileID: 1397365183}
   m_Layer: 0
   m_Name: RemoteController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1397365175
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1416,6 +1441,17 @@ MeshFilter:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1397365174}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1397365183
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1397365174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06d30449094c3b249b2ac244e9e3aac0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1465942452
 GameObject:
   m_ObjectHideFlags: 0
@@ -1459,6 +1495,11 @@ MonoBehaviour:
   ActivateOnLoad:
   - {fileID: 674735641}
   - {fileID: 1867805917}
+  - {fileID: 1853520649}
+  - {fileID: 1465943289}
+  - {fileID: 1397365174}
+  - {fileID: 266387148}
+  - {fileID: 353732298}
 --- !u!1 &1465943289
 GameObject:
   m_ObjectHideFlags: 0
@@ -1474,13 +1515,14 @@ GameObject:
   - component: {fileID: 1465943296}
   - component: {fileID: 1465943297}
   - component: {fileID: 1465943293}
+  - component: {fileID: 1465943298}
   m_Layer: 0
   m_Name: RemoteLight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1465943290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1591,6 +1633,17 @@ MeshFilter:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1465943289}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1465943298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1465943289}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06d30449094c3b249b2ac244e9e3aac0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1526818716
 GameObject:
   m_ObjectHideFlags: 0
@@ -1946,13 +1999,14 @@ GameObject:
   - component: {fileID: 1853520656}
   - component: {fileID: 1853520657}
   - component: {fileID: 1853520653}
+  - component: {fileID: 1853520658}
   m_Layer: 0
   m_Name: Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1853520650
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2062,6 +2116,17 @@ MeshFilter:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1853520649}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1853520658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1853520649}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06d30449094c3b249b2ac244e9e3aac0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1854584354
 GameObject:
   m_ObjectHideFlags: 0

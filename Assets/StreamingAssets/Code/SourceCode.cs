@@ -2313,7 +2313,6 @@ return 5f;
 				OperandVar324 = prop323;
 			}
 			smart_scope.Scope =  (OperandVar324);
-			UnityEngine.Debug.Log(root);
 			if(!smart_scope.SelectNext(this, root.GetComponent<Agent>())) State = TaskState.Failed;
 			var indexedWrapper0 = cons[0] as ScriptedTypes.near;
 			
@@ -2352,6 +2351,12 @@ return 5f;
 					}
 				}
 			}
+			
+			
+			
+			UnityEngine.GameObject OperandVar326 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
+			OperandVar326 = at;
+			External.Log((System.Object)(( ( ("finished lighting "))) + ( ( (OperandVar326)))));
 		}
         }
     }
@@ -2392,12 +2397,12 @@ return true;
 			ScriptedTypes.wander_to fromTask = FromTask as ScriptedTypes.wander_to; //IsContext = True IsNew = False
 			UnityEngine.GameObject root = FromTask.Root; //IsContext = True IsNew = False
 			UnityEngine.GameObject at = FromTask.At; //IsContext = False IsNew = False
-			UnityEngine.GameObject OperandVar334 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
-			OperandVar334 = root;
-			task.Root = (UnityEngine.GameObject) (OperandVar334);
 			UnityEngine.GameObject OperandVar335 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
-			OperandVar335 = at;
-			properTask.Who = (UnityEngine.GameObject) (OperandVar335);
+			OperandVar335 = root;
+			task.Root = (UnityEngine.GameObject) (OperandVar335);
+			UnityEngine.GameObject OperandVar336 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
+			OperandVar336 = at;
+			properTask.Who = (UnityEngine.GameObject) (OperandVar336);
 		}
         }
     }
@@ -2491,18 +2496,18 @@ return engagement;
 			//UnityEngine.GameObject root; //IsContext = True IsNew = False
 			//UnityEngine.GameObject at; //IsContext = False IsNew = False
 			//System.Single distance; //IsContext = False IsNew = False
-			System.Boolean OperandVar328 = default(System.Boolean); //IsContext = False IsNew = False
-			Entity StoredVariable326 = ((Entity)root.GetComponent(typeof(Entity))); //IsContext = False IsNew = False
-			if(StoredVariable326 != null)
+			System.Boolean OperandVar329 = default(System.Boolean); //IsContext = False IsNew = False
+			Entity StoredVariable327 = ((Entity)root.GetComponent(typeof(Entity))); //IsContext = False IsNew = False
+			if(StoredVariable327 != null)
 			{
-				Movable StoredVariable327 = ((Movable)StoredVariable326.GetComponent(typeof(Movable))); //IsContext = False IsNew = False
-				if(StoredVariable327 != null)
+				Movable StoredVariable328 = ((Movable)StoredVariable327.GetComponent(typeof(Movable))); //IsContext = False IsNew = False
+				if(StoredVariable328 != null)
 				{
 					applicable = true;
-					OperandVar328 = applicable;
+					OperandVar329 = applicable;
 				}
 			}
-			return (System.Boolean) (OperandVar328);
+			return (System.Boolean) (OperandVar329);
 		}
         }
         
@@ -2534,14 +2539,13 @@ return engagement;
 			//System.Single distance; //IsContext = False IsNew = False
 			//SmartScope smart_scope; //IsContext = False IsNew = False
 			//External External; //IsContext = False IsNew = False
-			System.Collections.Generic.List<UnityEngine.GameObject> OperandVar330 = default(System.Collections.Generic.List<UnityEngine.GameObject>); //IsContext = False IsNew = False
-			System.Collections.Generic.List<UnityEngine.GameObject> prop329 = External.AllEntities(); //IsContext = False IsNew = False
-			if(prop329 != null)
+			System.Collections.Generic.List<UnityEngine.GameObject> OperandVar331 = default(System.Collections.Generic.List<UnityEngine.GameObject>); //IsContext = False IsNew = False
+			System.Collections.Generic.List<UnityEngine.GameObject> prop330 = External.AllEntities(); //IsContext = False IsNew = False
+			if(prop330 != null)
 			{
-				OperandVar330 = prop329;
+				OperandVar331 = prop330;
 			}
-			smart_scope.Scope =  (OperandVar330);
-			UnityEngine.Debug.Log(root);
+			smart_scope.Scope =  (OperandVar331);
 			if(!smart_scope.SelectNext(this, root.GetComponent<Agent>())) State = TaskState.Failed;
 			engagement.FromTask = this;
 		}
@@ -2560,20 +2564,20 @@ return engagement;
 			//SmartScope smart_scope; //IsContext = False IsNew = False
 			
 			{
-				Movable subContext331 = (Movable)root.GetComponent(typeof(Movable)); //IsContext = True IsNew = False
-				//ContextStatement Movable subContext331 ContextSwitchInterpreter
-				if(subContext331 != null)
+				Movable subContext332 = (Movable)root.GetComponent(typeof(Movable)); //IsContext = True IsNew = False
+				//ContextStatement Movable subContext332 ContextSwitchInterpreter
+				if(subContext332 != null)
 				{
-					//Movable subContext331; //IsContext = True IsNew = False
+					//Movable subContext332; //IsContext = True IsNew = False
 					
-					UnityEngine.GameObject OperandVar332 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
-					OperandVar332 = at;
-					subContext331.Goto((System.Single)( (1f)),(UnityEngine.GameObject)( (OperandVar332)));
+					UnityEngine.GameObject OperandVar333 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
+					OperandVar333 = at;
+					subContext332.Goto((System.Single)( (1f)),(UnityEngine.GameObject)( (OperandVar333)));
 					
-					subContext331.Speed = (System.Single)( (1f));
-					Movable OperandVar333 = default(Movable); //IsContext = False IsNew = False
-					OperandVar333 = subContext331;
-					mov =  (OperandVar333);
+					subContext332.Speed = (System.Single)( (1f));
+					Movable OperandVar334 = default(Movable); //IsContext = False IsNew = False
+					OperandVar334 = subContext332;
+					mov =  (OperandVar334);
 					//Movable mov; //IsContext = False IsNew = False
 				}
 			}
@@ -2644,10 +2648,10 @@ return engagement;
 			//SmartScope smart_scope; //IsContext = False IsNew = False
 			//Movable mov; //IsContext = False IsNew = False
 			//TaskWrapper engagement; //IsContext = False IsNew = False
-			System.Boolean OperandVar337 = default(System.Boolean); //IsContext = False IsNew = False
-			System.Boolean prop336 = mov.NearTarget; //IsContext = False IsNew = False
-			OperandVar337 = prop336;
-			return (System.Boolean) (OperandVar337);
+			System.Boolean OperandVar338 = default(System.Boolean); //IsContext = False IsNew = False
+			System.Boolean prop337 = mov.NearTarget; //IsContext = False IsNew = False
+			OperandVar338 = prop337;
+			return (System.Boolean) (OperandVar338);
 		}
         }
     }
@@ -2702,18 +2706,18 @@ return "walk";
 			//UnityEngine.GameObject root; //IsContext = True IsNew = False
 			//UnityEngine.GameObject at; //IsContext = False IsNew = False
 			//UnityEngine.GameObject around; //IsContext = False IsNew = False
-			System.Boolean OperandVar340 = default(System.Boolean); //IsContext = False IsNew = False
-			Entity StoredVariable338 = ((Entity)root.GetComponent(typeof(Entity))); //IsContext = False IsNew = False
-			if(StoredVariable338 != null)
+			System.Boolean OperandVar341 = default(System.Boolean); //IsContext = False IsNew = False
+			Entity StoredVariable339 = ((Entity)root.GetComponent(typeof(Entity))); //IsContext = False IsNew = False
+			if(StoredVariable339 != null)
 			{
-				Movable StoredVariable339 = ((Movable)StoredVariable338.GetComponent(typeof(Movable))); //IsContext = False IsNew = False
-				if(StoredVariable339 != null)
+				Movable StoredVariable340 = ((Movable)StoredVariable339.GetComponent(typeof(Movable))); //IsContext = False IsNew = False
+				if(StoredVariable340 != null)
 				{
 					applicable = true;
-					OperandVar340 = applicable;
+					OperandVar341 = applicable;
 				}
 			}
-			return (System.Boolean) (OperandVar340);
+			return (System.Boolean) (OperandVar341);
 		}
         }
         
@@ -2743,24 +2747,18 @@ return "walk";
 			//UnityEngine.GameObject root; //IsContext = True IsNew = False
 			//UnityEngine.GameObject at; //IsContext = False IsNew = False
 			//UnityEngine.GameObject around; //IsContext = False IsNew = False
-			UnityEngine.Vector2 OperandVar345 = default(UnityEngine.Vector2); //IsContext = False IsNew = False
-			UnityEngine.Vector3 OperandVar343 = default(UnityEngine.Vector3); //IsContext = False IsNew = False
-			Entity StoredVariable341 = ((Entity)around.GetComponent(typeof(Entity))); //IsContext = False IsNew = False
-			if(StoredVariable341 != null)
+			UnityEngine.Vector2 OperandVar346 = default(UnityEngine.Vector2); //IsContext = False IsNew = False
+			UnityEngine.Vector3 OperandVar344 = default(UnityEngine.Vector3); //IsContext = False IsNew = False
+			Entity StoredVariable342 = ((Entity)around.GetComponent(typeof(Entity))); //IsContext = False IsNew = False
+			if(StoredVariable342 != null)
 			{
-				UnityEngine.Vector3 prop342 = StoredVariable341.Position; //IsContext = False IsNew = False
-				OperandVar343 = prop342;
+				UnityEngine.Vector3 prop343 = StoredVariable342.Position; //IsContext = False IsNew = False
+				OperandVar344 = prop343;
 			}
 			
-			UnityEngine.Vector2 prop344 = External.RandomPoint( (OperandVar343), (4f)); //IsContext = False IsNew = False
-			OperandVar345 = prop344;
-			UnityEngine.Vector2 point =  (OperandVar345); //IsContext = False IsNew = False
-			
-			
-			
-			UnityEngine.GameObject OperandVar346 = default(UnityEngine.GameObject); //IsContext = False IsNew = False
-			OperandVar346 = around;
-			External.Log((System.Object)(( ( ("wandering around "))) + ( ( (OperandVar346)))));
+			UnityEngine.Vector2 prop345 = External.RandomPoint( (OperandVar344), (4f)); //IsContext = False IsNew = False
+			OperandVar346 = prop345;
+			UnityEngine.Vector2 point =  (OperandVar346); //IsContext = False IsNew = False
 			
 			{
 				Movable subContext347 = (Movable)root.GetComponent(typeof(Movable)); //IsContext = True IsNew = False
