@@ -455,8 +455,9 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 	}
 
 	void ResumeTask()
-	{
-		selfTask.State = TaskState.Active;
+    {
+        State = BehaviourState.Active;
+        selfTask.State = TaskState.Active;
 		Agent.SetExecutingTask (this);
         
 		selfTask.OnResume ();
@@ -502,21 +503,24 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	void OnInterrupt()
 	{
-        Debug.Log("interrupted " + Agent.gameObject.name);
+        Debug.Log("interrupted " + Agent.gameObject.name + " " + Task.Interruption);
 		switch (Task.Interruption ) {
 		case InterruptionType.Terminal:
 			Agent.SetExecutingTask (null);
+                satisfactionBehaviour = null;
 			State = BehaviourState.Failed;
                 selfTask.OnTerminate();
 			break;
 		case InterruptionType.Resumable:
-			State = BehaviourState.None;
+                satisfactionBehaviour = null;
+                State = BehaviourState.None;
 			Task.State = TaskState.Paused;
             Agent.SetExecutingTask(null);
             selfTask.OnInterrupt ();
 			break;
 		case InterruptionType.Restartable:
-			State = BehaviourState.Waiting;
+            satisfactionBehaviour = null;
+            State = BehaviourState.Waiting;
 			Task.State = TaskState.Paused;
             Agent.SetExecutingTask(null);
             selfTask.OnInterrupt ();
