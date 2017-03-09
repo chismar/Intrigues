@@ -367,7 +367,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 4272609064453706, guid: ffa7d5d3a7f8e144696b293f858c7db1, type: 2}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4272609064453706, guid: ffa7d5d3a7f8e144696b293f858c7db1, type: 2}
       propertyPath: m_LocalPosition.z
@@ -418,6 +418,21 @@ Prefab:
     - target: {fileID: 1691847080816766, guid: ffa7d5d3a7f8e144696b293f858c7db1, type: 2}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114853213301615876, guid: ffa7d5d3a7f8e144696b293f858c7db1,
+        type: 2}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114547314808702264, guid: ffa7d5d3a7f8e144696b293f858c7db1,
+        type: 2}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 95362407645350638, guid: ffa7d5d3a7f8e144696b293f858c7db1,
+        type: 2}
+      propertyPath: m_Controller
+      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: ffa7d5d3a7f8e144696b293f858c7db1, type: 2}
@@ -1158,7 +1173,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1226690724}
   m_LocalRotation: {x: 0.12862812, y: -0, z: -0, w: 0.9916929}
-  m_LocalPosition: {x: 0.0002888441, y: 2.33, z: -5.17}
+  m_LocalPosition: {x: 0.0002888441, y: 2.88, z: -7.27}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -2312,7 +2327,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 4272609064453706, guid: ffa7d5d3a7f8e144696b293f858c7db1, type: 2}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4272609064453706, guid: ffa7d5d3a7f8e144696b293f858c7db1, type: 2}
       propertyPath: m_LocalPosition.z
@@ -2361,6 +2376,21 @@ Prefab:
     - target: {fileID: 1691847080816766, guid: ffa7d5d3a7f8e144696b293f858c7db1, type: 2}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 95362407645350638, guid: ffa7d5d3a7f8e144696b293f858c7db1,
+        type: 2}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 114853213301615876, guid: ffa7d5d3a7f8e144696b293f858c7db1,
+        type: 2}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114547314808702264, guid: ffa7d5d3a7f8e144696b293f858c7db1,
+        type: 2}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 114075819142821728, guid: ffa7d5d3a7f8e144696b293f858c7db1, type: 2}
@@ -2466,6 +2496,7 @@ GameObject:
   - component: {fileID: 2038756756}
   - component: {fileID: 2038756759}
   - component: {fileID: 2038756760}
+  - component: {fileID: 2038756761}
   m_Layer: 0
   m_Name: Roots
   m_TagString: Untagged
@@ -2537,6 +2568,49 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d0f415550cf3a44ba78e00abcf35835, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &2038756761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 2038756755}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fcf33299ff31a84d834adfe5c1a22f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clipsByName:
+    _Buckets: 00000000ffffffffffffffff
+    _HashCodes: 87c501000000000000000000
+    _Next: ffffffff0000000000000000
+    _Count: 1
+    _Version: 9
+    _FreeList: -1
+    _FreeCount: 0
+    _Keys:
+    - use
+    - 
+    - 
+    _Values:
+    - {fileID: 7400002, guid: d89ea37480b6d75458aa38843e9688dc, type: 3}
+    - {fileID: 0}
+    - {fileID: 0}
+  controllersByName:
+    _Buckets: ffffffffffffffff00000000
+    _HashCodes: c99137000000000000000000
+    _Next: ffffffff0000000000000000
+    _Count: 1
+    _Version: 10
+    _FreeList: -1
+    _FreeCount: 0
+    _Keys:
+    - walk
+    - 
+    - 
+    _Values:
+    - {fileID: 9100000, guid: e2cf68ff4b1ffda45a77f7307dd789b9, type: 2}
+    - {fileID: 0}
+    - {fileID: 0}
 --- !u!1 &2118131736
 GameObject:
   m_ObjectHideFlags: 0

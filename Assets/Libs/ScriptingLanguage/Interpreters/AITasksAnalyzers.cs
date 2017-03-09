@@ -268,8 +268,10 @@ public partial class AITasksLoader : ScriptInterpreter
 		if (upOp == null) {
 			return;
 		}
-
-		CreateEventFunction("OnStart", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnStart"));	
+        if(type.UserData.Contains("is_interaction"))
+            CreateInteractionRootFunction("OnStart", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnStart"));
+        else
+        CreateEventFunction("OnStart", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnStart"));	
 	}
 
 	void OnFinish(CodeTypeDeclaration type, Table table)
@@ -279,8 +281,11 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		}
 
-		CreateEventFunction("OnFinish", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnFinish"));
-	}
+        if (type.UserData.Contains("is_interaction"))
+            CreateInteractionRootFunction("OnFinish", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnFinish"));
+        else
+            CreateEventFunction("OnFinish", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnFinish"));
+    }
 
 	void OnTerminate(CodeTypeDeclaration type, Table table)
 	{
@@ -289,7 +294,10 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		}
 
-		CreateEventFunction("OnTerminate", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnTerminate"));
+        if (type.UserData.Contains("is_interaction"))
+            CreateInteractionRootFunction("OnTerminate", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnTerminate"));
+        else
+            CreateEventFunction("OnTerminate", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnTerminate"));
 	}
 
 	void OnInterrupt (CodeTypeDeclaration type, Table table)
@@ -307,7 +315,10 @@ public partial class AITasksLoader : ScriptInterpreter
 			return;
 		}
 
-		CreateEventFunction("OnInterrupt", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnInterrupt"));
+        if (type.UserData.Contains("is_interaction"))
+            CreateInteractionRootFunction("OnInterrupt", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnInterrupt"));
+        else
+            CreateEventFunction("OnInterrupt", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnInterrupt"));
 	}
 
 	void OnResume (CodeTypeDeclaration type, Table table)
@@ -329,8 +340,11 @@ public partial class AITasksLoader : ScriptInterpreter
 			afterInterruptFunction.Statements.Add (new CodeSnippetStatement ("return type.None;"));
 			type.Members.Add (afterInterruptFunction);
 			return;
-		}
-		CreateEventFunction("OnResume", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnResume"));
+        }
+        if (type.UserData.Contains("is_interaction"))
+            CreateInteractionRootFunction("OnResume", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnResume"));
+        else
+            CreateEventFunction("OnResume", upOp.Context, type, typeof(PrimitiveTask).GetMethod("OnResume"));
 	}
 
 

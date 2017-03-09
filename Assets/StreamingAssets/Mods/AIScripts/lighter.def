@@ -1,11 +1,11 @@
 lit_up_interaction = {
 	at(lit_up_metric,3, for_interaction) = all_entities
-	interaction = light_source
+	interaction = light_source.fit(not lit_up)
 	scope = manual
 
 	category = do_stuff
 	utility = 0.2
-	animation = crouch
+	animation = use
 	other_animation = none
 	during(near) = {
 		distance = 1
@@ -16,7 +16,7 @@ lit_up_interaction = {
 	interruption = restart
 
 	finish = {
-		at.light_source.lit_up = yes
-		log = "finished lighting " + at
+		other.light_source.lit_up = yes
+		log = "finished lighting " + other
 	}
 }

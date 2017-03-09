@@ -20,7 +20,10 @@ public class OnLoadActivator : MonoBehaviour
         if(isActive)
         {
             foreach (var go in ActivateOnLoad)
-                go.SetActive(true);
+            {
+                if(go != null)
+                    go.SetActive(true);
+            }
             Destroy(gameObject);
         }
     }
