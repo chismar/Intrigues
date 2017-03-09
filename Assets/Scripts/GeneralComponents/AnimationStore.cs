@@ -10,21 +10,26 @@ public class AnimationStore : Root<AnimationStore>
     ClipsDictionary clipsByName;
     [SerializeField]
     ControllersDictionary controllersByName;
-    public Playable GetAnimation(string name)
+    public AnimationClip GetAnimation(string name)
     {
         if (clipsByName != null)
             if (clipsByName.ContainsKey(name))
             {
                 var clip = clipsByName[name];
-                return AnimationClipPlayable.Create(clip);
+                return clip;
             }
-        if(controllersByName != null)
-            if(controllersByName.ContainsKey(name))
+        return null;
+    }
+
+    public RuntimeAnimatorController GetController(string name)
+    {
+        if (controllersByName != null)
+            if (controllersByName.ContainsKey(name))
             {
                 var controller = controllersByName[name];
-                return AnimatorControllerPlayable.Create(controller);
+                return controller;
             }
-        return Playable.Null;
+        return null;
     }
     
 }

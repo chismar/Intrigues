@@ -51,7 +51,7 @@ public class Agent : MonoBehaviour
 				currentBehaviour.Interrupt();
 			}
 			currentBehaviour = maxBeh;
-            Debug.LogWarning("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
+          //Debug.LogWarning("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
             if(currentBehaviour.State == BehaviourState.None)
                 {
 
@@ -63,21 +63,21 @@ public class Agent : MonoBehaviour
 			if (currentBehaviour.State == BehaviourState.ImpossibleToStart)
             {
 
-                Debug.LogWarning("{0} can't do {1}".Fmt(gameObject, currentBehaviour), gameObject);
+              //Debug.LogWarning("{0} can't do {1}".Fmt(gameObject, currentBehaviour), gameObject);
                 currentBehaviour = null;
             }
 			else
             {
 
                 currentBehaviour.Do();
-                Debug.LogWarning("{0} updates {1}".Fmt(gameObject, currentBehaviour), gameObject);
+              //Debug.LogWarning("{0} updates {1}".Fmt(gameObject, currentBehaviour), gameObject);
             }
 
 		}
         else
         {
 
-            Debug.LogWarning("{0} can't update {1}".Fmt(gameObject, currentBehaviour), gameObject);
+          //Debug.LogWarning("{0} can't update {1}".Fmt(gameObject, currentBehaviour), gameObject);
         }
 
 	}
@@ -85,7 +85,7 @@ public class Agent : MonoBehaviour
     void Update()
     {
         if (currentTaskBehaviour != null && currentTaskBehaviour.State == BehaviourState.Active) {
-            Debug.Log("agent updates " + currentTaskBehaviour);
+          //Debug.Log("agent updates " + currentTaskBehaviour);
             currentTaskBehaviour.Update();
         } else {
             //if (currentTaskBehaviour != null)
@@ -94,7 +94,7 @@ public class Agent : MonoBehaviour
                 if (currentBehaviour.State == BehaviourState.ImpossibleToStart || currentBehaviour.State == BehaviourState.Failed || currentBehaviour.State == BehaviourState.Finished)
                 {
 
-                   Debug.LogWarning("{0} state of {1} is {2}, clearing current behaviour".Fmt(gameObject, currentBehaviour, currentBehaviour.State), gameObject);
+                 //Debug.LogWarning("{0} state of {1} is {2}, clearing current behaviour".Fmt(gameObject, currentBehaviour, currentBehaviour.State), gameObject);
                     
                     currentBehaviour = null;
                 }
@@ -217,7 +217,7 @@ public abstract class AgentBehaviour
 		Agent = agent;
 		state = BehaviourState.None;
         Task.State = TaskState.None;
-        Debug.Log("init " + this + " in " + agent.gameObject.name);
+      //Debug.Log("init " + this + " in " + agent.gameObject.name);
         atScope = task.AtScope;
 		if (atScope != null) {
 
@@ -359,7 +359,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 	void ProcessPreTaskConditions()
 	{
 		if (satisfactionBehaviour == null) {
-            Debug.Log("satisfaction behaviour is null in " + Agent.gameObject.name);
+          //Debug.Log("satisfaction behaviour is null in " + Agent.gameObject.name);
 			TaskCondition unsatCond = null;
 			if (AreAllTaskConditionsSatisfied (out unsatCond)) {
 				Activate ();
@@ -372,7 +372,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
                 else
                 {
                     satisfactionBehaviour = unsatCond.Behaviour;
-                    Debug.Log(Agent.gameObject.name + " sat = " + satisfactionBehaviour);
+                  //Debug.Log(Agent.gameObject.name + " sat = " + satisfactionBehaviour);
                     if (satisfactionBehaviour == null)
                     {
                         Replan();
@@ -388,8 +388,8 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 			}	
 		} else
         {
-            Debug.Log("NOT satisfaction behaviour is null in " + Agent.gameObject.name);
-            Debug.Log(satisfactionBehaviour.State + " in " + Agent.gameObject.name);
+          //Debug.Log("NOT satisfaction behaviour is null in " + Agent.gameObject.name);
+          //Debug.Log(satisfactionBehaviour.State + " in " + Agent.gameObject.name);
             //State == Waiting
             switch (satisfactionBehaviour.State) {
 			case BehaviourState.Failed:
@@ -407,7 +407,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 				break;
 			default:
 
-                    Debug.Log("updates satisfaction beh: " + satisfactionBehaviour);
+                  //Debug.Log("updates satisfaction beh: " + satisfactionBehaviour);
 				satisfactionBehaviour.Do ();
 				break;
 			}
@@ -422,9 +422,9 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
             foreach(var con in cons)
             {
                 var debugOther = con.GetType().GetProperty("Other").GetValue(con, null) as GameObject;
-                Debug.DrawLine(con.Root.transform.position, debugOther.transform.position, con.Met ? Color.green : Color.red);
+              //Debug.DrawLine(con.Root.transform.position, debugOther.transform.position, con.Met ? Color.green : Color.red);
             }
-            Debug.DrawLine(Agent.transform.position, (Task as InteractionTask).Other.transform.position + Vector3.up * 2, Color.yellow);
+          //Debug.DrawLine(Agent.transform.position, (Task as InteractionTask).Other.transform.position + Vector3.up * 2, Color.yellow);
         }
 		//here the state of the behaviour is Active
 		switch (Task.State) {
@@ -438,7 +438,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
                 {
 
                     State = BehaviourState.Finished;
-                    Debug.Log(Agent.gameObject.name + " Finished " + this);
+                  //Debug.Log(Agent.gameObject.name + " Finished " + this);
                 }
                 else
                 {
@@ -478,7 +478,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	void StartTask()
 	{
-        Debug.LogWarningFormat("{0} is starting task {1}", Agent.gameObject.name, this);
+      //Debug.LogWarningFormat("{0} is starting task {1}", Agent.gameObject.name, this);
         State = BehaviourState.Active;
 		selfTask.State = TaskState.Active;
 		Agent.SetExecutingTask (this);
@@ -488,7 +488,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	void ResumeTask()
     {
-        Debug.LogWarningFormat("{0} is resuming task {1}", Agent.gameObject.name, this);
+      //Debug.LogWarningFormat("{0} is resuming task {1}", Agent.gameObject.name, this);
         State = BehaviourState.Active;
         selfTask.State = TaskState.Active;
 		Agent.SetExecutingTask (this);
@@ -511,12 +511,12 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	void UpdateActiveTask()
 	{
-        Debug.Log(Agent.gameObject.name + " updates active task " + this);
+      //Debug.Log(Agent.gameObject.name + " updates active task " + this);
 		TaskCondition unsatCond = null;
         if (selfTask.Timed > 0)
         {
             timeLeft -= Time.deltaTime;
-            Debug.LogWarning(this + "" + timeLeft);
+          //Debug.LogWarning(this + "" + timeLeft);
             if (timeLeft <= 0)
             {
                 selfTask.State = TaskState.Finished;
@@ -536,7 +536,7 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	void OnInterrupt()
 	{
-       Debug.Log("interrupted " + Agent.gameObject.name + " " + Task.Interruption);
+     //Debug.Log("interrupted " + Agent.gameObject.name + " " + Task.Interruption);
 		switch (Task.Interruption ) {
 		case InterruptionType.Terminal:
 			Agent.SetExecutingTask (null);

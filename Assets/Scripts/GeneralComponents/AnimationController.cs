@@ -8,99 +8,91 @@ public class AnimationController : MonoBehaviour
 {
 
     Animator animator;
-    AnimationMixerPlayable mixer;
-    Playable currentPlayable;
-    Playable nextPlayable;
-    int nextPlayableID;
+    PlayableGraph graph;
+    PlayableHandle mixer;
+    //Playable currentPlayable;
+    //Playable nextPlayable;
+    //int nextPlayableID;
     //TODO: fix this shit, as the assumption under RemoveInput was that it actually removes it, but in reality it just sets it as null
-    Stack<int> freePorts = new Stack<int>(3);
-    Dictionary<string, Playable> controllerPlayables = new Dictionary<string, Playable>();
-    HashSet<Playable> controllersSet = new HashSet<Playable>();
-    Dictionary<string, int> controllersPorts = new Dictionary<string, int>();
+    //Stack<int> freePorts = new Stack<int>(3);
+    //Dictionary<string, Playable> controllerPlayables = new Dictionary<string, Playable>();
+    //HashSet<Playable> controllersSet = new HashSet<Playable>();
+    //Dictionary<string, int> controllersPorts = new Dictionary<string, int>();
+    int curInputIndex = -1;
     private void Awake()
     {
-        currentPlayable = Playable.Null;
-        nextPlayable = Playable.Null;
-        mixer = AnimationMixerPlayable.Create();
-
+        
         animator = GetComponent<Animator>();
-        animator.Play(mixer);
+        mixer = AnimationPlayableUtilities.PlayMixer(animator, 3, out graph);
     }
 
     private void OnDestroy()
     {
-        animator.Stop();
-        for ( int i = 0; i < mixer.inputCount; i++)
-        {
-            var p = mixer.GetInput(i);
-            if (p.IsValid())
-                p.Destroy();
-        }
-        mixer.Destroy();
+        graph.Destroy();
     }
+    bool hadInit = false;
     public void Play(string animationName)
     {
-        Playable newPlayable;
-        int portId = -1;
-        if (controllerPlayables.ContainsKey(animationName))
+        Debug.Log("Play " + animationName);
+        var clip = AnimationStore.Instance.GetAnimation(animationName);
+        PlayableHandle handle;
+        if(clip == null)
         {
-            newPlayable = controllerPlayables[animationName];
-            portId = controllersPorts[animationName];
+            var controller = AnimationStore.Instance.GetController(animationName);
+            handle = graph.CreateAnimatorControllerPlayable(controller);
         }
         else
         {
-
-            newPlayable = AnimationStore.Instance.GetAnimation(animationName);
-
-            if (freePorts.Count > 0)
+            handle = graph.CreateAnimationClipPlayable(clip);
+        }
+        curInputIndex++;
+        if (curInputIndex == mixer.inputCount)
+            curInputIndex = 0;
+        if(mixer.GetInput(curInputIndex) != PlayableHandle.Null)
+        {
+            var input = mixer.GetInput(curInputIndex);
+            graph.Disconnect(mixer, curInputIndex);
+            input.Destroy();
+        }
+        graph.Connect(handle, 0, mixer, curInputIndex);
+        if(hadInit)
+            mixer.SetInputWeight(curInputIndex, 0f);
+        else
+        {
+            mixer.SetInputWeight(curInputIndex, 1f);
+            hadInit = true;
+        }
+        
+    }
+    //static List<int> inputsToRemove = new List<int>();
+    //static Stack<float> newWeights = new Stack<float>();
+    float fadeSpeed = 0.001f;
+    //float prevLeftWeight;
+    private void Update()
+    {
+        for (int i = 0; i < mixer.inputCount; i++)
+        {
+            if (i == curInputIndex)
             {
-                portId = freePorts.Pop();
-                mixer.SetInput(newPlayable, portId);
+                var w = mixer.GetInputWeight(i) + fadeSpeed;
+                if (w >= 1f)
+                    w = 1f;
+                mixer.SetInputWeight(i, w);
             }
             else
             {
-
-                portId = mixer.AddInput(newPlayable);
+                var w = mixer.GetInputWeight(i) - fadeSpeed;
+                if (w < fadeSpeed * 2)
+                    w = 0f;
+                mixer.SetInputWeight(i, w);
             }
-
-            if (Playable.GetTypeOf(newPlayable) == typeof(AnimatorControllerPlayable))
-            {
-                controllerPlayables.Add(animationName, newPlayable);
-                controllersSet.Add(newPlayable);
-                controllersPorts.Add(animationName, portId);
-            }
-            
         }
-        if (newPlayable == Playable.Null)
-            Debug.LogWarning(animationName + " is null");
-        
-        
-        if (currentPlayable == Playable.Null)
-        {
-            currentPlayable = newPlayable;
-            nextPlayable = newPlayable;
-            mixer.SetInputWeight(portId, 1f);
-            prevLeftWeight = 0f;
-            //StartCoroutine(Slowdown(portId));
 
-        }
-        else
-        {
-            nextPlayable = newPlayable;
-            mixer.SetInputWeight(portId, 0f);
-            prevLeftWeight = 1f;
 
-        }
-        nextPlayableID = portId;
-        //animator.Play(mixer);
-    }
-    static List<int> inputsToRemove = new List<int>();
-    static Stack<float> newWeights = new Stack<float>();
-    float fadeSpeed = 0.05f;
-    float prevLeftWeight;
-    private void Update()
-    {
-        if (mixer.inputCount == 0)
+
+
+
+        /*if (mixer.inputCount == 0)
             return;
         inputsToRemove.Clear();
         newWeights.Clear();
@@ -174,7 +166,7 @@ public class AnimationController : MonoBehaviour
             //if (inputsToRemove.Count > 0)
             //    animator.Play(mixer);
         }
-
+        */
         
         
         
@@ -183,8 +175,13 @@ public class AnimationController : MonoBehaviour
 
     private void OnGUI()
     {
-        if(mixer.IsValid())
-        GraphVisualizerClient.Show(mixer, gameObject.name);
+        if(gameObject.name == "NPC")
+        {
+            GUI.Label(Rect.MinMaxRect(100, 100, 400, 200), mixer.GetInputWeight(0).ToString());
+            GUI.Label(Rect.MinMaxRect(100, 200, 400, 300), mixer.GetInputWeight(1).ToString());
+            GUI.Label(Rect.MinMaxRect(100, 300, 400, 400), mixer.GetInputWeight(2).ToString());
+        }
     }
+
 }
 
