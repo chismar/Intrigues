@@ -53,7 +53,32 @@ public class TasksStore : Root<TasksStore>
 			if (pools.Count > 0)
 				poolsByCat.Add (listPair.Key, pools);
 		}
-
+        List<Type> impossibleTasks = new List<Type>();
+        foreach(var taskPoolPair in allTasks)
+        {
+            var task = taskPoolPair.Value.Get() as Task;
+            if(task is ComplexTask)
+            {
+                var cTask = task as ComplexTask;
+                foreach (var dec in cTask.Decomposition)
+                {
+                    var cat = dec.TaskCategory;
+                    if (!poolsByCat.ContainsKey(cat))
+                        impossibleTasks.Add(taskPoolPair.Key);
+                }
+            }
+            else if(task is PrimitiveTask)
+            {
+                var pTask = task as PrimitiveTask;
+                if(pTask.EngageIn != null)
+                {
+                    var eCat = pTask.EngageIn.TaskCategory;
+                    if (!poolsByCat.ContainsKey(eCat))
+                        impossibleTasks.Add(taskPoolPair.Key);
+                }
+            }
+            taskPoolPair.Value.Return(task);
+        }
 		agent.tasksByType = allTasks;
 		agent.tasksSet = poolsByCat;
 		foreach (var taskPool in allTasks.Values) {

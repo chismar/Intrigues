@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class AgentAnimationController : MonoBehaviour
 {
@@ -10,6 +11,37 @@ public class AgentAnimationController : MonoBehaviour
     {
         agent = GetComponent<Agent>();
         animations = GetComponent<AnimationController>();
+        StartCoroutine(CollectAnimationsOnLoaded());
+    }
+
+    IEnumerator CollectAnimationsOnLoaded()
+    {
+        while (GetComponent<GenerationMarker>() != null)
+            yield return null;
+        HashSet<string> animationsSet = new HashSet<string>();
+        foreach ( var pool in TasksStore.Instance.TaskPoolsByType.Values)
+        {
+            var task = pool.Get() as Task;
+            if(task is ComplexTask)
+            {
+                pool.Return(task);
+                continue;
+            }
+            if(task is InteractionTask)
+            {
+                var iTask = task as InteractionTask;
+                iTask.Other = gameObject;
+                if (iTask.OtherFilter())
+                    animationsSet.Add(iTask.OtherAnimation);
+            }
+
+            var pTask = task as PrimitiveTask;
+            pTask.Root = gameObject;
+            if (pTask.Filter())
+                animationsSet.Add(pTask.Animation);
+            pool.Return(task);
+        }
+        animations.Init(animationsSet);
     }
     private void Update()
     {
