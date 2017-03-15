@@ -1,0 +1,242 @@
+monsters_lair_threat = {
+	scope = story
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		spawn_prefab("npc", player) = {
+			entity.random_offset=10
+			create = player_marker
+			entity.random_offset=10
+			create = chief
+		}
+		spawn_prefab("npc", shaman_npc) = {
+			entity.random_offset=10
+			create = shaman
+		}
+		spawn_prefab("npc", healer_npc) = {
+			entity.random_offset=10
+			create = healer
+		}
+
+		spawn_prefab("loc", lair) = {
+			entity.random_offset=10
+			create = monsters_lair
+		}
+	}
+}
+
+old_altar_threat = {
+	scope = story
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		spawn_prefab("npc", player_npc) = {
+			entity.random_offset=10
+			create = player_marker
+			entity.random_offset=10
+			create = shaman
+		}
+		spawn_prefab("npc", chief_npc) = {
+			entity.random_offset=10
+			create = chief
+		}
+		spawn_prefab("npc", healer_npc) = {
+			entity.random_offset=10
+			create = healer
+		}
+
+		spawn_prefab("loc", altar) = {
+			entity.random_offset=10
+			create = ancient_altar
+		}
+	}
+}
+
+burial_disease_threat = {
+	scope = story
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		spawn_prefab("npc", player_npc) = {
+			entity.random_offset=10
+			create = player_marker
+			entity.random_offset=10
+			create = healer
+		}
+
+		spawn_prefab("npc", chief_npc) = {
+			entity.random_offset=10
+			create = chief
+		}
+		spawn_prefab("npc", shaman_npc) = {
+			entity.random_offset=10
+			create = shaman
+		}
+		spawn_prefab("loc", kurgan) = {
+			entity.random_offset=10
+			create = evil_kurgan
+		}
+	}	
+}
+
+warriors_worth_quest = {
+	scope = story.fit(quests < 5)
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		a = amount(all_actors, warrior)
+		if(a < 3).repeat(random_range(3 - a,5 - a)) = {
+			spawn_prefab("npc", human_npc) = {
+				entity.random_offset=10
+				create = warrior
+			}	
+		}
+	}
+}
+
+blacksmith_materials_quest = {
+	scope = story.fit(quests < 5)
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		spawn_prefab("npc", human_npc) = {
+			entity.random_offset=10
+			create = blacksmith
+		}
+	}
+}
+
+artisan_materials_quest = {
+	scope = story.fit(quests < 5)
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+
+		spawn_prefab("npc", human_npc) = {
+			entity.random_offset=10
+			create = blacksmith
+		}
+		story.quests = quests + 1
+	}
+}
+
+
+old_friend_quest = {
+	scope = story.fit(quests < 5)
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		
+		spawn_prefab("npc", human_npc) = {
+			entity.random_offset=10
+			create = blacksmith
+		}
+		story.quests = quests + 1
+	}
+}
+
+forest_monster = {
+	scope = story.fit(quests < 5)
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		spawn_prefab("npc", human_npc) = {
+			entity.random_offset=10
+			create = blacksmith
+		}
+		story.quests = quests + 1
+
+	}
+}
+
+exotic_artifact = {
+	scope = story.fit(quests < 5)
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		spawn_prefab("npc", human_npc) = {
+			entity.random_offset=10
+			create = blacksmith
+		}
+		story.quests = quests + 1
+
+	}
+}
+
+farm_is_infested = {
+	scope = story.fit(quests < 5)
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		spawn_prefab("npc", human_npc) = {
+			entity.random_offset=10
+			create = blacksmith
+		}
+		story.quests = quests + 1
+
+	}
+}
+
+old_world_metal = {
+	scope = story.fit(quests < 5)
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		spawn_prefab("npc", human_npc) = {
+			entity.random_offset=10
+			create = blacksmith
+		}
+		story.quests = quests + 1
+
+	}
+}
+
+lost_apprentice = {
+	scope = story.fit(quests < 5)
+	utility = 1
+	
+	once_per_object = yes
+	category = big_quest
+	once_per_category = yes
+	action = {
+		spawn_prefab("npc", human_npc) = {
+			entity.random_offset=10
+			create = blacksmith
+		}
+		story.quests = quests + 1
+
+	}
+}

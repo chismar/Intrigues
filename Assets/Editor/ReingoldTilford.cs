@@ -86,6 +86,8 @@ namespace UnityEngine.Experimental.Director
             {
                 Clear();
             }
+            if (root == null)
+                return;
             RecursiveAddNodes(root, 0, 1.0f, 1.0f);
 
             ComputeHorizontalPositionForEachLevel();

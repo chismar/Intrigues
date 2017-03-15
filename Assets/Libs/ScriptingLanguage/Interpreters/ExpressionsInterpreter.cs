@@ -430,7 +430,7 @@ public class ExpressionInterpreter : ScriptEnginePlugin
                                             exprBuilder.Append("typeof(ScriptedTypes.").
                                                 Append(callArgs[j].ToString().ClearFromBraces()).Append(")").Append(",");
                                         else
-                                            exprBuilder.Append(InterpretExpression(callArgs[j], curBlock).ExprString).Append(",");
+                                            exprBuilder.Append("(").Append(TypeName.NameOf(argsDef[j].ParameterType)).Append(")(").Append(InterpretExpression(callArgs[j], curBlock).ExprString).Append(")").Append(",");
                                     }
                                     catch (IndexOutOfRangeException e)
                                     {

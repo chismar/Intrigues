@@ -32,7 +32,11 @@ public class Entity : MonoBehaviour {
     {
         transform.position = new Vector3(x + Random.Range(-range, range), 0, y + Random.Range(-range, range));
     }
-
+    public void RandomOffset( float range)
+    {
+        var pos = transform.position;
+        transform.position = new Vector3(pos.x + Random.Range(-range, range), 0, pos.y + Random.Range(-range, range));
+    }
     public delegate void GODelegate(GameObject go);
     public event GODelegate OnDeath;
 

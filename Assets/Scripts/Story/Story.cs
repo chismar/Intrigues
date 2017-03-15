@@ -27,4 +27,6 @@ public class Story : Root<Story>
     public List<GameObject> AllActors {  get { return npcs; } }
 
     public int ActorsCount {  get { return npcs.Count; } }
+
+    public int Quests { get; set; }
 }

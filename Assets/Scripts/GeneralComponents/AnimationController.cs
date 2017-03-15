@@ -11,6 +11,7 @@ public class AnimationController : MonoBehaviour
     PlayableHandle mixer;
     Dictionary<string, int> animationToIndex = new Dictionary<string, int>();
     int curAnimationIndex = -1;
+
     public void Init(HashSet<string> animations)
     {
         var animator = GetComponent<Animator>();
@@ -46,7 +47,7 @@ public class AnimationController : MonoBehaviour
     }
     public void Play(string animationName)
     {
-        Debug.Log("Play " + animationName);
+        //Debug.Log("Play " + animationName);
         if (animationToIndex.ContainsKey(animationName))
         {
             if(curAnimationIndex != -1)
@@ -101,12 +102,23 @@ public class AnimationController : MonoBehaviour
         
         
     }
-
+#if UNITY_EDITOR
+    bool wasSelected = false;
     private void OnGUI()
     {
-        if(mixer.IsValid())
-        GraphVisualizerClient.Show(mixer.GetObject(), gameObject.name);
+        if(UnityEditor.Selection.Contains(gameObject))
+        {
+            wasSelected = true;
+            if (mixer.IsValid())
+                GraphVisualizerClient.Show(mixer.GetObject(), gameObject.name);
+        }
+        else if (wasSelected)
+        {
+            wasSelected = false;
+            Debug.Log("hide " + gameObject.name);
+            GraphVisualizerClient.Remove(mixer.GetObject());
+        }
     }
-
+#endif
 }
 

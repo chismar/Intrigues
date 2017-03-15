@@ -1,0 +1,10 @@
+blacksmith = yes
+shaman = yes
+chief = yes
+warrior = yes
+farmer = yes
+hunter = yes
+healer = yes
+trader = yes
+artisan = yes
+worker = yes

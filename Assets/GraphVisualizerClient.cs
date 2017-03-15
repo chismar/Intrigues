@@ -9,6 +9,9 @@ public class GraphVisualizerClient
     public delegate void UpdateGraphDelegate(Playable p, string title);
     public UpdateGraphDelegate updateGraph;
 
+    public delegate void RemoveGraphDelegate(Playable p);
+    public RemoveGraphDelegate removeGraph;
+
     private static GraphVisualizerClient s_Instance;
 
     public static GraphVisualizerClient instance
@@ -20,7 +23,11 @@ public class GraphVisualizerClient
             return s_Instance;
         }
     }
-
+    public static void Remove(Playable p)
+    {
+        if (instance.removeGraph != null)
+            instance.removeGraph(p);
+    }
     public static void Show(Playable p, string title)
     {
         if (instance.updateGraph != null)

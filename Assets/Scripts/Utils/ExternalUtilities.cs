@@ -10,7 +10,7 @@ public class ExternalUtilities : Root<ExternalUtilities>
     private void Awake()
     {
         base.Awake();
-        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "Mag", "AllEntities", "SelectByWeight", "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne", "RandomPoint"));
+        FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "RandomRange","Amount","Mag", "AllEntities", "SelectByWeight", "Any", "Log", "Has", "SpawnPrefab", "FindObject", "NoOne", "RandomPoint"));
     }
     //ayn
     System.Random rand = new System.Random();
@@ -60,9 +60,11 @@ public class ExternalUtilities : Root<ExternalUtilities>
 
     public GameObject SpawnPrefab(string name, string goName)
     {
+        Debug.Log(name);
         var go =  GameObject.Instantiate(Resources.Load("Prefabs/" + name) as GameObject);
         go.name = goName;
         go.GetComponent<Entity>().PrefabName = name;
+        go.SetActive(true);
         return go;
     }
 
@@ -89,8 +91,17 @@ public class ExternalUtilities : Root<ExternalUtilities>
         else
             return found[Random.Range(0, found.Count)];
     }
-
-
+    
+    public int Amount(List<GameObject> objects, CheckDelegate del)
+    {
+        if (objects == null)
+            return 0;
+        int amount = 0;
+        for (int i = 0; i < objects.Count; i++)
+            if (del(objects[i]))
+                amount++;
+        return amount;
+    }
     public float Mag(Vector3 vec)
     {
         return vec.magnitude;
@@ -109,7 +120,7 @@ public class ExternalUtilities : Root<ExternalUtilities>
     {
         allActors.Add(go);
     }
-    bool enabled = true;
+    bool enabled = false;
     void Update()
     {
         if (Input.GetKeyUp(KeyCode.H))
@@ -157,5 +168,10 @@ public class ExternalUtilities : Root<ExternalUtilities>
             GUI.EndScrollView();
         }
         
+        
+    }
+    public int RandomRange(int min, int max)
+    {
+        return rand.Next(min, max);
     }
 }

@@ -25,6 +25,7 @@ public partial class GraphVisualizer : EditorWindow
     private GraphVisualizer()
     {
         GraphVisualizerClient.instance.updateGraph = OnUpdateGraph;
+        GraphVisualizerClient.instance.removeGraph = RemoveGraph;
         EditorApplication.playmodeStateChanged = OnPlayModeChanged;
     }
 
@@ -43,6 +44,17 @@ public partial class GraphVisualizer : EditorWindow
         }
     }
 
+    public void RemoveGraph(Playable p)
+    {
+        if (m_Graphs.ContainsKey(p))
+            m_Graphs.Remove(p);
+        if (m_CurrentGraph == p )
+        {
+
+            m_CurrentGraph = null;
+            UpdateLayout(m_CurrentGraph);
+        }
+    }
     public void OnUpdateGraph(Playable p, string title)
     {
         if (!m_Graphs.ContainsKey(p))

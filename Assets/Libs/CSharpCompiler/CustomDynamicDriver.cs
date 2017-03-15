@@ -84,7 +84,7 @@ namespace CSharpCompiler
 			bool tokenize_only = module.Compiler.Settings.TokenizeOnly;
 			var sources = module.Compiler.SourceFiles;
 
-			Location.Initialize (sources);
+			Mono.CSharp.Location.Initialize (sources);
 
 			var session = new ParserSession {
 				UseJayGlobalArrays = true,
