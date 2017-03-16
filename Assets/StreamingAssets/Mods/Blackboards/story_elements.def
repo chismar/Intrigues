@@ -1,3 +1,12 @@
 monsters_lair = yes
 ancient_altar = yes
 evil_kurgan = yes
+
+old_friend = yes
+
+monster = yes
+
+infestation = yes
+farm = yes
+mine = yes
+ancient = yes

@@ -60,6 +60,7 @@ public class ExternalUtilities : Root<ExternalUtilities>
 
     public GameObject SpawnPrefab(string name, string goName)
     {
+       
         Debug.Log(name);
         var go =  GameObject.Instantiate(Resources.Load("Prefabs/" + name) as GameObject);
         go.name = goName;

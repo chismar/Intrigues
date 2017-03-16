@@ -49,7 +49,7 @@ public class GenerationMarker : MonoBehaviour
 
             Debug.Log(builder.ToString());
         }
-        
+
         Destroy(this);
     }
 }

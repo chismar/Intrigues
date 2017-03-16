@@ -45,6 +45,7 @@ public class AgentAnimationController : MonoBehaviour
     }
     private void Update()
     {
+        if(animations.Initialized)
         if(agent.currentTaskBehaviour != null)
         if(beh != agent.currentTaskBehaviour)
         {
@@ -52,6 +53,8 @@ public class AgentAnimationController : MonoBehaviour
             beh = agent.currentTaskBehaviour;
             if(prevAnim != (beh.Task as PrimitiveTask).Animation)
             animations.Play((beh.Task as PrimitiveTask).Animation);
+                if (GetComponent<PlayerMarker>() != null)
+                    Debug.LogWarning("Playing " + (beh.Task as PrimitiveTask).Animation);
 
         }
     }

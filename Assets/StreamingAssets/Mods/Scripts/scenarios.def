@@ -111,8 +111,8 @@ blacksmith_materials_quest = {
 	utility = 1
 	
 	once_per_object = yes
-	category = big_quest
-	once_per_category = yes
+	category = quest
+	only_max_utility = yes
 	action = {
 		spawn_prefab("npc", human_npc) = {
 			entity.random_offset=10
@@ -126,8 +126,8 @@ artisan_materials_quest = {
 	utility = 1
 	
 	once_per_object = yes
-	category = big_quest
-	once_per_category = yes
+	category = quest
+	only_max_utility = yes
 	action = {
 
 		spawn_prefab("npc", human_npc) = {
@@ -140,18 +140,19 @@ artisan_materials_quest = {
 
 
 old_friend_quest = {
-	scope = story.fit(quests < 5)
+	scope = story.fit(quests < 5 and amount(all_entities, yes) > 8)
 	utility = 1
 	
 	once_per_object = yes
-	category = big_quest
-	once_per_category = yes
+	category = quest
+	only_max_utility = yes
 	action = {
-		
-		spawn_prefab("npc", human_npc) = {
+		spawn_prefab("npc", "old_friend") = {
 			entity.random_offset=10
-			create = blacksmith
+			create = artisan
+			create = old_friend
 		}
+
 		story.quests = quests + 1
 	}
 }
@@ -161,12 +162,12 @@ forest_monster = {
 	utility = 1
 	
 	once_per_object = yes
-	category = big_quest
-	once_per_category = yes
+	category = quest
+	only_max_utility = yes
 	action = {
-		spawn_prefab("npc", human_npc) = {
+		spawn_prefab("npc", "monster") = {
 			entity.random_offset=10
-			create = blacksmith
+			create = monster
 		}
 		story.quests = quests + 1
 
@@ -178,12 +179,12 @@ exotic_artifact = {
 	utility = 1
 	
 	once_per_object = yes
-	category = big_quest
-	once_per_category = yes
+	category = quest
+	only_max_utility = yes
 	action = {
 		spawn_prefab("npc", human_npc) = {
 			entity.random_offset=10
-			create = blacksmith
+			create = trader
 		}
 		story.quests = quests + 1
 
@@ -195,13 +196,25 @@ farm_is_infested = {
 	utility = 1
 	
 	once_per_object = yes
-	category = big_quest
-	once_per_category = yes
+	category = quest
+	only_max_utility = yes
 	action = {
-		spawn_prefab("npc", human_npc) = {
+		farmer_npc = no_one
+		spawn_prefab("npc", "human_npc") = {
 			entity.random_offset=10
-			create = blacksmith
+			create = farmer
+			farmer_npc = this
 		}
+		farm_loc = no_one
+		spawn_prefab("loc", "farm") = {
+			entity.random_offset=10
+			create = infestation
+			create = farm
+			farm_loc = this
+		}
+		farm_loc.facts.add_owned.by = farmer_npc
+		farmer_npc.facts.add_owner.of_what = farm_loc
+
 		story.quests = quests + 1
 
 	}
@@ -212,12 +225,20 @@ old_world_metal = {
 	utility = 1
 	
 	once_per_object = yes
-	category = big_quest
-	once_per_category = yes
+	category = quest
+	only_max_utility = yes
 	action = {
+		mine_loc = no_one
+		spawn_prefab("loc", "mine") = {
+			entity.random_offset=10
+			create = mine
+			create = ancient
+			mine_loc = this
+		}
 		spawn_prefab("npc", human_npc) = {
 			entity.random_offset=10
-			create = blacksmith
+			create = artisan
+			facts.add_wants_old_world_metal.where = mine_loc
 		}
 		story.quests = quests + 1
 
@@ -225,16 +246,33 @@ old_world_metal = {
 }
 
 lost_apprentice = {
-	scope = story.fit(quests < 5)
+	scope = story.fit(quests < 5 and (amount(all_entities, blacksmith) > 0 or amount(all_entities, artisan) > 0))
 	utility = 1
 	
 	once_per_object = yes
-	category = big_quest
-	once_per_category = yes
+	category = quest
+	only_max_utility = yes
 	action = {
+		master = any(all_entities, blacksmith)
+		if(not has(master)).
+			master = any(all_entities, artisan)
+		app = no_one
 		spawn_prefab("npc", human_npc) = {
 			entity.random_offset=10
-			create = blacksmith
+			r = random_range(0, 2)
+			app = this
+			app.create = artisan
+			app.create(apprentice) = {
+				of = master
+			}
+			master = {
+				artisan = {
+					own_apprentice = app
+				}
+				blacksmith = {
+					own_apprentice = app
+				}
+			}
 		}
 		story.quests = quests + 1
 

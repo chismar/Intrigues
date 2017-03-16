@@ -130,6 +130,8 @@ public class ContextSwitchInterpreter : FunctionOperatorInterpreter
         contextBlock.Statements.Add(isNotNull);
 		contextBlock = isNotNull.TrueBlock;
         contextBlock.Statements.Add(new DeclareVariableStatement() { Name = declareVar.Name, IsArg = true, IsContext = true, Type = declareVar.Type});
+        if (!(op.Context is Table))
+            Debug.Log("context is not a table near: " + op);
 		foreach (var entry in (op.Context as Table).Entries)
 		{
 			var subOp = entry as Operator;

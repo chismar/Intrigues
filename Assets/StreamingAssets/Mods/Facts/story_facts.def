@@ -1,0 +1,3 @@
+wants_old_world_metal = {
+	where = gameobject
+}

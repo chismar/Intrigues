@@ -11,7 +11,8 @@ public class AnimationController : MonoBehaviour
     PlayableHandle mixer;
     Dictionary<string, int> animationToIndex = new Dictionary<string, int>();
     int curAnimationIndex = -1;
-
+    public string CurrentAnimation;
+    public bool Initialized = false;
     public void Init(HashSet<string> animations)
     {
         var animator = GetComponent<Animator>();
@@ -37,7 +38,7 @@ public class AnimationController : MonoBehaviour
             animationToIndex.Add(animationName, i);
             i++;
         }
-
+        Initialized = true;
     }
 
     private void OnDestroy()
@@ -47,10 +48,11 @@ public class AnimationController : MonoBehaviour
     }
     public void Play(string animationName)
     {
-        //Debug.Log("Play " + animationName);
         if (animationToIndex.ContainsKey(animationName))
         {
-            if(curAnimationIndex != -1)
+            Debug.Log("Play " + animationName + " on " + gameObject.name);
+            CurrentAnimation = animationName;
+            if (curAnimationIndex != -1)
                 nonZeroInputs.Add(curAnimationIndex);
             curAnimationIndex = animationToIndex[animationName];
         }

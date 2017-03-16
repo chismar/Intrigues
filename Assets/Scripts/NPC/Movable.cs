@@ -70,8 +70,9 @@ public class Movable : MonoBehaviour {
         }
     }
 
-	public void Clear(bool yes)
+	public void Clear(bool yes = true)
 	{
+        targetGo = null;
 		target = transform.position;
 		OKDistance = 1;
 	}

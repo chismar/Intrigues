@@ -1,4 +1,6 @@
-blacksmith = yes
+blacksmith = {
+	own_apprentice = gameobject
+}
 shaman = yes
 chief = yes
 warrior = yes
@@ -6,5 +8,10 @@ farmer = yes
 hunter = yes
 healer = yes
 trader = yes
-artisan = yes
+artisan = {
+	own_apprentice = gameobject
+}
 worker = yes
+apprentice = {
+	of = gameobject
+}

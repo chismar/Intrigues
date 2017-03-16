@@ -1,0 +1,6 @@
+owner = {
+	of_what = gameobject
+}
+owned = {
+	by_whom = gameobject
+}

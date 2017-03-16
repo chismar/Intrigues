@@ -17,15 +17,19 @@ public class Agent : MonoBehaviour
 	{
 		return tasksSet.ContainsKey (c.TaskCategory);
 	}
-
+    bool passive = false;
     private void Awake()
     {
         metrics = gameObject.GetComponent<Metrics>();
     }
+    private void Start()
+    {
+        passive = GetComponent<PlayerMarker>() != null;
+    }
     static System.Random rand = new System.Random();
     void UpdateAI()
 	{
-		//Debug.Log ("UpdateAI");
+        //Debug.Log ("UpdateAI");
 		float maxUt = 0;
 		AgentBehaviour maxBeh = null;
 		for (int i = 0; i < Behaviours.Count; i++) {
@@ -81,7 +85,20 @@ public class Agent : MonoBehaviour
         }
 
 	}
-    
+    public string Task {  get { return currentTaskBehaviour.Task is BehaviourTask ? (currentTaskBehaviour.Task as BehaviourTask).TaskName : null; } }
+    public void Do(BehaviourTask interactionTask)
+    {
+
+        if (currentBehaviour != null)
+        {
+            currentBehaviour.Interrupt();
+        }
+        currentBehaviour = AgentBehaviour.FromTask(this, interactionTask);
+        currentTaskBehaviour = currentBehaviour as PrimitiveAgentBehaviour;
+        currentTaskBehaviour.selfTask.OnStart();
+        currentBehaviour.State = BehaviourState.Active;
+        interactionTask.State = TaskState.Active;
+    }
     void Update()
     {
         if (currentTaskBehaviour != null && currentTaskBehaviour.State == BehaviourState.Active) {
@@ -98,10 +115,14 @@ public class Agent : MonoBehaviour
                     
                     currentBehaviour = null;
                 }
-			UpdateAI ();
+            if (!passive)
+                UpdateAI ();
 		}
 	}
-
+    public float CurrentUtility()
+    {
+        return currentBehaviour == null ? 0f : currentBehaviour.Utility(false);
+    }
 	public void SetExecutingTask(PrimitiveAgentBehaviour beh)
 	{
 		currentTaskBehaviour = beh;
@@ -147,11 +168,26 @@ public class Agent : MonoBehaviour
 			if (doableInTheory) {
 				float taskUt = task.Utility ();
 				if (taskUt > maxUt) {
-					if(maxTask != null)
-						catList [maxTaskIndex].Return (maxTask);
-					maxTask = task;
-					maxUt = taskUt;
-					maxTaskIndex = i;
+                    bool should = true;
+                    if(task is InteractionTask)
+                    {
+                        var other = (task as InteractionTask).Other.GetComponent<Agent>();
+                        if(other != null)
+                        {
+                            var otherUt = other.CurrentUtility();
+                            if (otherUt > taskUt)
+                                should = false;
+                        }
+                    }
+                    if (should)
+                    {
+
+                        if (maxTask != null)
+                            catList[maxTaskIndex].Return(maxTask);
+                        maxTask = task;
+                        maxUt = taskUt;
+                        maxTaskIndex = i;
+                    }
 				}
 				else
 					catList [i].Return (task);

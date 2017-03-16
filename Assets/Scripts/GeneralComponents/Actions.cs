@@ -457,7 +457,7 @@ public class Actions : Root<Actions>
         return false;
     }
 
-    System.Random random = new System.Random(2);
+    System.Random random = new System.Random();
 
     public EventAction GenerateMostUseful(GameObject go, float fuzzy = 0f, List<EventAction> customActions = null, HashSet<EventAction> performedActions = null)
     {

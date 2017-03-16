@@ -1,6 +1,6 @@
 test_common_reaction(test_event) = 
 {
-	scope = target.actor
+	scope = target.entity
 	action = 
 	{
 		visuals_feed.push(trigger) = target.entity.position
@@ -50,13 +50,23 @@ close_on_dialog_finished(dialog_finished) =
 
 npc_extension_personality(entity_created) = 
 {
-	scope = actor.entity
+	scope = entity
 	action = 
 	{
 		log = "Added personality"
 		create = facts
 		create = backstory
 		create = personality
+		
+	}
+}
+
+player_extension_controls(entity_post_created) = 
+{
+	scope = player_marker
+	action = 
+	{
+		create = movable_controller
 		
 	}
 }

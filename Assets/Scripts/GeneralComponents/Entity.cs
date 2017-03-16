@@ -18,6 +18,14 @@ public class Entity : MonoBehaviour {
         EventsManager.Instance.FireEvent(e);
         FindObjectOfType<ExternalUtilities>().NotifyOfNewGO(gameObject);
     }
+
+    private void Start()
+    {
+
+        var e = EventsManager.Instance.GetEvent<EntityPostCreated>();
+        e.Root = gameObject;
+        EventsManager.Instance.FireEvent(e);
+    }
     public string PrefabName { get; set; }
 
     public void SetPosition(float x, float y)
@@ -49,4 +57,7 @@ public class Entity : MonoBehaviour {
 
 
 public class EntityCreated : Event
+{ }
+
+public class EntityPostCreated : Event
 { }
