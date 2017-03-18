@@ -6,7 +6,7 @@ simple_wander = {
 	animation = walk
 	start = {
 		movable = {
-			goto(1) = at
+			goto(2) = at
 			speed = 1
 			cache(mov) = this
 		}
@@ -36,7 +36,7 @@ wander_around = {
 		point = random_point(around.entity.position, 4)
 		
 		movable = {
-			goto_point(1) = point
+			goto_point(2) = point
 			speed = 1
 			cache(mov) = this
 		}

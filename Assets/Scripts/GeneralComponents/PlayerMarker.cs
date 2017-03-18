@@ -12,5 +12,6 @@ public class PlayerMarker : MonoBehaviour
     private void Awake()
     {
         FindObjectOfType<BasicLoader>().EFunctions.Add(new BasicLoader.ExternalFunctions(this, "Player"));
+        Camera.main.transform.SetParent(transform, false);
     }
 }

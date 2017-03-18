@@ -41,7 +41,6 @@ public class MovableController : MonoBehaviour
 
             if(agent.CurrentUtility() < moveTask.Utility())
             {
-                    Debug.Log("do!");
                 agent.Do(moveTask);
                 isInCharge = true;
             }
@@ -76,38 +75,42 @@ public class MovePlayerTask : BehaviourTask
     public override void OnUpdate()
     {
         //Debug.Log("updated move player task");
-        Vector2 gotoPoint = Root.transform.position;
+        Vector3 gotoPoint = Root.transform.position;
         bool hasNewPoint = false;
         movable.Speed = Speed;
         if (Input.GetKey(KeyCode.W))
         {
-            gotoPoint += (Vector2.up * movable.Speed);
+            gotoPoint += (Root.transform.forward * movable.Speed);
             hasNewPoint = true;
         }
         if (Input.GetKey(KeyCode.A))
         {
-            gotoPoint += (Vector2.left * movable.Speed);
+            gotoPoint += (-Root.transform.right * movable.Speed);
             hasNewPoint = true;
         }
         if (Input.GetKey(KeyCode.S))
         {
-            gotoPoint += (Vector2.down * movable.Speed);
+            gotoPoint += (-Root.transform.forward * movable.Speed);
             hasNewPoint = true;
         }
         if (Input.GetKey(KeyCode.D))
         {
-            gotoPoint += (Vector2.right * movable.Speed);
+            gotoPoint += (Root.transform.right * movable.Speed);
             hasNewPoint = true;
         }
         if (hasNewPoint)
-            movable.GotoPoint(OKDistance, gotoPoint);
+        {
+            CurTimeout = 0;
+            movable.GotoPoint(OKDistance, new Vector2(gotoPoint.x, gotoPoint.z));
+        }
         else
         {
             CurTimeout += Time.deltaTime;
             if (CurTimeout > TimeoutMax)
             {
                 CurTimeout = 0;
-                movable.GotoPoint(OKDistance, (Vector2)Root.transform.position);
+                var pos = Root.transform.position;
+                movable.GotoPoint(OKDistance, new Vector2(pos.x, pos.z));
             }
         }
     }

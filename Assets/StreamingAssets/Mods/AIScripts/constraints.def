@@ -9,6 +9,6 @@ constraint(near) =
 		who = other
 	}
 
-	satisfaction = mag(s.position - o.position) <= 1
+	satisfaction = mag(s.position - o.position) <= distance
 	serialization = format("should_be_near", who = root, other = other, distance = distance)
 }

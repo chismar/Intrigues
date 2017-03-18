@@ -11,7 +11,7 @@ public class Agent : MonoBehaviour
 	public Dictionary<Type, List<ObjectPool>> tasksSet;
 	public Dictionary<Type, ObjectPool> tasksByType;
 	public PrimitiveAgentBehaviour currentTaskBehaviour;
-
+    AgentBehaviour lastBehaviour;
 	public AgentBehaviour currentBehaviour;
 	public bool IsExternal(TaskCondition c)
 	{
@@ -53,8 +53,9 @@ public class Agent : MonoBehaviour
 		if (maxBeh != currentBehaviour) {
 			if (currentBehaviour != null) {
 				currentBehaviour.Interrupt();
-			}
-			currentBehaviour = maxBeh;
+                }
+                lastBehaviour = currentBehaviour;
+                currentBehaviour = maxBeh;
           //Debug.LogWarning("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
             if(currentBehaviour.State == BehaviourState.None)
                 {
@@ -67,8 +68,9 @@ public class Agent : MonoBehaviour
 			if (currentBehaviour.State == BehaviourState.ImpossibleToStart)
             {
 
-              //Debug.LogWarning("{0} can't do {1}".Fmt(gameObject, currentBehaviour), gameObject);
-                currentBehaviour = null;
+                //Debug.LogWarning("{0} can't do {1}".Fmt(gameObject, currentBehaviour), gameObject);
+                lastBehaviour = currentBehaviour;
+                  currentBehaviour = null;
             }
 			else
             {
@@ -93,6 +95,8 @@ public class Agent : MonoBehaviour
         {
             currentBehaviour.Interrupt();
         }
+
+        lastBehaviour = currentBehaviour;
         currentBehaviour = AgentBehaviour.FromTask(this, interactionTask);
         currentTaskBehaviour = currentBehaviour as PrimitiveAgentBehaviour;
         currentTaskBehaviour.selfTask.OnStart();
@@ -111,8 +115,9 @@ public class Agent : MonoBehaviour
                 if (currentBehaviour.State == BehaviourState.ImpossibleToStart || currentBehaviour.State == BehaviourState.Failed || currentBehaviour.State == BehaviourState.Finished)
                 {
 
-                 //Debug.LogWarning("{0} state of {1} is {2}, clearing current behaviour".Fmt(gameObject, currentBehaviour, currentBehaviour.State), gameObject);
-                    
+                    //Debug.LogWarning("{0} state of {1} is {2}, clearing current behaviour".Fmt(gameObject, currentBehaviour, currentBehaviour.State), gameObject);
+
+                    lastBehaviour = currentBehaviour;
                     currentBehaviour = null;
                 }
             if (!passive)
@@ -199,7 +204,27 @@ public class Agent : MonoBehaviour
 		return AgentBehaviour.FromTask (this, maxTask);
 		
 	}
-    
+#if UNITY_EDITOR
+    bool wasSelected = false;
+    private void OnGUI()
+    {
+        if (UnityEditor.Selection.Contains(gameObject))
+        {
+            wasSelected = true;
+            if(currentBehaviour != null)
+            {
+                AIGraphVisualizerClient.RemoveAllExcept(currentBehaviour, Behaviours);
+                AIGraphVisualizerClient.Show(currentBehaviour, gameObject.name);
+            }
+        }
+        else if (wasSelected)
+        {
+            wasSelected = false;
+            AIGraphVisualizerClient.Remove(currentBehaviour);
+            AIGraphVisualizerClient.RemoveAll(Behaviours);
+        }
+    }
+#endif
 }
 
 /*
@@ -235,7 +260,7 @@ Failed -> goto failed
 No behaviour -> UpdateAI -> has current task -> update cycle -> no task -> UpdateAI
  */
 public enum BehaviourState { None, Finished, Failed, ImpossibleToStart, Active, Paused, Waiting }
-public abstract class AgentBehaviour
+public abstract class AgentBehaviour : AIObject
 {
 	public Task Task { get; private set; }
 	protected Agent Agent { get; private set; }
@@ -358,7 +383,25 @@ public class PrimitiveAgentBehaviour : AgentBehaviour
 
 	TaskWrapper engageIn;
     public float timeLeft = 0f;
-	public override void Init (Agent agent, Task task)
+
+    List<AIObject> connections = new List<AIObject>();
+    public override List<AIObject> GetConnections()
+    {
+        connections.Clear();
+        if (cons != null)
+            foreach (var con in cons)
+                if(!con.Met)
+                connections.Add(con);
+        if (deps != null)
+            foreach (var dep in deps)
+                if (!dep.Met)
+                    connections.Add(dep);
+        if (engageIn != null)
+            connections.Add(engageIn);
+        return connections;
+
+    }
+    public override void Init (Agent agent, Task task)
 	{
 		base.Init (agent, task);
 		cons = null;
@@ -740,9 +783,18 @@ public class ComplexAgentBehaviour : AgentBehaviour
 		cTask = task as ComplexTask;
 		tasks = cTask.Decomposition;
         firstTime = true;
-	}
+    }
+    List<AIObject> connections = new List<AIObject>();
+    public override List<AIObject> GetConnections()
+    {
+        connections.Clear();
+        if (tasks != null)
+            foreach (var task in tasks)
+                connections.Add(task);
+        return connections;
 
-	public override void Interrupt ()
+    }
+    public override void Interrupt ()
 	{
 		switch (cTask.Interruption ) {
 		case InterruptionType.Restartable:
@@ -890,7 +942,7 @@ public class ComplexAgentBehaviour : AgentBehaviour
 }
 
 
-public abstract class TaskCondition
+public abstract class TaskCondition : AIObject
 {
     public GameObject Root;
 	public bool Update()
@@ -909,7 +961,15 @@ public abstract class TaskCondition
 	public virtual LocalizedString Serialized { get { return null; } }
 	public virtual void Init()
 	{
-	}
+    }
+    List<AIObject> list = new List<AIObject>();
+    public override List<AIObject> GetConnections()
+    {
+        list.Clear();
+        if (Behaviour != null)
+            list.Add(Behaviour);
+        return list;
+    }
 }
 
 public abstract class Constraint : TaskCondition
@@ -925,6 +985,12 @@ public abstract class TaskWrapper : Constraint
 	public virtual GameObject TargetAgent {  get { return FromTask.Root; } }
 	public int CurrentAttempts;
 	public Task FromTask;
+    
 }
 
 
+
+public abstract class AIObject
+{
+    public abstract List<AIObject> GetConnections();
+}

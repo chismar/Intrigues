@@ -50,10 +50,10 @@ public class Movable : MonoBehaviour {
             target = targetGo.position;
         var transform = base.transform;
         var difVector = target - transform.position;
+        difVector.y = 0;
         var distance = difVector.magnitude;
         if (IsMoving = distance > OKDistance)
         {
-
             var finTarget = target + mod;
             difVector = finTarget - transform.position;
             distance = difVector.magnitude;

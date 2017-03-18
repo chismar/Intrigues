@@ -8,7 +8,7 @@ lit_up_interaction = {
 	animation = use
 	other_animation = none
 	during(near) = {
-		distance = 1
+		distance = 2
 	}
 	
 
