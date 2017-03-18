@@ -55,7 +55,7 @@ wander_around = {
 
 wander_complex_beh = {
 	scope = entity
-	utility = 0.1
+	utility = 0.2
 	wander_to = {
 		distance = 1
 	}

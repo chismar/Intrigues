@@ -11,8 +11,8 @@ public class StringRenderer : Root<StringRenderer>
     ObjectPool<StringBuilder> builders = new ObjectPool<StringBuilder>();
     public string Render(GameObject from, string value, Dictionary<string, object> values)
     {
-        foreach (var v in values)
-            Debug.Log(v.Key + " " + v.Value);
+        //foreach (var v in values)
+        //    Debug.Log(v.Key + " " + v.Value);
         string localString = null;
         
         if (!localisation.TryGetValue(value, out localString))
@@ -51,6 +51,7 @@ public class StringRenderer : Root<StringRenderer>
     }
     void Substitute(GameObject from, StringBuilder builder, string localString, int index, out int outIndex, Dictionary<string, object> values)
     {
+        
         StringBuilder subBuilder = builders.Get();
         subBuilder.Length = 0;
         char c = '{';
@@ -84,12 +85,12 @@ public class StringRenderer : Root<StringRenderer>
         scope.Add(subScopeBuilder.ToString());
         builders.Return(subScopeBuilder);
         builders.Return(subBuilder);
-        Debug.LogWarning("Scope: " + scope[0]);
+        //Debug.LogWarning("Scope: " + scope[0]);
         if(tagsByType.ContainsKey(scope[0]))
         {
             var tags = tagsByType[scope[0]];
-            Debug.LogWarning(tags.Count);
-            Debug.LogWarning(scope[1]);
+            //Debug.LogWarning(tags.Count);
+            //Debug.LogWarning(scope[1]);
             LocalisationTag maxTag = null;
             float maxUt = 0;
                 for (int i =0; i < tags.Count;i++)

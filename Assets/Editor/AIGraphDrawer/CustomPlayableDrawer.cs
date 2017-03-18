@@ -82,6 +82,7 @@ namespace AIVisualizer
 
             string msg = null;
             var ser = obj.Serialized;
+            if(obj.Root != null)
             if (ser != null)
                 msg = ser.Render(obj.Root);
             else
