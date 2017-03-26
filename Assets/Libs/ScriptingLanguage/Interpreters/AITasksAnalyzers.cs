@@ -160,7 +160,13 @@ public partial class AITasksLoader : ScriptInterpreter
         var exprInter = Engine.GetPlugin<ExpressionInterpreter>();
         initMethodBlock.Statements.Add("smart_scope.Scope = {0};".Fmt(exprInter.InterpretExpression(atOp.Context as Expression, initMethodBlock, typeof(List<GameObject>)).ExprString));
         //initMethodBlock.Statements.Add("UnityEngine.Debug.Log(root);");
+        
+        initMethodBlock.Statements.Add("if(!OtherIsProvided){");
         initMethodBlock.Statements.Add("if(!smart_scope.SelectNext(this, root.GetComponent<Agent>())) State = TaskState.Failed;");
+        initMethodBlock.Statements.Add("} else {");
+        initMethodBlock.Statements.Add("smart_scope.SelectNext(this);");
+        initMethodBlock.Statements.Add("}");
+
         //CreateEventFunction ("OtherFilter", atOp.Context, type, typeof(Task).GetMethod ("AtScope"), retVal);
     }
 

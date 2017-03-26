@@ -6,115 +6,150 @@ using System.Text;
 
 public class InteractableButton : MonoBehaviour
 {
-    public Text InteractionName;
-    public Button Button;
-    public EventAction Interaction;
-    public InteractionsView View;
-    List<Dependency> deps;
-    HoverTooltip tooltip;
+    public Text GUIInteractionDescription;
+    public Button GUIButton;
+    public HoverTooltip GUITooltip;
+    public InteractionTask Interaction;
+    LocalizedString description;
+    Agent agent;
     private void Start()
     {
-        InteractionName.text = Interaction.GetType().Name;
-        deps = Interaction.GetDependencies();
-        tooltip = GetComponent<HoverTooltip>();
-        if(tooltip == null)
-            tooltip = gameObject.AddComponent<HoverTooltip>();
-        Button.onClick.AddListener(OnButtonClicked);
-        InterAvailable();
-        RebuildTooltip();
-        wasAvailable = !InterAvailable();
+        description = new LocalizedString(Interaction.GetType().Name, new Dictionary<string, object>() { {"other", Interaction.Other} });
+        GUIInteractionDescription.text = description.Render(Interaction.Root);
+        agent = Interaction.Root.GetComponent<Agent>();
+        GUIButton.onClick.AddListener(OnButtonClicked);
+    }
+    public void DemandUpdate()
+    {
+        if (CanBeEnacted())
+        {
+            EnableButton();
+        }
+        else
+            DisableButton();
+    }
+    void DisableButton()
+    {
+        GUIButton.interactable = false;
+    }
+    void EnableButton()
+    {
+        GUIButton.interactable = true;
+    }
+    static HashSet<TaskWrapper> satConditions = new HashSet<TaskWrapper>();
+    static HashSet<TaskWrapper> unsatConditions = new HashSet<TaskWrapper>();
+    bool CanBeEnacted()
+    {
+        satConditions.Clear();
+        unsatConditions.Clear();
+        bool shouldRebuildTooltip = false;
+        bool canBeEnacted = true;
+        var cons = Interaction.Constraints;
+        if(cons != null)
+        {
+            for (int i = 0; i < cons.Count; i++)
+            {
+                var con = cons[i];
+                if (con.Met)
+                    satConditions.Add(con);
+                else
+                    unsatConditions.Add(con);
+            }
+            cons.Update();
+            for ( int i = 0; i < cons.Count; i++)
+            {
+                var con = cons[i];
+                if (!con.Met)
+                {
+                    canBeEnacted = false;
+                    if (!shouldRebuildTooltip)
+                        if (satConditions.Contains(con))
+                            shouldRebuildTooltip = true;
+                }
+                else
+                {
+                    if (!shouldRebuildTooltip)
+                        if (unsatConditions.Contains(con))
+                            shouldRebuildTooltip = true;
+                }
+                
+            }
+        }
+        var deps = Interaction.Dependencies;
+        if(deps != null)
+        {
+            for (int i = 0; i < deps.Count; i++)
+            {
+                var dep = deps[i];
+                if (dep.Met)
+                    satConditions.Add(dep);
+                else
+                    unsatConditions.Add(dep);
+            }
+            deps.Update();
+            for (int i = 0; i < deps.Count; i++)
+            {
+                var dep = deps[i];
+                if (!dep.Met)
+                { 
+                    canBeEnacted = false;
+                }
+                else
+                {
+                    if (!shouldRebuildTooltip)
+                    if (unsatConditions.Contains(dep))
+                        shouldRebuildTooltip = true;
+                }
+            }
+        }
+        var otherAgent = Interaction.Other.GetComponent<Agent>();
+        if (otherAgent != null)
+        {
+            if (otherAgent.CurrentUtility() > Interaction.Utility())
+                canBeEnacted = false;
+        }
+        if (shouldRebuildTooltip)
+            RebuildTooltip();
+        return canBeEnacted;
     }
 
     void OnButtonClicked()
     {
-        if (InterAvailable() && Interaction.Filter())
+        if (CanBeEnacted())
         {
-            Interaction.Action();
-            if (Interaction.Coroutine != null)
-                Interaction.Coroutine.MoveNext();
+
+            agent.Do(Interaction);
+
         }
-        View.UpdateView();
-    }
-    static ObjectPool<List<Dependency>> lists = new ObjectPool<List<Dependency>>();
-    List<Dependency> satisfiedDeps = new List<Dependency>();
-    List<Dependency> unsatisfiedDeps = new List<Dependency>();
-    StringBuilder depsTooltipBuilder = new StringBuilder();
-    string depsData;
-    bool wasAvailable = false;
-    private void Update()
-    {
-
-
-        var nowAvailable = InterAvailable();
-        if (nowAvailable == wasAvailable)
-            return;
         else
-        {
-            if (nowAvailable)
-            {
-                Button.interactable = true;
-            }
-            else
-            {
-                Button.interactable = false;
-            }
-            wasAvailable = nowAvailable;
-        }
-        
-
+            DisableButton();
     }
-
-    bool InterAvailable()
-    {
-        bool available = true;
-        bool changed = false;
-        if (deps != null)
-        {
-            var unSatList = lists.Get();
-            unSatList.Clear();
-            var satList = lists.Get();
-            satList.Clear();
-            for (int i = 0; i < deps.Count;i++)
-            {
-                var dep = deps[i];
-                if (!dep.Satisfied())
-                {
-                    available = false;
-                    unSatList.Add(dep);
-                    if (satisfiedDeps.Contains(dep))
-                        changed = true;
-                }
-                else
-                {
-                    satList.Add(dep);
-                    if (unsatisfiedDeps.Contains(dep))
-                        changed = true;
-                }
-            }
-
-            lists.Return(satisfiedDeps);
-            lists.Return(unsatisfiedDeps);
-            satisfiedDeps = satList;
-            unsatisfiedDeps = unSatList;
-            if(changed)
-                RebuildTooltip();
-        }
-        return available;
-    }
-
+    static StringBuilder depsTooltipBuilder = new StringBuilder();
     void RebuildTooltip()
     {
+        depsTooltipBuilder.Length = 0;
         depsTooltipBuilder.Append("<color=green>");
-        foreach (var satDep in satisfiedDeps)
-            depsTooltipBuilder.Append(satDep.ToString()).AppendLine();
+        if (Interaction.Dependencies != null)
+            foreach (var satDep in Interaction.Dependencies)
+            if(satDep.Met)
+            depsTooltipBuilder.Append(satDep.Serialized.Render(agent.gameObject)).AppendLine();
+        if (Interaction.Constraints != null)
+            foreach (var satDep in Interaction.Constraints)
+            if (satDep.Met)
+                depsTooltipBuilder.Append(satDep.Serialized.Render(agent.gameObject)).AppendLine();
         depsTooltipBuilder.Append("</color>").AppendLine();
 
         depsTooltipBuilder.Append("<color=red>");
-        foreach (var satDep in unsatisfiedDeps)
-            depsTooltipBuilder.Append(satDep.ToString()).AppendLine();
+        if(Interaction.Dependencies != null)
+        foreach (var satDep in Interaction.Dependencies)
+            if(!satDep.Met)
+            depsTooltipBuilder.Append(satDep.Serialized.Render(agent.gameObject)).AppendLine();
+        if (Interaction.Constraints != null)
+            foreach (var satDep in Interaction.Constraints)
+            if (!satDep.Met)
+                depsTooltipBuilder.Append(satDep.Serialized.Render(agent.gameObject)).AppendLine();
         depsTooltipBuilder.Append("</color>").AppendLine();
-        depsData = depsTooltipBuilder.ToString();
-        tooltip.Text = depsData;
+        GUITooltip.Text = depsTooltipBuilder.ToString();
         depsTooltipBuilder.Length = 0;
     }
 }

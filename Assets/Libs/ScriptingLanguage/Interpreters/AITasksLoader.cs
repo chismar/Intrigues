@@ -14,7 +14,8 @@ using System.Text;
 public enum TaskState { None, Active, Paused, Failed, Finished }
 public abstract class Task
 {
-	public Penalties Penalties { get;set;}
+    public bool OtherIsProvided = false;
+    public Penalties Penalties { get;set;}
 	public TaskState State {get;set;}
 	public GameObject Root { get { return root; } set { root = value; } }
 	protected GameObject root;
@@ -70,6 +71,20 @@ public abstract class SmartScope
     public virtual bool ForInteraction { get { return false; } }
     public List<Metric> CachedMetrics;
     public Metrics metrics;
+    public void SelectNext(Task task)
+    {
+        GameObject go = null;
+        var iTask = task as InteractionTask;
+        if (iTask != null)
+            go = iTask.Other;
+        if (go != null)
+        {
+            if (CurrentGO != null)
+                AlreadyChosenGameObjects.Add(CurrentGO);
+            CurrentGO = go;
+            task.At = go;
+        }
+    }
     public bool SelectNext(Task task, Agent agent)
     {
         this.curTask = task;

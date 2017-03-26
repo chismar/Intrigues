@@ -67,6 +67,6 @@ player_extension_controls(entity_post_created) =
 	action = 
 	{
 		create = movable_controller
-		
+		create = interactable_controller
 	}
 }

@@ -9,6 +9,8 @@ public class InteractableController : MonoBehaviour
     void Start()
     {
         view = FindObjectOfType<InteractionsView>();
+        view.Controller = this;
+        
     }
     RaycastHit hit;
     private void Update()
@@ -44,12 +46,19 @@ public class InteractableController : MonoBehaviour
             ClearSelection();
         }
     }
-    Interactable interactable;
-    List<EventAction> availableInteractions = new List<EventAction>();
-    Actor actor;
+    Agent agent;
+    private void Awake()
+    {
+        agent = GetComponent<Agent>();
+    }
+    public Interactable interactable;
+    public bool noInteractions = false;
+    public List<InteractionTask> tasks = new List<InteractionTask>();
     public bool SnapToInteractable(GameObject go)
     {
-        Debug.Log(go);
+
+        noInteractions = true;
+        Debug.Log("Snap to " + go);
         ClearSelection();
         interactable = go.GetComponent<Interactable>();
         if (interactable == null)
@@ -57,36 +66,38 @@ public class InteractableController : MonoBehaviour
         var highlight = go.GetComponent<Highlightable>();
         if (highlight != null)
             highlight.LitUp();
-
-        actor = GetComponent<Actor>();
-        if (actor == null)
-            return false;
-        availableInteractions.Clear();
-        foreach (var inter in actor.allInteractions)
+        tasks.Clear();
+        foreach(var typePool in agent.tasksByType)
         {
-            (inter as EventInteraction).Initiator = gameObject;
-            inter.Root = go;
-            if (inter.Filter())
-                availableInteractions.Add(inter);
+            if(typeof(InteractionTask).IsAssignableFrom(typePool.Key))
+            {
+                //found an interaction task
+                var task = typePool.Value.Get() as InteractionTask;
+                var oip = task.OtherIsProvided;
+                task.Root = gameObject;
+                task.Other = go;
+                task.At = go;
+                task.OtherIsProvided = true;
+                task.State = TaskState.None;
+                task.Init();
+                task.Dependencies.Init();
+                task.Constraints.Init();
+                if (task.EngageIn != null)
+                    task.EngageIn.Init();
+                if (task.OtherFilter())
+                    tasks.Add(task);
+                else
+                {
+                    typePool.Value.Return(task);
+                }
+
+            }
         }
-        view.ShowInteractions(availableInteractions, this);
+        Debug.Log("Interactions: " + tasks.Count);
+        noInteractions = tasks.Count == 0;
         return true;
     }
-
-    public List<EventAction> UpdateInteractions(HashSet<System.Type> interactionsToIgnore)
-    {
-        availableInteractions.Clear();
-        foreach (var inter in actor.allInteractions)
-        {
-            if (interactionsToIgnore.Contains(inter.GetType()))
-                continue;
-            (inter as EventInteraction).Initiator = gameObject;
-            inter.Root = interactable.gameObject;
-            if (inter.Filter())
-                availableInteractions.Add(inter);
-        }
-        return availableInteractions;
-    }
+    
     void ClearSelection()
     {
         if (interactable == null)
@@ -95,6 +106,6 @@ public class InteractableController : MonoBehaviour
         if (highlight != null)
             highlight.LitDown();
         interactable = null;
-        view.ShowInteractions(null, this);
+        view.ShowInteractions(null);
     }
 }

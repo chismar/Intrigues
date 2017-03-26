@@ -3,11 +3,11 @@ using System.Collections;
 
 public class Highlightable : MonoBehaviour
 {
-    //SpriteRenderer renderer;
+    MeshRenderer renderer;
     public bool isLitUp = false;
     private void Awake()
     {
-        //renderer = GetComponent<SpriteRenderer>();
+        renderer = GetComponent<MeshRenderer>();
     }
 
     Color previousColor;
@@ -15,8 +15,8 @@ public class Highlightable : MonoBehaviour
     {
         if (isLitUp)
             return;
-        //previousColor = renderer.color;
-        //renderer.color = new Color(0.9f, 0.3f, 0.3f);
+        previousColor = renderer.material.color;
+        renderer.material.color = new Color(0.9f, 0.3f, 0.3f);
         isLitUp = true;
     }
 
@@ -24,7 +24,7 @@ public class Highlightable : MonoBehaviour
     {
         if (!isLitUp)
             return;
-        //renderer.color = previousColor;
+        renderer.material.color = previousColor;
         isLitUp = false;
     }
 }

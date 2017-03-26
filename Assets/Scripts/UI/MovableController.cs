@@ -80,22 +80,22 @@ public class MovePlayerTask : BehaviourTask
         movable.Speed = Speed;
         if (Input.GetKey(KeyCode.W))
         {
-            gotoPoint += (Root.transform.forward * movable.Speed);
+            gotoPoint += (-Vector3.forward * movable.Speed);
             hasNewPoint = true;
         }
         if (Input.GetKey(KeyCode.A))
         {
-            gotoPoint += (-Root.transform.right * movable.Speed);
+            gotoPoint += (Vector3.right * movable.Speed);
             hasNewPoint = true;
         }
         if (Input.GetKey(KeyCode.S))
         {
-            gotoPoint += (-Root.transform.forward * movable.Speed);
+            gotoPoint += (Vector3.forward * movable.Speed);
             hasNewPoint = true;
         }
         if (Input.GetKey(KeyCode.D))
         {
-            gotoPoint += (Root.transform.right * movable.Speed);
+            gotoPoint += (-Vector3.right * movable.Speed);
             hasNewPoint = true;
         }
         if (hasNewPoint)

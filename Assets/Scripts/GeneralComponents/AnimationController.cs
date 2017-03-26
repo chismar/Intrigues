@@ -50,7 +50,7 @@ public class AnimationController : MonoBehaviour
     {
         if (animationToIndex.ContainsKey(animationName))
         {
-            Debug.Log("Play " + animationName + " on " + gameObject.name);
+            //Debug.Log("Play " + animationName + " on " + gameObject.name);
             CurrentAnimation = animationName;
             if (curAnimationIndex != -1)
                 nonZeroInputs.Add(curAnimationIndex);

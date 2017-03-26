@@ -38,7 +38,7 @@ public class Agent : MonoBehaviour
             {
 
                 beh.Init(this, beh.Task);
-
+                beh.Task.OtherIsProvided = false;
                 beh.Task.Init();
                 if (beh.Task.State == TaskState.Failed)
                     continue;
@@ -88,9 +88,23 @@ public class Agent : MonoBehaviour
 
 	}
     public string Task {  get { return currentTaskBehaviour.Task is BehaviourTask ? (currentTaskBehaviour.Task as BehaviourTask).TaskName : null; } }
-    public void Do(BehaviourTask interactionTask)
+    public void Do(BehaviourTask behTask)
     {
 
+        if (currentBehaviour != null)
+        {
+            currentBehaviour.Interrupt();
+        }
+
+        lastBehaviour = currentBehaviour;
+        currentBehaviour = AgentBehaviour.FromTask(this, behTask);
+        currentTaskBehaviour = currentBehaviour as PrimitiveAgentBehaviour;
+        currentTaskBehaviour.selfTask.OnStart();
+        currentBehaviour.State = BehaviourState.Active;
+        behTask.State = TaskState.Active;
+    }
+    public void Do(InteractionTask interactionTask)
+    {
         if (currentBehaviour != null)
         {
             currentBehaviour.Interrupt();

@@ -7,25 +7,44 @@ public class InteractionsView : MonoBehaviour
 {
 
     public GameObject InteractionButtonPrefab;
-    InteractableController controller;
-    public void ShowInteractions(List<EventAction> interactions, InteractableController controller)
+    public InteractableController Controller;
+    Interactable target;
+    void Update()
     {
-        this.controller = controller;
+        if(Controller != null)
+        {
+            if(Controller.interactable != null && target != Controller.interactable)
+            {
+                ShowInteractions(null);
+                if(updater != null)
+                StopCoroutine(updater);
+                updater = null;
+                target = Controller.interactable;
+                if (!Controller.noInteractions)
+                {
+                    ShowInteractions(Controller.tasks);
+                    StartCoroutine(updater = Updater());
+                }
+                    
+            }
+        }
+        
+    }
+    
+
+
+    public void ShowInteractions(List<InteractionTask> interactions)
+    {
         while (buttons.Count > 0)
         {
             Destroy(buttons[buttons.Count - 1].gameObject);
             buttons.RemoveAt(buttons.Count - 1);
         }
-        if (updater != null)
-        {
-            StopCoroutine(updater);
-            updater = null;
-        }
         
         if (interactions == null)
             return;
 
-        Debug.Log("show interactions");
+        //Debug.Log("show interactions");
         foreach (var interaction in interactions)
         {
             CreateButton(interaction);
@@ -34,46 +53,20 @@ public class InteractionsView : MonoBehaviour
             StartCoroutine(updater = Updater());
     }
 
-    public void CreateButton(EventAction interaction)
+    public void CreateButton(InteractionTask interaction)
     {
         var button = GameObject.Instantiate(InteractionButtonPrefab);
         var iB = button.GetComponent<InteractableButton>();
         iB.Interaction = interaction;
-        iB.View = this;
         button.transform.SetParent(transform);
         buttons.Add(iB);
     }
     List<InteractableButton> buttons = new List<InteractableButton>();
-    HashSet<Type> intersToIgnore = new HashSet<Type>();
     public void UpdateView()
     {
-        if(controller.GetComponent<Actor>().curAction != null)
-        {
-            while(buttons.Count > 0)
-            {
-                Destroy(buttons[buttons.Count - 1].gameObject);
-                buttons.RemoveAt(buttons.Count - 1);
-            }
-            return;
-        }
-        intersToIgnore.Clear();
-        for ( int i =0; i < buttons.Count; i++)
-        {
-            var button = buttons[i];
-            intersToIgnore.Add(button.Interaction.GetType());
-            if (!button.Interaction.Filter())
-            {
-                Destroy(button.gameObject);
-                buttons.RemoveAt(i);
-                i--;
-            }
-            
-        }
-        var inters = controller.UpdateInteractions(intersToIgnore);
-        foreach(var inter in inters)
-        {
-            CreateButton(inter);
-        }
+        foreach (var button in buttons)
+            button.DemandUpdate();
+
     }
     IEnumerator updater;
     IEnumerator Updater()
