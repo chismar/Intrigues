@@ -32,38 +32,46 @@ public class Agent : MonoBehaviour
         //Debug.Log ("UpdateAI");
 		float maxUt = 0;
 		AgentBehaviour maxBeh = null;
-		for (int i = 0; i < Behaviours.Count; i++) {
-			var beh = Behaviours [i];
-			if (beh.State != BehaviourState.Paused && beh != currentBehaviour && beh.State != BehaviourState.Waiting)
+        if(!passive)
+        {
+            for (int i = 0; i < Behaviours.Count; i++)
             {
-
-                beh.Init(this, beh.Task);
-                beh.Task.OtherIsProvided = false;
-                beh.Task.Init();
-                if (beh.Task.State == TaskState.Failed)
-                    continue;
-            }
-			var ut = beh.Utility (beh == currentBehaviour) * (1f + 0.1f * (0.5f - (float)rand.NextDouble()) / 0.5f);
-			if (ut > maxUt) {
-				maxBeh = beh;
-				maxUt = ut;
-			}
-		}
-		if (maxBeh != null)
-		if (maxBeh != currentBehaviour) {
-			if (currentBehaviour != null) {
-				currentBehaviour.Interrupt();
-                }
-                lastBehaviour = currentBehaviour;
-                currentBehaviour = maxBeh;
-          //Debug.LogWarning("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
-            if(currentBehaviour.State == BehaviourState.None)
+                var beh = Behaviours[i];
+                if (beh.State != BehaviourState.Paused && beh != currentBehaviour && beh.State != BehaviourState.Waiting)
                 {
 
-                    currentBehaviour.PlanAhead();
-                    //Debug.Log(currentBehaviour.State);
+                    beh.Init(this, beh.Task);
+                    beh.Task.OtherIsProvided = false;
+                    beh.Task.Init();
+                    if (beh.Task.State == TaskState.Failed)
+                        continue;
+                }
+                var ut = beh.Utility(beh == currentBehaviour) * (1f + 0.1f * (0.5f - (float)rand.NextDouble()) / 0.5f);
+                if (ut > maxUt)
+                {
+                    maxBeh = beh;
+                    maxUt = ut;
+                }
+            }
+            if (maxBeh != null)
+                if (maxBeh != currentBehaviour)
+                {
+                    if (currentBehaviour != null)
+                    {
+                        currentBehaviour.Interrupt();
+                    }
+                    lastBehaviour = currentBehaviour;
+                    currentBehaviour = maxBeh;
+                    //Debug.LogWarning("{0} has chosen to do {1}".Fmt(gameObject, currentBehaviour), gameObject);
+                    if (currentBehaviour.State == BehaviourState.None)
+                    {
+
+                        currentBehaviour.PlanAhead();
+                        //Debug.Log(currentBehaviour.State);
+                    }
                 }
         }
+		
 		if (currentBehaviour != null && currentTaskBehaviour == null) {
 			if (currentBehaviour.State == BehaviourState.ImpossibleToStart)
             {
@@ -98,10 +106,6 @@ public class Agent : MonoBehaviour
 
         lastBehaviour = currentBehaviour;
         currentBehaviour = AgentBehaviour.FromTask(this, behTask);
-        currentTaskBehaviour = currentBehaviour as PrimitiveAgentBehaviour;
-        currentTaskBehaviour.selfTask.OnStart();
-        currentBehaviour.State = BehaviourState.Active;
-        behTask.State = TaskState.Active;
     }
     public void Do(InteractionTask interactionTask)
     {
@@ -112,10 +116,9 @@ public class Agent : MonoBehaviour
 
         lastBehaviour = currentBehaviour;
         currentBehaviour = AgentBehaviour.FromTask(this, interactionTask);
-        currentTaskBehaviour = currentBehaviour as PrimitiveAgentBehaviour;
-        currentTaskBehaviour.selfTask.OnStart();
-        currentBehaviour.State = BehaviourState.Active;
-        interactionTask.State = TaskState.Active;
+        //currentTaskBehaviour.selfTask.OnStart();
+        //currentBehaviour.State = BehaviourState.Active;
+        //interactionTask.State = TaskState.Active;
     }
     void Update()
     {
@@ -134,12 +137,13 @@ public class Agent : MonoBehaviour
                     lastBehaviour = currentBehaviour;
                     currentBehaviour = null;
                 }
-            if (!passive)
-                UpdateAI ();
+            UpdateAI ();
 		}
 	}
     public float CurrentUtility()
     {
+        if (currentBehaviour != null && (currentBehaviour.State == BehaviourState.ImpossibleToStart || currentBehaviour.State == BehaviourState.Failed || currentBehaviour.State == BehaviourState.Finished))
+            return 0f;
         return currentBehaviour == null ? 0f : currentBehaviour.Utility(false);
     }
 	public void SetExecutingTask(PrimitiveAgentBehaviour beh)

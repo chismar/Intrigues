@@ -13,13 +13,14 @@ public class InteractionsView : MonoBehaviour
     {
         if(Controller != null)
         {
-            if(Controller.interactable != null && target != Controller.interactable)
+            if(target != Controller.interactable)
             {
                 ShowInteractions(null);
                 if(updater != null)
                 StopCoroutine(updater);
                 updater = null;
                 target = Controller.interactable;
+                if(Controller.interactable != null)
                 if (!Controller.noInteractions)
                 {
                     ShowInteractions(Controller.tasks);

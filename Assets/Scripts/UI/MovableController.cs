@@ -70,6 +70,7 @@ public class MovePlayerTask : BehaviourTask
 
     public bool ShouldBeInCharge()
     {
+        
         return Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D);
     }
     public override void OnUpdate()

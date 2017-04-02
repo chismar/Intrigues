@@ -3,11 +3,13 @@ using System.Collections;
 
 public class Highlightable : MonoBehaviour
 {
-    MeshRenderer renderer;
+    Renderer renderer;
     public bool isLitUp = false;
     private void Awake()
     {
         renderer = GetComponent<MeshRenderer>();
+        if (renderer == null)
+            renderer = GetComponentInChildren<MeshRenderer>();
     }
 
     Color previousColor;

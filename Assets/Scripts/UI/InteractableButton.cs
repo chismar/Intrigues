@@ -21,6 +21,8 @@ public class InteractableButton : MonoBehaviour
     }
     public void DemandUpdate()
     {
+        if (agent == null)
+            return;
         if (CanBeEnacted())
         {
             EnableButton();
@@ -127,6 +129,8 @@ public class InteractableButton : MonoBehaviour
     static StringBuilder depsTooltipBuilder = new StringBuilder();
     void RebuildTooltip()
     {
+        if (agent == null)
+            Debug.Log(Interaction.Root);
         depsTooltipBuilder.Length = 0;
         depsTooltipBuilder.Append("<color=green>");
         if (Interaction.Dependencies != null)
